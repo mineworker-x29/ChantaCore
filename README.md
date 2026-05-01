@@ -1,0 +1,41 @@
+# ChantaCore
+
+`src/chanta_core/` includes a minimal CLI for OpenAI-compatible model endpoints such as LM Studio.
+
+## Setup
+
+1. Create `.env` from `.env.example`.
+2. In LM Studio, start the local server and load `qwen3.6-35b-a3b:2`.
+3. Install the package:
+
+```bash
+pip install -e .
+```
+
+## Usage
+
+One-shot prompt:
+
+```bash
+chanta-cli ask "한국어로 자기소개를 해줘."
+```
+
+Pipe stdin:
+
+```bash
+echo "현재 설정을 요약해줘." | chanta-cli ask
+```
+
+Interactive session:
+
+```bash
+chanta-cli repl --system "답변은 간결하게 해."
+```
+
+Inspect resolved config:
+
+```bash
+chanta-cli show-config
+```
+
+`python -m chanta_core ...` also works.

@@ -1,0 +1,2 @@
+[console_scripts]
+chanta-cli = chanta_core.cli:main
