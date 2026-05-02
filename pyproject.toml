@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.6.1"
-description = "Skill dispatch contract hardening for ChantaCore."
+version = "0.6.2"
+description = "Built-in skill baseline with process intelligence skills for ChantaCore."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]

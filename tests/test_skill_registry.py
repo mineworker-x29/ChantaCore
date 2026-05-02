@@ -17,6 +17,11 @@ def test_skill_registry_registers_builtin_llm_chat() -> None:
     assert by_id == by_name
     assert registry.require("skill:llm_chat").skill_name == "llm_chat"
     assert "llm_chat" in [skill.skill_name for skill in registry.list_skills()]
+    assert registry.get("skill:echo") is not None
+    assert registry.get("echo") is not None
+    assert registry.get("skill:summarize_text") is not None
+    assert registry.get("skill:inspect_ocel_recent") is not None
+    assert registry.get("skill:summarize_process_trace") is not None
 
 
 def test_duplicate_identical_skill_registration_is_idempotent() -> None:

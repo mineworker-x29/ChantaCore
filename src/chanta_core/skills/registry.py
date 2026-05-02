@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from chanta_core.skills.builtin import create_llm_chat_skill
+from chanta_core.skills.builtin import (
+    create_echo_skill,
+    create_inspect_ocel_recent_skill,
+    create_llm_chat_skill,
+    create_summarize_process_trace_skill,
+    create_summarize_text_skill,
+)
 from chanta_core.skills.errors import SkillRegistryError
 from chanta_core.skills.skill import Skill
 
@@ -54,6 +60,10 @@ class SkillRegistry:
 
     def register_builtin_skills(self) -> None:
         self.register(create_llm_chat_skill())
+        self.register(create_echo_skill())
+        self.register(create_summarize_text_skill())
+        self.register(create_inspect_ocel_recent_skill())
+        self.register(create_summarize_process_trace_skill())
 
     def list_skills(self) -> list[Skill]:
         return [self._skills_by_id[skill_id] for skill_id in sorted(self._skills_by_id)]

@@ -9,31 +9,28 @@ from chanta_core.skills.result import SkillExecutionResult
 from chanta_core.skills.skill import Skill
 
 
-def create_llm_chat_skill() -> Skill:
+def create_summarize_text_skill() -> Skill:
     return Skill(
-        skill_id="skill:llm_chat",
-        skill_name="llm_chat",
-        description=(
-            "Use the configured local or remote LLM provider to answer the "
-            "user request."
-        ),
+        skill_id="skill:summarize_text",
+        skill_name="summarize_text",
+        description="Summarize input text using the configured LLM provider.",
         execution_type="llm",
         input_schema={},
         output_schema={},
-        tags=["llm", "chat", "default"],
+        tags=["llm", "summarization", "builtin"],
         skill_attrs={
             "is_builtin": True,
-            "provider_mode": "configured",
+            "requires_llm": True,
+            "requires_external_tool": False,
         },
     )
 
 
-def execute_llm_chat_skill(
+def execute_summarize_text_skill(
     *,
     skill: Skill,
     context: SkillExecutionContext,
     llm_client: Any,
-    context_assembler: Any,
     trace_service: Any,
     **_,
 ) -> SkillExecutionResult:
@@ -44,25 +41,21 @@ def execute_llm_chat_skill(
         session_id=context.session_id,
         metadata={"process_instance_id": context.process_instance_id},
     )
-    messages = context_assembler.assemble_for_llm_chat(
-        user_input=context.user_input,
-        system_prompt=context.system_prompt,
-    )
-    iteration = int(context.context_attrs.get("iteration", 0))
-    trace_service.record_context_assembled(
-        execution_context,
-        messages,
-        profile=profile,
-        iteration=iteration,
-    )
-
-    provider_name = getattr(getattr(llm_client, "settings", None), "provider", None)
-    model_id = getattr(getattr(llm_client, "settings", None), "model", None)
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "Summarize the user's text concisely. Preserve key facts and "
+                "avoid adding unsupported claims."
+            ),
+        },
+        {"role": "user", "content": context.user_input},
+    ]
     trace_service.record_llm_call_started(
         execution_context,
         messages,
-        provider_name=provider_name,
-        model_id=model_id,
+        provider_name=getattr(getattr(llm_client, "settings", None), "provider", None),
+        model_id=getattr(getattr(llm_client, "settings", None), "model", None),
         profile=profile,
     )
     try:
@@ -79,8 +72,10 @@ def execute_llm_chat_skill(
             output_text=None,
             output_attrs={
                 "execution_type": skill.execution_type,
-                "exception_type": type(error).__name__,
+                "summary_mode": "builtin_summarize_text",
+                "input_length": len(context.user_input),
                 "failure_stage": "call_llm",
+                "exception_type": type(error).__name__,
                 "skill_id": skill.skill_id,
                 "skill_name": skill.skill_name,
             },
@@ -98,7 +93,9 @@ def execute_llm_chat_skill(
         success=True,
         output_text=response_text,
         output_attrs={
-            "execution_type": "llm",
+            "execution_type": skill.execution_type,
+            "summary_mode": "builtin_summarize_text",
+            "input_length": len(context.user_input),
             "response_length": len(response_text),
         },
     )

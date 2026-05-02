@@ -19,7 +19,11 @@ __all__ = [
     "SkillValidationError",
     "SkillRegistry",
     "builtin_llm_chat_skill",
+    "create_echo_skill",
+    "create_inspect_ocel_recent_skill",
     "create_llm_chat_skill",
+    "create_summarize_process_trace_skill",
+    "create_summarize_text_skill",
 ]
 
 
@@ -39,7 +43,14 @@ def __getattr__(name: str) -> Any:
         return getattr(errors, name)
     if name == "SkillRegistry":
         return import_module("chanta_core.skills.registry").SkillRegistry
-    if name in {"builtin_llm_chat_skill", "create_llm_chat_skill"}:
+    if name in {
+        "builtin_llm_chat_skill",
+        "create_echo_skill",
+        "create_inspect_ocel_recent_skill",
+        "create_llm_chat_skill",
+        "create_summarize_process_trace_skill",
+        "create_summarize_text_skill",
+    }:
         builtin = import_module("chanta_core.skills.builtin")
         return getattr(builtin, name)
     raise AttributeError(name)

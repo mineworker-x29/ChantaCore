@@ -3,7 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from chanta_core.skills.builtin import execute_llm_chat_skill
+from chanta_core.skills.builtin import (
+    execute_echo_skill,
+    execute_inspect_ocel_recent_skill,
+    execute_llm_chat_skill,
+    execute_summarize_process_trace_skill,
+    execute_summarize_text_skill,
+)
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.result import SkillExecutionResult
 from chanta_core.skills.skill import Skill
@@ -34,6 +40,13 @@ class SkillExecutor:
         self.trace_service = trace_service or TraceService()
         self.policy = policy or SkillExecutionPolicy()
         self.events: list[Any] = []
+        self._handlers = {
+            "skill:llm_chat": execute_llm_chat_skill,
+            "skill:echo": execute_echo_skill,
+            "skill:summarize_text": execute_summarize_text_skill,
+            "skill:inspect_ocel_recent": execute_inspect_ocel_recent_skill,
+            "skill:summarize_process_trace": execute_summarize_process_trace_skill,
+        }
 
     def execute(
         self,
@@ -42,13 +55,15 @@ class SkillExecutor:
     ) -> SkillExecutionResult:
         self.events = []
         skill.validate()
-        if skill.skill_id == "skill:llm_chat" or skill.execution_type == "llm":
-            result = execute_llm_chat_skill(
+        handler = self._handlers.get(skill.skill_id)
+        if handler is not None:
+            result = handler(
                 skill=skill,
                 context=context,
                 llm_client=self.llm_client,
                 context_assembler=self.context_assembler,
                 trace_service=_RecordingTraceService(self.trace_service, self.events),
+                ocel_store=getattr(self.trace_service, "ocel_store", None),
             )
             self._handle_failure_event_if_needed(skill, context, result)
             if self.policy.raise_on_failure and not result.success:

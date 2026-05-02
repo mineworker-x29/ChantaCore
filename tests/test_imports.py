@@ -29,7 +29,14 @@ from chanta_core.runtime.loop import (
     ProcessRunResult,
     ProcessRunState,
 )
-from chanta_core.skills.builtin import builtin_llm_chat_skill, create_llm_chat_skill
+from chanta_core.skills.builtin import (
+    builtin_llm_chat_skill,
+    create_echo_skill,
+    create_inspect_ocel_recent_skill,
+    create_llm_chat_skill,
+    create_summarize_process_trace_skill,
+    create_summarize_text_skill,
+)
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.errors import SkillRegistryError, SkillValidationError
 from chanta_core.skills.executor import SkillExecutionPolicy, SkillExecutor
@@ -67,7 +74,11 @@ def test_required_imports() -> None:
     assert SkillValidationError is not None
     assert SkillRegistry is not None
     assert builtin_llm_chat_skill is not None
+    assert create_echo_skill is not None
+    assert create_inspect_ocel_recent_skill is not None
     assert create_llm_chat_skill is not None
+    assert create_summarize_process_trace_skill is not None
+    assert create_summarize_text_skill is not None
     assert Mission is not None
     assert DelegationPacket is not None
     assert OCELObject is not None

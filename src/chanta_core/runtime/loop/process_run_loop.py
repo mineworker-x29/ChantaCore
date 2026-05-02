@@ -55,6 +55,7 @@ class ProcessRunLoop:
         agent_id: str,
         user_input: str,
         system_prompt: str | None = None,
+        skill_id: str | None = None,
     ) -> ProcessRunResult:
         context = ExecutionContext.create(
             agent_id=agent_id,
@@ -100,7 +101,11 @@ class ProcessRunLoop:
                 if next_activity != "execute_skill":
                     break
 
-                skill = self.skill_registry.get_builtin_llm_chat()
+                skill = (
+                    self.skill_registry.require(skill_id)
+                    if skill_id
+                    else self.skill_registry.get_builtin_llm_chat()
+                )
                 state.selected_skill_id = skill.skill_id
                 self._append_event(
                     self.trace_service.record_skill_selected(
