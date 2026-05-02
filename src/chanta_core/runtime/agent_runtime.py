@@ -37,9 +37,34 @@ class AgentRuntime:
         events: list[AgentEvent] = []
 
         try:
-            events.append(self.trace_service.record_run_started(context))
+            events.append(
+                self.trace_service.record_user_request_received(
+                    context,
+                    profile=self.agent_profile,
+                )
+            )
+            events.append(
+                self.trace_service.record_run_started(
+                    context,
+                    profile=self.agent_profile,
+                )
+            )
             messages = self.prompt_assembly.assemble(context, self.agent_profile)
-            events.append(self.trace_service.record_prompt_assembled(context, messages))
+            events.append(
+                self.trace_service.record_prompt_assembled(
+                    context,
+                    messages,
+                    profile=self.agent_profile,
+                )
+            )
+            llm_call_event = self.trace_service.record_llm_call_started(
+                context,
+                messages,
+                provider_name=self.llm_client.settings.provider,
+                model_id=self.llm_client.settings.model,
+                profile=self.agent_profile,
+            )
+            events.append(llm_call_event)
             response_text = self.llm_client.chat_messages(
                 messages=messages,
                 temperature=self.agent_profile.default_temperature,
@@ -49,11 +74,25 @@ class AgentRuntime:
                 self.trace_service.record_llm_response_received(
                     context,
                     response_text,
+                    profile=self.agent_profile,
+                    llm_call_id=llm_call_event.payload.get("llm_call_id"),
                 )
             )
-            events.append(self.trace_service.record_run_completed(context))
+            events.append(
+                self.trace_service.record_run_completed(
+                    context,
+                    profile=self.agent_profile,
+                    response_text=response_text,
+                )
+            )
         except Exception as error:
-            events.append(self.trace_service.record_run_failed(context, error))
+            events.append(
+                self.trace_service.record_run_failed(
+                    context,
+                    error,
+                    profile=self.agent_profile,
+                )
+            )
             raise
 
         return AgentRunResult(

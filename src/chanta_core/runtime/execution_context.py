@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
+
+from chanta_core.utility.time import utc_now_iso
 
 
 def create_session_id() -> str:
     return str(uuid4())
-
-
-def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 @dataclass(frozen=True)

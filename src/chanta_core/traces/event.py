@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
+
+from chanta_core.utility.time import utc_now_iso
 
 
 def create_event_id() -> str:
@@ -11,7 +12,7 @@ def create_event_id() -> str:
 
 
 def utc_timestamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return utc_now_iso()
 
 
 @dataclass(frozen=True)

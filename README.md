@@ -39,3 +39,71 @@ chanta-cli show-config
 ```
 
 `python -m chanta_core ...` also works.
+
+## OCEL / OCPX / PIG Foundation
+
+ChantaCore v0.3 adds an OCEL-oriented canonical trace layer for process
+intelligence. Runtime events are persisted as object-centric event, object, and
+relation records in a SQLite store at `data/ocel/chanta_core_ocel.sqlite`.
+
+The existing JSONL event log remains only as an optional raw/debug mirror.
+Canonical persistence for runtime traces is now the SQLite OCEL store.
+
+User requests are first-class OCEL objects. The runtime trace path records
+sessions, agents, user requests, prompts, LLM calls, providers, models, LLM
+responses, outcomes, and errors as separate objects where applicable.
+
+`chanta_core.ocpx` is the foundation for a future object-centric process
+computation engine. It is inspired by OCPA-style analysis but is intended to
+evolve into a local ChantaCore computation layer that reads OCEL records and
+builds process views without requiring heavy runtime dependencies.
+
+`chanta_core.pig` is the foundation for the Process Intelligence Graph / Guide
+layer. It consumes OCPX views and currently provides simple graph, guide,
+diagnostic, and recommendation outputs.
+
+pm4py and ocpa compatibility is future-facing. Compatibility should be achieved
+through standards-oriented OCEL export/import boundaries, not mandatory runtime
+dependencies.
+
+### v0.3.1 OCEL relation hygiene
+
+Event-object and object-object relations now use logical uniqueness:
+`event_id + object_id + qualifier` for event-object relations, and
+`source_object_id + target_object_id + qualifier` for object-object relations.
+Duplicate logical relations are ignored on insert.
+
+`OCELValidator.validate_duplicate_relations()` reports duplicate relation groups
+across both standard-oriented OCEL tables and Chanta operational extension
+tables. The raw mirror may still append repeated raw events because it is
+debug/audit-oriented, not canonical persistence.
+
+Worker OCEL emission is still future work.
+
+### v0.3.2 OCEL canonical model alignment
+
+ChantaCore v0.3.2 aligns the internal OCEL-oriented model with a smaller
+canonical event/object shape. Canonical events now use `event_activity`,
+`event_timestamp`, and `event_attrs`; runtime taxonomy such as
+`runtime_event_type`, lifecycle, source runtime, session id, and actor id lives
+inside `event_attrs`.
+
+Canonical objects now use `object_id`, `object_type`, and `object_attrs`.
+Object-specific values such as `object_key`, `display_name`, `created_at`, and
+runtime state are stored in `object_attrs`.
+
+Python relation modeling uses a unified `OCELRelation` with `relation_kind`,
+`source_id`, `target_id`, `qualifier`, and `relation_attrs`. SQLite persistence
+still keeps event-object and object-object relation tables separate.
+
+Runtime activities use stable reusable labels such as `receive_user_request`,
+`start_goal`, `assemble_prompt`, `call_llm`, `receive_llm_response`, and
+`complete_goal`. The basic AgentRuntime path now records a lightweight `goal`
+object related to the user request, session, and agent.
+
+Timestamp creation is centralized in `chanta_core.utility.time.utc_now_iso()`
+and returns timezone-aware UTC strings with a trailing `Z`.
+
+This remains an object-centric runtime trace foundation. Full worker events,
+skill runtime, process mining algorithms, and complete pm4py/ocpa compatibility
+are still future work.

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.2.0"
-description = "Trace-aware runtime core for ChantaResearchGroup agents."
+version = "0.3.2"
+description = "OCEL canonical model alignment and execution ontology for ChantaCore."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]
@@ -23,3 +23,6 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "--basetemp=.pytest-tmp"
