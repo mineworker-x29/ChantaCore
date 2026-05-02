@@ -52,11 +52,14 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
     assert activities == [
         "receive_user_request",
         "start_process_instance",
-        "assemble_prompt",
+        "start_process_run_loop",
+        "decide_next_activity",
         "select_skill",
         "execute_skill",
+        "assemble_context",
         "call_llm",
         "receive_llm_response",
+        "observe_result",
         "record_outcome",
         "complete_process_instance",
     ]

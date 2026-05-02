@@ -61,12 +61,27 @@ class PIGBuilder:
 
     def build_guide_from_view(self, view: OCPXProcessView) -> dict[str, Any]:
         object_type_counts = self.engine.count_objects_by_type(view)
+        selected_skills = sorted(
+            {
+                str(event.event_attrs.get("skill_id"))
+                for event in view.events
+                if event.event_attrs.get("skill_id")
+            }
+        )
+        loop_iterations = [
+            event.event_attrs.get("iteration")
+            for event in view.events
+            if event.event_activity in {"decide_next_activity", "observe_result"}
+        ]
         return {
             "event_count": len(view.events),
             "object_count": len(view.objects),
             "activity_sequence": self.engine.activity_sequence(view),
             "process_instance_count": object_type_counts.get("process_instance", 0),
             "skill_usage_count": object_type_counts.get("skill", 0),
+            "selected_skills": selected_skills,
+            "observation_count": self.engine.count_events_by_activity(view).get("observe_result", 0),
+            "loop_iteration_count": len(set(loop_iterations)),
             "top_event_activities": self.engine.count_events_by_activity(view),
             "top_event_types": self.engine.count_events_by_type(view),
             "top_object_types": object_type_counts,

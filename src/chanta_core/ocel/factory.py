@@ -81,6 +81,106 @@ class OCELFactory:
             ],
         )
 
+    def start_process_run_loop(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        *,
+        max_iterations: int,
+        state_attrs: dict[str, Any] | None = None,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        event = self._event(
+            runtime_event_type="process_run_loop_started",
+            event_activity="start_process_run_loop",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="started",
+            event_attrs={
+                "max_iterations": max_iterations,
+                "state_attrs": state_attrs or {},
+            },
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp, status="running"),
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+            ],
+        )
+
+    def decide_next_activity(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        *,
+        next_activity: str,
+        iteration: int,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        event = self._event(
+            runtime_event_type="next_activity_decided",
+            event_activity="decide_next_activity",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="decided",
+            event_attrs={
+                "next_activity": next_activity,
+                "iteration": iteration,
+            },
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp),
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+            ],
+        )
+
+    def assemble_context(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        messages: list[ChatMessage],
+        *,
+        iteration: int,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        prompt = self._prompt_object(messages, timestamp)
+        event = self._event(
+            runtime_event_type="context_assembled",
+            event_activity="assemble_context",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="assembled",
+            event_attrs={
+                "iteration": iteration,
+                "message_count": len(messages),
+                "messages": messages,
+            },
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp) + [prompt],
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, prompt.object_id, "assembled_prompt"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+                self._o2o(self._request_id(context), prompt.object_id, "request_to_prompt"),
+            ],
+        )
+
     def assemble_prompt(
         self,
         context: ExecutionContext,
@@ -239,6 +339,38 @@ class OCELFactory:
             relations.append(self._e2o(event, llm_call_id, "llm_call"))
             relations.append(self._o2o(llm_call_id, response.object_id, "llm_call_to_response"))
         return self._record(event, objects, relations)
+
+    def observe_result(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        *,
+        observation: dict[str, Any],
+        iteration: int,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        event = self._event(
+            runtime_event_type="result_observed",
+            event_activity="observe_result",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="observed",
+            event_attrs={
+                "iteration": iteration,
+                "observation": observation,
+            },
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp),
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+            ],
+        )
 
     def record_outcome(
         self,
@@ -646,6 +778,9 @@ class OCELFactory:
 
     @staticmethod
     def _process_id(context: ExecutionContext) -> str:
+        process_instance_id = context.metadata.get("process_instance_id")
+        if process_instance_id:
+            return str(process_instance_id)
         return f"process_instance:{short_hash(f'{context.session_id}:{context.user_input}:process')}"
 
     @staticmethod

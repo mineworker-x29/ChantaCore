@@ -44,15 +44,18 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
     assert [event.event_type for event in result.events] == [
         "user_request_received",
         "agent_run_started",
-        "prompt_assembled",
+        "process_run_loop_started",
+        "next_activity_decided",
         "skill_selected",
         "skill_executed",
+        "context_assembled",
         "llm_call_started",
         "llm_response_received",
+        "result_observed",
         "outcome_recorded",
         "process_instance_completed",
     ]
-    assert store.fetch_event_count() == 9
+    assert store.fetch_event_count() == 12
     assert store.fetch_object_count() >= 11
     assert store.fetch_event_object_relation_count() > 0
     assert store.fetch_object_object_relation_count() > 0
@@ -92,11 +95,14 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
     assert activities == [
         "receive_user_request",
         "start_process_instance",
-        "assemble_prompt",
+        "start_process_run_loop",
+        "decide_next_activity",
         "select_skill",
         "execute_skill",
+        "assemble_context",
         "call_llm",
         "receive_llm_response",
+        "observe_result",
         "record_outcome",
         "complete_process_instance",
     ]

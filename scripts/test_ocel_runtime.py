@@ -37,6 +37,20 @@ def main() -> None:
         [event["event_activity"] for event in store.fetch_recent_events(limit=10)],
     )
     print("session_summary:", query.session_summary(result.session_id))
+    print(
+        "loop_activities:",
+        [
+            event["event_activity"]
+            for event in store.fetch_events_by_session(result.session_id)
+            if event["event_activity"]
+            in {
+                "start_process_run_loop",
+                "decide_next_activity",
+                "assemble_context",
+                "observe_result",
+            }
+        ],
+    )
 
 
 if __name__ == "__main__":

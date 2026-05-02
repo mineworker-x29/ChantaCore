@@ -55,6 +55,58 @@ class TraceService:
             record,
         )
 
+    def record_process_run_loop_started(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile | None = None,
+        *,
+        max_iterations: int,
+        state_attrs: dict[str, Any] | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.start_process_run_loop(
+            context,
+            profile,
+            max_iterations=max_iterations,
+            state_attrs=state_attrs,
+        )
+        return self._record(
+            context,
+            "process_run_loop_started",
+            {
+                "process_instance_id": context.metadata.get("process_instance_id"),
+                "max_iterations": max_iterations,
+                "state_attrs": state_attrs or {},
+            },
+            record,
+        )
+
+    def record_next_activity_decided(
+        self,
+        context: ExecutionContext,
+        *,
+        next_activity: str,
+        iteration: int,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.decide_next_activity(
+            context,
+            profile,
+            next_activity=next_activity,
+            iteration=iteration,
+        )
+        return self._record(
+            context,
+            "next_activity_decided",
+            {
+                "process_instance_id": context.metadata.get("process_instance_id"),
+                "next_activity": next_activity,
+                "iteration": iteration,
+            },
+            record,
+        )
+
     def record_run_started(
         self,
         context: ExecutionContext,
@@ -82,6 +134,32 @@ class TraceService:
             context,
             "prompt_assembled",
             {"messages": messages},
+            record,
+        )
+
+    def record_context_assembled(
+        self,
+        context: ExecutionContext,
+        messages: list[ChatMessage],
+        profile: AgentProfile | None = None,
+        *,
+        iteration: int,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.assemble_context(
+            context,
+            profile,
+            messages,
+            iteration=iteration,
+        )
+        return self._record(
+            context,
+            "context_assembled",
+            {
+                "process_instance_id": context.metadata.get("process_instance_id"),
+                "iteration": iteration,
+                "messages": messages,
+            },
             record,
         )
 
@@ -186,6 +264,32 @@ class TraceService:
             context,
             "outcome_recorded",
             {"outcome_id": outcome_id, "response_text": response_text},
+            record,
+        )
+
+    def record_result_observed(
+        self,
+        context: ExecutionContext,
+        *,
+        observation: dict[str, Any],
+        iteration: int,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.observe_result(
+            context,
+            profile,
+            observation=observation,
+            iteration=iteration,
+        )
+        return self._record(
+            context,
+            "result_observed",
+            {
+                "process_instance_id": context.metadata.get("process_instance_id"),
+                "iteration": iteration,
+                "observation": observation,
+            },
             record,
         )
 

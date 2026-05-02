@@ -19,6 +19,15 @@ from chanta_core.pig.service import PIGService
 from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.agent_runtime import AgentRuntime
 from chanta_core.runtime.chat_service import ChatService
+from chanta_core.runtime.loop import (
+    ProcessActivityDecider,
+    ProcessContextAssembler,
+    ProcessObservation,
+    ProcessRunLoop,
+    ProcessRunPolicy,
+    ProcessRunResult,
+    ProcessRunState,
+)
 from chanta_core.skills.skill import Skill
 from chanta_core.skills.registry import SkillRegistry
 from chanta_core.skills.builtin import builtin_llm_chat_skill
@@ -31,6 +40,13 @@ def test_required_imports() -> None:
     assert LLMClient is not None
     assert AgentRuntime is not None
     assert ChatService is not None
+    assert ProcessActivityDecider is not None
+    assert ProcessContextAssembler is not None
+    assert ProcessObservation is not None
+    assert ProcessRunLoop is not None
+    assert ProcessRunPolicy is not None
+    assert ProcessRunResult is not None
+    assert ProcessRunState is not None
     assert AgentProfile is not None
     assert PromptAssemblyService is not None
     assert AgentEvent is not None

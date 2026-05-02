@@ -133,3 +133,34 @@ The current LLM response path is traced as selection and execution of the
 built-in `skill:llm_chat` object. This is trace ontology only; a full skill
 execution framework, worker runtime, task queue, and process mining algorithms
 remain future work.
+
+### v0.5 ProcessRunLoop Runtime
+
+ChantaCore v0.5 introduces `ProcessRunLoop` as the canonical bounded runtime
+loop for advancing one `process_instance`. `AgentRuntime` still receives the
+user request and starts the process instance, then delegates execution to the
+loop.
+
+The v0.5 loop is synchronous and bounded to one iteration by default. It keeps
+mutable `ProcessRunState`, assembles model context, invokes the configured LLM
+through the runtime harness, records an observation, applies a stop policy, and
+persists each major transition through the OCEL-backed trace service.
+
+Additional loop activities include:
+
+```text
+start_process_run_loop
+decide_next_activity
+assemble_context
+observe_result
+```
+
+`ProcessTrace`-style views are read models produced through OCPX, not the
+runtime loop itself. Process variants, permission gates, tool dispatch, context
+compaction, subagent delegation, and worker queues remain future work.
+
+Claude Code's shared-loop pattern is used only as architectural inspiration for
+loop state, context assembly, harness execution, observation collection, stop
+conditions, and persistence. ChantaCore v0.5 does not copy or implement Claude
+Code features such as streaming, shell sandboxing, MCP/plugin execution, or
+subagents.
