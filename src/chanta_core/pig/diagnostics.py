@@ -71,4 +71,18 @@ class PIGDiagnosticService:
                     metadata={"failed_process_objects": failed_process_objects},
                 )
             )
+        if "fail_skill_execution" in activity_sequence:
+            diagnostics.append(
+                PIGDiagnostic(
+                    diagnostic_id="failed_skill_execution",
+                    severity="error",
+                    title="Failed skill execution",
+                    description="The process view contains a failed skill execution event.",
+                    evidence_refs=[
+                        event.event_id
+                        for event in view.events
+                        if event.event_activity == "fail_skill_execution"
+                    ],
+                )
+            )
         return diagnostics

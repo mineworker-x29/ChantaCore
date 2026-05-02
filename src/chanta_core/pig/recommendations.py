@@ -55,4 +55,15 @@ class PIGRecommendationService:
                     confidence=0.8,
                 )
             )
+        if "failed_skill_execution" in diagnostic_ids:
+            recommendations.append(
+                PIGRecommendation(
+                    recommendation_id="review_skill_failure",
+                    recommendation_type="failure_analysis",
+                    title="Review skill failure",
+                    payload={"action": "inspect_error_object"},
+                    rationale_refs=["failed_skill_execution"],
+                    confidence=0.8,
+                )
+            )
         return recommendations

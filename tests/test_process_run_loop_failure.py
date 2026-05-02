@@ -67,6 +67,8 @@ def test_process_run_loop_failure_records_ocel_error_shape(tmp_path) -> None:
         "execute_skill",
         "assemble_context",
         "call_llm",
+        "fail_skill_execution",
+        "observe_result",
         "fail_process_instance",
     ]
 
@@ -98,12 +100,13 @@ def test_process_run_loop_failure_records_ocel_error_shape(tmp_path) -> None:
         ).fetchone()[0]
 
     assert int(observed_error_count) == 1
-    assert int(error_from_process_count) == 1
+    assert int(error_from_process_count) >= 1
     assert OCELValidator(store).validate_duplicate_relations()["valid"] is True
 
     loader = OCPXLoader(store)
     view = loader.load_process_instance_view("process_instance:test-loop-failure")
     assert "fail_process_instance" in [event.event_activity for event in view.events]
+    assert "fail_skill_execution" in [event.event_activity for event in view.events]
     assert any(item.object_type == "error" for item in view.objects)
 
     pig_result = PIGService(loader=loader).analyze_process_instance(

@@ -164,3 +164,41 @@ loop state, context assembly, harness execution, observation collection, stop
 conditions, and persistence. ChantaCore v0.5 does not copy or implement Claude
 Code features such as streaming, shell sandboxing, MCP/plugin execution, or
 subagents.
+
+### v0.5.1 ProcessRunLoop failure and evaluation hardening
+
+ChantaCore v0.5.1 hardens the ProcessRunLoop failure path. A failed LLM call or
+skill execution now creates a failed `ProcessObservation`, persists
+`fail_process_instance`, creates an `error` object, and links that error to the
+`process_instance` with `error_from_process`.
+
+`ProcessRunPolicy.raise_on_failure` controls whether the loop re-raises after
+recording the failure or returns a failed `ProcessRunResult`. Basic runtime
+evaluation attributes such as `success`, `evaluation_mode`, and
+`observation_count` are included in loop results.
+
+### v0.6 Skill Dispatch Runtime
+
+ChantaCore v0.6 introduces the first real skill dispatch runtime. The
+`ProcessRunLoop` no longer hardcodes the LLM execution path. Instead, it
+selects `skill:llm_chat`, records `select_skill` and `execute_skill`, dispatches
+the skill through `SkillExecutor`, receives a `SkillExecutionResult`, and
+converts that result into a `ProcessObservation`.
+
+The built-in LLM chat skill is defined under `chanta_core.skills.builtin` and
+uses the existing trace service to persist `assemble_context`, `call_llm`, and
+`receive_llm_response` events. External skill ingestion, arbitrary callable
+skills, tool dispatch, permission gates, worker queues, and multi-iteration
+planning remain future work.
+
+### v0.6.1 Skill Dispatch Contract Hardening
+
+ChantaCore v0.6.1 adds validation and deterministic failure semantics to the
+skill dispatch layer. `Skill.validate()` checks the skill descriptor contract,
+`SkillRegistry` rejects ambiguous duplicate registrations, and
+`SkillExecutor` returns structured failed `SkillExecutionResult` objects for
+unsupported or failing skills by default.
+
+Skill execution failures are now represented separately from process failures
+through the OCEL activity `fail_skill_execution`. If a failed skill terminates
+the process, the runtime also records `fail_process_instance`.

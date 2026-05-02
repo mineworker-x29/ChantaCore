@@ -269,6 +269,64 @@ class OCELFactory:
             ],
         )
 
+    def fail_skill_execution(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        skill: Skill,
+        *,
+        error_message: str,
+        error_type: str,
+        failure_stage: str,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        error_object = OCELObject(
+            object_id=new_object_id("error"),
+            object_type="error",
+            object_attrs={
+                "object_key": error_type,
+                "display_name": error_type,
+                "error_message": error_message,
+                "error_type": error_type,
+                "failure_stage": failure_stage,
+                "skill_id": skill.skill_id,
+                "process_instance_id": self._process_id(context),
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+        event = self._event(
+            runtime_event_type="skill_execution_failed",
+            event_activity="fail_skill_execution",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="failed",
+            event_attrs={
+                "skill_id": skill.skill_id,
+                "skill_name": skill.skill_name,
+                "error_message": error_message,
+                "error_type": error_type,
+                "failure_stage": failure_stage,
+            },
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp, status="failed")
+            + [self._skill_object(skill, timestamp), error_object],
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, skill.skill_id, "failed_skill"),
+                self._e2o(event, error_object.object_id, "observed_error"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+                self._o2o(self._process_id(context), skill.skill_id, "uses_skill"),
+                self._o2o(error_object.object_id, skill.skill_id, "error_from_skill_execution"),
+                self._o2o(error_object.object_id, self._process_id(context), "error_from_process"),
+            ],
+        )
+
     def call_llm(
         self,
         context: ExecutionContext,
@@ -657,6 +715,7 @@ class OCELFactory:
                 "execution_type": skill.execution_type,
                 "input_schema": skill.input_schema,
                 "output_schema": skill.output_schema,
+                "tags": skill.tags,
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 **skill.skill_attrs,

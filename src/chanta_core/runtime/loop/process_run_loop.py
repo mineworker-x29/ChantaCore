@@ -11,6 +11,8 @@ from chanta_core.runtime.loop.observation import ProcessObservation
 from chanta_core.runtime.loop.policy import ProcessRunPolicy
 from chanta_core.runtime.loop.result import ProcessRunResult
 from chanta_core.runtime.loop.state import ProcessRunState
+from chanta_core.skills.context import SkillExecutionContext
+from chanta_core.skills.executor import SkillExecutor
 from chanta_core.skills.registry import SkillRegistry
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
@@ -28,6 +30,7 @@ class ProcessRunLoop:
         decider: ProcessActivityDecider | None = None,
         evaluator: ProcessRunEvaluator | None = None,
         agent_profile: AgentProfile | None = None,
+        skill_executor: SkillExecutor | None = None,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.trace_service = trace_service or TraceService()
@@ -37,6 +40,11 @@ class ProcessRunLoop:
         self.decider = decider or ProcessActivityDecider()
         self.evaluator = evaluator or ProcessRunEvaluator()
         self.agent_profile = agent_profile or load_default_agent_profile()
+        self.skill_executor = skill_executor or SkillExecutor(
+            llm_client=self.llm_client,
+            context_assembler=self.context_assembler,
+            trace_service=self.trace_service,
+        )
         self.events: list[AgentEvent] = []
 
     def run(
@@ -110,52 +118,88 @@ class ProcessRunLoop:
                 )
 
                 # TODO: add permission gate before external tool or shell dispatch.
-                messages = self.context_assembler.assemble_for_llm_chat(
+                # TODO: add context compaction before long-running model calls.
+                skill_context = SkillExecutionContext(
+                    process_instance_id=process_instance_id,
+                    session_id=session_id,
+                    agent_id=agent_id,
                     user_input=user_input,
                     system_prompt=system_prompt,
+                    event_attrs={
+                        "next_activity": next_activity,
+                        "iteration": state.iteration,
+                    },
+                    context_attrs={
+                        "iteration": state.iteration,
+                        "temperature": self.agent_profile.default_temperature,
+                        "max_tokens": self.agent_profile.max_tokens,
+                        "agent_profile": self.agent_profile,
+                    },
                 )
-                # TODO: add context compaction before long-running model calls.
-                self._append_event(
-                    self.trace_service.record_context_assembled(
-                        context,
-                        messages,
-                        profile=self.agent_profile,
-                        iteration=state.iteration,
-                    )
-                )
-                self._append_event(
-                    self.trace_service.record_llm_call_started(
-                        context,
-                        messages,
-                        provider_name=self.llm_client.settings.provider,
-                        model_id=self.llm_client.settings.model,
-                        profile=self.agent_profile,
-                    )
-                )
-                response_text = self.llm_client.chat_messages(
-                    messages=messages,
-                    temperature=self.agent_profile.default_temperature,
-                    max_tokens=self.agent_profile.max_tokens,
-                )
-                self._append_event(
-                    self.trace_service.record_llm_response_received(
-                        context,
-                        response_text,
-                        profile=self.agent_profile,
-                    )
-                )
+                skill_result = self.skill_executor.execute(skill, skill_context)
+                self.events.extend(self.skill_executor.events)
 
                 observation = ProcessObservation(
                     activity=next_activity,
-                    success=True,
-                    output_text=response_text,
+                    success=skill_result.success,
+                    output_text=skill_result.output_text,
                     output_attrs={
-                        "skill_id": skill.skill_id,
+                        **skill_result.output_attrs,
+                        "skill_id": skill_result.skill_id,
+                        "skill_name": skill_result.skill_name,
                         "iteration": state.iteration,
                     },
+                    error=skill_result.error,
                 )
                 observations.append(observation)
                 state.observations.append(observation.to_dict())
+                if not skill_result.success:
+                    state.status = "failed"
+                    state.last_error = skill_result.error
+                    failure_stage = str(
+                        skill_result.output_attrs.get("failure_stage") or "skill_dispatch"
+                    )
+                    exception_type = str(
+                        skill_result.output_attrs.get("exception_type") or "SkillExecutionError"
+                    )
+                    state.state_attrs["exception_type"] = exception_type
+                    state.state_attrs["failure_stage"] = failure_stage
+                    self._append_event(
+                        self.trace_service.record_result_observed(
+                            context,
+                            observation=observation.to_dict(),
+                            profile=self.agent_profile,
+                            iteration=state.iteration,
+                        )
+                    )
+                    self._append_event(
+                        self.trace_service.record_process_instance_failed(
+                            context,
+                            RuntimeError(skill_result.error or "Skill execution failed"),
+                            profile=self.agent_profile,
+                            failure_stage=failure_stage,
+                        )
+                    )
+                    state.state_attrs["_failure_recorded"] = True
+                    if self.policy.raise_on_failure:
+                        raise RuntimeError(skill_result.error or "Skill execution failed")
+                    return ProcessRunResult(
+                        process_instance_id=process_instance_id,
+                        session_id=session_id,
+                        agent_id=agent_id,
+                        status="failed",
+                        response_text="",
+                        observations=observations,
+                        result_attrs={
+                            **self.evaluator.evaluate(state),
+                            "iteration_count": state.iteration,
+                            "selected_skill_id": state.selected_skill_id,
+                            "error": skill_result.error,
+                            "exception_type": exception_type,
+                            "failure_stage": failure_stage,
+                        },
+                    )
+
                 self._append_event(
                     self.trace_service.record_result_observed(
                         context,
@@ -207,28 +251,29 @@ class ProcessRunLoop:
                 failure_stage = "call_llm"
             state.state_attrs["exception_type"] = type(error).__name__
             state.state_attrs["failure_stage"] = failure_stage
-            observation = ProcessObservation(
-                activity=state.current_activity or failure_stage,
-                success=False,
-                output_text=None,
-                output_attrs={
-                    "failure_stage": failure_stage,
-                    "exception_type": type(error).__name__,
-                    "iteration": state.iteration,
-                    "selected_skill_id": state.selected_skill_id,
-                },
-                error=str(error),
-            )
-            observations.append(observation)
-            state.observations.append(observation.to_dict())
-            self._append_event(
-                self.trace_service.record_process_instance_failed(
-                    context,
-                    error,
-                    profile=self.agent_profile,
-                    failure_stage=failure_stage,
+            if not state.state_attrs.get("_failure_recorded"):
+                observation = ProcessObservation(
+                    activity=state.current_activity or failure_stage,
+                    success=False,
+                    output_text=None,
+                    output_attrs={
+                        "failure_stage": failure_stage,
+                        "exception_type": type(error).__name__,
+                        "iteration": state.iteration,
+                        "selected_skill_id": state.selected_skill_id,
+                    },
+                    error=str(error),
                 )
-            )
+                observations.append(observation)
+                state.observations.append(observation.to_dict())
+                self._append_event(
+                    self.trace_service.record_process_instance_failed(
+                        context,
+                        error,
+                        profile=self.agent_profile,
+                        failure_stage=failure_stage,
+                    )
+                )
             if self.policy.raise_on_failure:
                 raise
             return ProcessRunResult(

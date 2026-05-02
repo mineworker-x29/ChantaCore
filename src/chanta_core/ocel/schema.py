@@ -40,6 +40,7 @@ EVENT_OBJECT_QUALIFIERS = {
     "generated_response",
     "selected_skill",
     "executed_skill",
+    "failed_skill",
     "used_tool",
     "target_file",
     "target_repository",
@@ -68,6 +69,7 @@ OBJECT_OBJECT_QUALIFIERS = {
     "artifact_from_request",
     "error_from_run",
     "error_from_process",
+    "error_from_skill_execution",
     "outcome_of_run",
 }
 
@@ -80,6 +82,7 @@ CANONICAL_EVENT_ACTIVITIES = {
     "assemble_prompt",
     "select_skill",
     "execute_skill",
+    "fail_skill_execution",
     "call_llm",
     "receive_llm_response",
     "observe_result",

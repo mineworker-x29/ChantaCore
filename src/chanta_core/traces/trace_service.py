@@ -193,6 +193,38 @@ class TraceService:
             record,
         )
 
+    def record_skill_execution_failed(
+        self,
+        context: ExecutionContext,
+        skill: Skill,
+        *,
+        error_message: str,
+        error_type: str,
+        failure_stage: str,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.fail_skill_execution(
+            context,
+            profile,
+            skill,
+            error_message=error_message,
+            error_type=error_type,
+            failure_stage=failure_stage,
+        )
+        return self._record(
+            context,
+            "skill_execution_failed",
+            {
+                "skill_id": skill.skill_id,
+                "skill_name": skill.skill_name,
+                "error": error_message,
+                "error_type": error_type,
+                "failure_stage": failure_stage,
+            },
+            record,
+        )
+
     def record_llm_call_started(
         self,
         context: ExecutionContext,

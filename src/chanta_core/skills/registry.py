@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from chanta_core.skills.builtin import builtin_llm_chat_skill
+from chanta_core.skills.builtin import create_llm_chat_skill
+from chanta_core.skills.errors import SkillRegistryError
 from chanta_core.skills.skill import Skill
 
 
@@ -11,9 +12,22 @@ class SkillRegistry:
         self._skills_by_id: dict[str, Skill] = {}
         self._ids_by_name: dict[str, str] = {}
         if include_builtins:
-            self.register(builtin_llm_chat_skill())
+            self.register_builtin_skills()
 
     def register(self, skill: Skill) -> None:
+        skill.validate()
+        existing = self._skills_by_id.get(skill.skill_id)
+        if existing is not None:
+            if existing == skill:
+                return
+            raise SkillRegistryError(
+                f"Skill already registered with different definition: {skill.skill_id}"
+            )
+        existing_id_for_name = self._ids_by_name.get(skill.skill_name)
+        if existing_id_for_name is not None and existing_id_for_name != skill.skill_id:
+            raise SkillRegistryError(
+                f"Skill name already registered for another skill_id: {skill.skill_name}"
+            )
         self._skills_by_id[skill.skill_id] = skill
         self._ids_by_name[skill.skill_name] = skill.skill_id
 
@@ -28,9 +42,18 @@ class SkillRegistry:
     def get_builtin_llm_chat(self) -> Skill:
         skill = self.get("skill:llm_chat")
         if skill is None:
-            skill = builtin_llm_chat_skill()
+            skill = create_llm_chat_skill()
             self.register(skill)
         return skill
 
+    def require(self, skill_id_or_name: str) -> Skill:
+        skill = self.get(skill_id_or_name)
+        if skill is None:
+            raise SkillRegistryError(f"Skill is not registered: {skill_id_or_name}")
+        return skill
+
+    def register_builtin_skills(self) -> None:
+        self.register(create_llm_chat_skill())
+
     def list_skills(self) -> list[Skill]:
-        return list(self._skills_by_id.values())
+        return [self._skills_by_id[skill_id] for skill_id in sorted(self._skills_by_id)]
