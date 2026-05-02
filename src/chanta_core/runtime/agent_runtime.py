@@ -6,6 +6,7 @@ from chanta_core.llm.client import LLMClient
 from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.run_result import AgentRunResult
+from chanta_core.skills.registry import SkillRegistry
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
 
@@ -18,11 +19,13 @@ class AgentRuntime:
         prompt_assembly: PromptAssemblyService | None = None,
         trace_service: TraceService | None = None,
         agent_profile: AgentProfile | None = None,
+        skill_registry: SkillRegistry | None = None,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.prompt_assembly = prompt_assembly or PromptAssemblyService()
         self.trace_service = trace_service or TraceService()
         self.agent_profile = agent_profile or load_default_agent_profile()
+        self.skill_registry = skill_registry or SkillRegistry()
 
     def run(
         self,
@@ -57,6 +60,21 @@ class AgentRuntime:
                     profile=self.agent_profile,
                 )
             )
+            llm_skill = self.skill_registry.get_builtin_llm_chat()
+            events.append(
+                self.trace_service.record_skill_selected(
+                    context,
+                    llm_skill,
+                    profile=self.agent_profile,
+                )
+            )
+            events.append(
+                self.trace_service.record_skill_executed(
+                    context,
+                    llm_skill,
+                    profile=self.agent_profile,
+                )
+            )
             llm_call_event = self.trace_service.record_llm_call_started(
                 context,
                 messages,
@@ -79,7 +97,14 @@ class AgentRuntime:
                 )
             )
             events.append(
-                self.trace_service.record_run_completed(
+                self.trace_service.record_outcome_recorded(
+                    context,
+                    profile=self.agent_profile,
+                    response_text=response_text,
+                )
+            )
+            events.append(
+                self.trace_service.record_process_instance_completed(
                     context,
                     profile=self.agent_profile,
                     response_text=response_text,
@@ -87,7 +112,7 @@ class AgentRuntime:
             )
         except Exception as error:
             events.append(
-                self.trace_service.record_run_failed(
+                self.trace_service.record_process_instance_failed(
                     context,
                     error,
                     profile=self.agent_profile,

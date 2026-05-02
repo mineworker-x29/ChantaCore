@@ -13,10 +13,26 @@ class OCPXEngine:
             "session_id": view.session_id,
             "event_count": len(view.events),
             "object_count": len(view.objects),
+            "activity_sequence": self.activity_sequence(view),
             "activity_counts": self.count_events_by_activity(view),
             "event_types": self.count_events_by_type(view),
             "object_types": self.count_objects_by_type(view),
         }
+
+    def summarize_process_instance_view(self, view: OCPXProcessView) -> dict[str, Any]:
+        process_instances = [
+            item.object_id
+            for item in view.objects
+            if item.object_type == "process_instance"
+        ]
+        return {
+            **self.summarize_view(view),
+            "process_instance_ids": process_instances,
+            "process_instance_count": len(process_instances),
+        }
+
+    def activity_sequence(self, view: OCPXProcessView) -> list[str]:
+        return [event.event_activity for event in view.events]
 
     def count_events_by_type(self, view: OCPXProcessView) -> dict[str, int]:
         return self.count_events_by_activity(view)

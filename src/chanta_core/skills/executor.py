@@ -11,6 +11,7 @@ class SkillExecutor:
     def execute(self, skill: Skill, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         return {
             "skill_id": skill.skill_id,
+            "skill_name": skill.skill_name,
             "status": "not_implemented",
             "payload": payload or {},
         }

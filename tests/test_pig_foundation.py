@@ -15,6 +15,8 @@ def test_pig_foundation_builds_outputs(tmp_path) -> None:
     service_result = PIGService(loader=loader).analyze_recent(limit=20)
 
     assert graph.nodes
+    assert PIGBuilder is not None
+    assert PIGService is not None
     assert "event_count" in service_result["guide"]
     assert isinstance(service_result["diagnostics"], list)
     assert isinstance(service_result["recommendations"], list)

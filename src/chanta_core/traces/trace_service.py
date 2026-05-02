@@ -9,6 +9,7 @@ from chanta_core.ocel.factory import OCELFactory
 from chanta_core.ocel.models import OCELRecord
 from chanta_core.ocel.store import OCELStore
 from chanta_core.runtime.execution_context import ExecutionContext
+from chanta_core.skills.skill import Skill
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.event_store import AgentEventStore
 
@@ -24,6 +25,7 @@ class TraceService:
         self.ocel_store = ocel_store or OCELStore()
         self.ocel_factory = ocel_factory or OCELFactory()
         self._llm_call_by_session: dict[str, str] = {}
+        self._outcome_by_session: dict[str, str] = {}
 
     def record_user_request_received(
         self,
@@ -31,11 +33,25 @@ class TraceService:
         profile: AgentProfile | None = None,
     ) -> AgentEvent:
         profile = self._profile(profile)
-        record = self.ocel_factory.user_request_received(context, profile)
+        record = self.ocel_factory.receive_user_request(context, profile)
         return self._record(
             context,
             "user_request_received",
             {"user_input": context.user_input},
+            record,
+        )
+
+    def record_process_instance_started(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.start_process_instance(context, profile)
+        return self._record(
+            context,
+            "process_instance_started",
+            {"user_input": context.user_input, "runtime_metadata": context.metadata},
             record,
         )
 
@@ -44,13 +60,14 @@ class TraceService:
         context: ExecutionContext,
         profile: AgentProfile | None = None,
     ) -> AgentEvent:
-        profile = self._profile(profile)
-        record = self.ocel_factory.agent_run_started(context, profile)
-        return self._record(
-            context,
-            "agent_run_started",
-            {"user_input": context.user_input, "metadata": context.metadata},
-            record,
+        event = self.record_process_instance_started(context, profile)
+        return AgentEvent(
+            event_type="agent_run_started",
+            session_id=event.session_id,
+            agent_id=event.agent_id,
+            payload=event.payload,
+            event_id=event.event_id,
+            timestamp=event.timestamp,
         )
 
     def record_prompt_assembled(
@@ -60,11 +77,41 @@ class TraceService:
         profile: AgentProfile | None = None,
     ) -> AgentEvent:
         profile = self._profile(profile)
-        record = self.ocel_factory.prompt_assembled(context, profile, messages)
+        record = self.ocel_factory.assemble_prompt(context, profile, messages)
         return self._record(
             context,
             "prompt_assembled",
             {"messages": messages},
+            record,
+        )
+
+    def record_skill_selected(
+        self,
+        context: ExecutionContext,
+        skill: Skill,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.select_skill(context, profile, skill)
+        return self._record(
+            context,
+            "skill_selected",
+            {"skill_id": skill.skill_id, "skill_name": skill.skill_name},
+            record,
+        )
+
+    def record_skill_executed(
+        self,
+        context: ExecutionContext,
+        skill: Skill,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.execute_skill(context, profile, skill)
+        return self._record(
+            context,
+            "skill_executed",
+            {"skill_id": skill.skill_id, "skill_name": skill.skill_name},
             record,
         )
 
@@ -77,7 +124,7 @@ class TraceService:
         profile: AgentProfile | None = None,
     ) -> AgentEvent:
         profile = self._profile(profile)
-        record = self.ocel_factory.llm_call_started(
+        record = self.ocel_factory.call_llm(
             context=context,
             profile=profile,
             messages=messages,
@@ -107,7 +154,7 @@ class TraceService:
     ) -> AgentEvent:
         profile = self._profile(profile)
         llm_call_id = llm_call_id or self._llm_call_by_session.get(context.session_id)
-        record = self.ocel_factory.llm_response_received(
+        record = self.ocel_factory.receive_llm_response(
             context=context,
             profile=profile,
             response_text=response_text,
@@ -120,19 +167,80 @@ class TraceService:
             record,
         )
 
-    def record_run_completed(
+    def record_outcome_recorded(
         self,
         context: ExecutionContext,
         profile: AgentProfile | None = None,
         response_text: str | None = None,
     ) -> AgentEvent:
         profile = self._profile(profile)
-        record = self.ocel_factory.agent_run_completed(
+        record = self.ocel_factory.record_outcome(
             context=context,
             profile=profile,
             response_text=response_text,
         )
-        return self._record(context, "agent_run_completed", {}, record)
+        outcome_id = str(record.event.event_attrs.get("outcome_id") or "")
+        if outcome_id:
+            self._outcome_by_session[context.session_id] = outcome_id
+        return self._record(
+            context,
+            "outcome_recorded",
+            {"outcome_id": outcome_id, "response_text": response_text},
+            record,
+        )
+
+    def record_process_instance_completed(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile | None = None,
+        response_text: str | None = None,
+        outcome_id: str | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        outcome_id = outcome_id or self._outcome_by_session.get(context.session_id)
+        record = self.ocel_factory.complete_process_instance(
+            context=context,
+            profile=profile,
+            response_text=response_text,
+            outcome_id=outcome_id,
+        )
+        return self._record(
+            context,
+            "process_instance_completed",
+            {"outcome_id": outcome_id, "response_text": response_text},
+            record,
+        )
+
+    def record_run_completed(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile | None = None,
+        response_text: str | None = None,
+    ) -> AgentEvent:
+        event = self.record_process_instance_completed(context, profile, response_text)
+        return AgentEvent(
+            event_type="agent_run_completed",
+            session_id=event.session_id,
+            agent_id=event.agent_id,
+            payload=event.payload,
+            event_id=event.event_id,
+            timestamp=event.timestamp,
+        )
+
+    def record_process_instance_failed(
+        self,
+        context: ExecutionContext,
+        error: Exception,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        record = self.ocel_factory.fail_process_instance(context, profile, error)
+        return self._record(
+            context,
+            "process_instance_failed",
+            {"error_type": type(error).__name__, "error": str(error)},
+            record,
+        )
 
     def record_run_failed(
         self,
@@ -140,13 +248,14 @@ class TraceService:
         error: Exception,
         profile: AgentProfile | None = None,
     ) -> AgentEvent:
-        profile = self._profile(profile)
-        record = self.ocel_factory.agent_run_failed(context, profile, error)
-        return self._record(
-            context,
-            "agent_run_failed",
-            {"error_type": type(error).__name__, "error": str(error)},
-            record,
+        event = self.record_process_instance_failed(context, error, profile)
+        return AgentEvent(
+            event_type="agent_run_failed",
+            session_id=event.session_id,
+            agent_id=event.agent_id,
+            payload=event.payload,
+            event_id=event.event_id,
+            timestamp=event.timestamp,
         )
 
     def _record(

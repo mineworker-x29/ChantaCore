@@ -45,12 +45,15 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "user_request_received",
         "agent_run_started",
         "prompt_assembled",
+        "skill_selected",
+        "skill_executed",
         "llm_call_started",
         "llm_response_received",
-        "agent_run_completed",
+        "outcome_recorded",
+        "process_instance_completed",
     ]
-    assert store.fetch_event_count() == 6
-    assert store.fetch_object_count() >= 8
+    assert store.fetch_event_count() == 9
+    assert store.fetch_object_count() >= 11
     assert store.fetch_event_object_relation_count() > 0
     assert store.fetch_object_object_relation_count() > 0
 
@@ -60,7 +63,8 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
             "session",
             "agent",
             "user_request",
-            "goal",
+            "process_instance",
+            "skill",
             "prompt",
             "llm_call",
             "llm_response",
@@ -72,7 +76,8 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "session",
         "agent",
         "user_request",
-        "goal",
+        "process_instance",
+        "skill",
         "prompt",
         "llm_call",
         "llm_response",
@@ -86,11 +91,14 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
     )]
     assert activities == [
         "receive_user_request",
-        "start_goal",
+        "start_process_instance",
         "assemble_prompt",
+        "select_skill",
+        "execute_skill",
         "call_llm",
         "receive_llm_response",
-        "complete_goal",
+        "record_outcome",
+        "complete_process_instance",
     ]
 
     with sqlite3.connect(store.db_path) as connection:
@@ -114,7 +122,7 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
             """
             SELECT COUNT(*)
             FROM chanta_object_object_relation_ext
-            WHERE source_object_id LIKE 'goal:%'
+            WHERE source_object_id LIKE 'process_instance:%'
                 AND target_object_id LIKE 'request:%'
                 AND qualifier = ?
             """,

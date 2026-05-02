@@ -16,4 +16,6 @@ def test_ocpx_loader_reads_ocel_store(tmp_path) -> None:
 
     assert isinstance(view, OCPXProcessView)
     assert len(view.events) >= 1
+    assert view.events[0].event_activity
+    assert isinstance(engine.activity_sequence(view), list)
     assert summary["event_count"] >= 1

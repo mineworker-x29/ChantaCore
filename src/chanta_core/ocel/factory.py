@@ -9,6 +9,7 @@ from chanta_core.agents.profile import AgentProfile
 from chanta_core.llm.types import ChatMessage
 from chanta_core.ocel.models import OCELObject, OCELRecord, OCELEvent, OCELRelation
 from chanta_core.runtime.execution_context import ExecutionContext
+from chanta_core.skills.skill import Skill
 from chanta_core.utility.time import utc_now_iso
 
 
@@ -27,7 +28,7 @@ def new_object_id(prefix: str) -> str:
 class OCELFactory:
     source_runtime = "chanta_core"
 
-    def user_request_received(
+    def receive_user_request(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
@@ -42,28 +43,26 @@ class OCELFactory:
             lifecycle="received",
             event_attrs={"user_input": context.user_input},
         )
-        objects = self._base_objects(context, profile, timestamp)
         return self._record(
             event=event,
-            objects=objects,
+            objects=self._base_objects(context, profile, timestamp, status="received"),
             relations=[
+                self._e2o(event, self._request_id(context), "primary_request"),
                 self._e2o(event, self._session_id(context), "session_context"),
                 self._e2o(event, self._agent_id(profile), "acting_agent"),
-                self._e2o(event, self._request_id(context), "primary_request"),
-                self._e2o(event, self._goal_id(context), "goal_context"),
-                *self._goal_object_relations(context, profile),
+                *self._process_object_relations(context, profile),
             ],
         )
 
-    def agent_run_started(
+    def start_process_instance(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
     ) -> OCELRecord:
         timestamp = utc_now_iso()
         event = self._event(
-            runtime_event_type="agent_run_started",
-            event_activity="start_goal",
+            runtime_event_type="process_instance_started",
+            event_activity="start_process_instance",
             context=context,
             profile=profile,
             timestamp=timestamp,
@@ -72,17 +71,17 @@ class OCELFactory:
         )
         return self._record(
             event=event,
-            objects=self._base_objects(context, profile, timestamp),
+            objects=self._base_objects(context, profile, timestamp, status="running"),
             relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, self._request_id(context), "primary_request"),
                 self._e2o(event, self._session_id(context), "session_context"),
                 self._e2o(event, self._agent_id(profile), "acting_agent"),
-                self._e2o(event, self._request_id(context), "primary_request"),
-                self._e2o(event, self._goal_id(context), "goal_context"),
-                *self._goal_object_relations(context, profile),
+                *self._process_object_relations(context, profile),
             ],
         )
 
-    def prompt_assembled(
+    def assemble_prompt(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
@@ -103,17 +102,74 @@ class OCELFactory:
             event=event,
             objects=self._base_objects(context, profile, timestamp) + [prompt],
             relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, prompt.object_id, "assembled_prompt"),
                 self._e2o(event, self._session_id(context), "session_context"),
                 self._e2o(event, self._agent_id(profile), "acting_agent"),
-                self._e2o(event, self._request_id(context), "primary_request"),
-                self._e2o(event, self._goal_id(context), "goal_context"),
-                self._e2o(event, prompt.object_id, "assembled_prompt"),
-                *self._goal_object_relations(context, profile),
+                *self._process_object_relations(context, profile),
                 self._o2o(self._request_id(context), prompt.object_id, "request_to_prompt"),
             ],
         )
 
-    def llm_call_started(
+    def select_skill(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        skill: Skill,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        event = self._event(
+            runtime_event_type="skill_selected",
+            event_activity="select_skill",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="selected",
+            event_attrs={"skill_id": skill.skill_id, "skill_name": skill.skill_name},
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp) + [self._skill_object(skill, timestamp)],
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, skill.skill_id, "selected_skill"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+                self._o2o(self._process_id(context), skill.skill_id, "uses_skill"),
+            ],
+        )
+
+    def execute_skill(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        skill: Skill,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        event = self._event(
+            runtime_event_type="skill_executed",
+            event_activity="execute_skill",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="executed",
+            event_attrs={"skill_id": skill.skill_id, "skill_name": skill.skill_name},
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp) + [self._skill_object(skill, timestamp)],
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, skill.skill_id, "executed_skill"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+                self._o2o(self._process_id(context), skill.skill_id, "uses_skill"),
+            ],
+        )
+
+    def call_llm(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
@@ -125,7 +181,6 @@ class OCELFactory:
         llm_call = self._llm_call_object(messages, timestamp)
         provider = self._provider_object(provider_name, timestamp)
         model = self._model_object(model_id, timestamp)
-        prompt = self._prompt_object(messages, timestamp)
         event = self._event(
             runtime_event_type="llm_call_started",
             event_activity="call_llm",
@@ -141,24 +196,19 @@ class OCELFactory:
         )
         return self._record(
             event=event,
-            objects=(
-                self._base_objects(context, profile, timestamp)
-                + [prompt, llm_call, provider, model]
-            ),
+            objects=self._base_objects(context, profile, timestamp) + [llm_call, provider, model],
             relations=[
-                self._e2o(event, self._session_id(context), "session_context"),
-                self._e2o(event, self._agent_id(profile), "acting_agent"),
-                self._e2o(event, self._goal_id(context), "goal_context"),
-                self._e2o(event, prompt.object_id, "assembled_prompt"),
+                self._e2o(event, self._process_id(context), "process_context"),
                 self._e2o(event, llm_call.object_id, "llm_call"),
                 self._e2o(event, provider.object_id, "used_provider"),
                 self._e2o(event, model.object_id, "used_model"),
-                *self._goal_object_relations(context, profile),
-                self._o2o(prompt.object_id, llm_call.object_id, "prompt_to_llm_call"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
             ],
         )
 
-    def llm_response_received(
+    def receive_llm_response(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
@@ -166,16 +216,7 @@ class OCELFactory:
         llm_call_id: str | None = None,
     ) -> OCELRecord:
         timestamp = utc_now_iso()
-        response = OCELObject(
-            object_id=new_object_id("response"),
-            object_type="llm_response",
-            object_attrs={
-                "object_key": short_hash(response_text),
-                "display_name": "LLM response",
-                "response_text": response_text,
-                "created_at": timestamp,
-            },
-        )
+        response = self._response_object(response_text, timestamp)
         event = self._event(
             runtime_event_type="llm_response_received",
             event_activity="receive_llm_response",
@@ -187,69 +228,81 @@ class OCELFactory:
         )
         objects = self._base_objects(context, profile, timestamp) + [response]
         relations: list[OCELRelation] = [
+            self._e2o(event, self._process_id(context), "process_context"),
+            self._e2o(event, response.object_id, "generated_response"),
             self._e2o(event, self._session_id(context), "session_context"),
             self._e2o(event, self._agent_id(profile), "acting_agent"),
-            self._e2o(event, self._goal_id(context), "goal_context"),
-            self._e2o(event, response.object_id, "generated_response"),
-            *self._goal_object_relations(context, profile),
+            *self._process_object_relations(context, profile),
         ]
         if llm_call_id:
-            llm_call = OCELObject(
-                object_id=llm_call_id,
-                object_type="llm_call",
-                object_attrs={
-                    "object_key": llm_call_id,
-                    "display_name": "LLM call",
-                    "created_at": timestamp,
-                },
-            )
-            objects.append(llm_call)
+            objects.append(self._llm_call_placeholder(llm_call_id, timestamp))
             relations.append(self._e2o(event, llm_call_id, "llm_call"))
-            relations.append(
-                self._o2o(llm_call_id, response.object_id, "llm_call_to_response")
-            )
+            relations.append(self._o2o(llm_call_id, response.object_id, "llm_call_to_response"))
         return self._record(event, objects, relations)
 
-    def agent_run_completed(
+    def record_outcome(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
         response_text: str | None = None,
+        outcome_id: str | None = None,
     ) -> OCELRecord:
         timestamp = utc_now_iso()
-        outcome = OCELObject(
-            object_id=new_object_id("outcome"),
-            object_type="outcome",
-            object_attrs={
-                "object_key": context.session_id,
-                "display_name": "Agent run outcome",
-                "response_text": response_text,
-                "created_at": timestamp,
-            },
-        )
+        outcome = self._outcome_object(context, timestamp, response_text, outcome_id)
         event = self._event(
-            runtime_event_type="agent_run_completed",
-            event_activity="complete_goal",
+            runtime_event_type="outcome_recorded",
+            event_activity="record_outcome",
             context=context,
             profile=profile,
             timestamp=timestamp,
-            lifecycle="completed",
-            event_attrs={"response_text": response_text},
+            lifecycle="recorded",
+            event_attrs={"response_text": response_text, "outcome_id": outcome.object_id},
         )
         return self._record(
             event=event,
             objects=self._base_objects(context, profile, timestamp) + [outcome],
             relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, outcome.object_id, "produced_outcome"),
                 self._e2o(event, self._session_id(context), "session_context"),
                 self._e2o(event, self._agent_id(profile), "acting_agent"),
-                self._e2o(event, self._goal_id(context), "goal_context"),
-                self._e2o(event, outcome.object_id, "produced_outcome"),
-                *self._goal_object_relations(context, profile),
-                self._o2o(outcome.object_id, self._goal_id(context), "outcome_of_run"),
+                *self._process_object_relations(context, profile),
+                self._o2o(outcome.object_id, self._process_id(context), "outcome_of_process"),
             ],
         )
 
-    def agent_run_failed(
+    def complete_process_instance(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        response_text: str | None = None,
+        outcome_id: str | None = None,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        outcome = self._outcome_object(context, timestamp, response_text, outcome_id)
+        event = self._event(
+            runtime_event_type="process_instance_completed",
+            event_activity="complete_process_instance",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="completed",
+            event_attrs={"response_text": response_text, "outcome_id": outcome.object_id},
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp, status="completed") + [outcome],
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, outcome.object_id, "produced_outcome"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+                self._o2o(outcome.object_id, self._process_id(context), "outcome_of_process"),
+            ],
+        )
+
+    def fail_process_instance(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
@@ -265,11 +318,12 @@ class OCELFactory:
                 "error_type": type(error).__name__,
                 "error": str(error),
                 "created_at": timestamp,
+                "updated_at": timestamp,
             },
         )
         event = self._event(
-            runtime_event_type="agent_run_failed",
-            event_activity="fail_run",
+            runtime_event_type="process_instance_failed",
+            event_activity="fail_process_instance",
             context=context,
             profile=profile,
             timestamp=timestamp,
@@ -278,16 +332,66 @@ class OCELFactory:
         )
         return self._record(
             event=event,
-            objects=self._base_objects(context, profile, timestamp) + [error_object],
+            objects=self._base_objects(context, profile, timestamp, status="failed") + [error_object],
             relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, error_object.object_id, "observed_error"),
                 self._e2o(event, self._session_id(context), "session_context"),
                 self._e2o(event, self._agent_id(profile), "acting_agent"),
-                self._e2o(event, self._goal_id(context), "goal_context"),
-                self._e2o(event, error_object.object_id, "observed_error"),
-                *self._goal_object_relations(context, profile),
-                self._o2o(error_object.object_id, self._goal_id(context), "error_from_run"),
+                *self._process_object_relations(context, profile),
+                self._o2o(error_object.object_id, self._process_id(context), "error_from_run"),
             ],
         )
+
+    # Backward-compatible wrappers used by v0.3 scripts/tests.
+    def user_request_received(self, context: ExecutionContext, profile: AgentProfile) -> OCELRecord:
+        return self.receive_user_request(context, profile)
+
+    def agent_run_started(self, context: ExecutionContext, profile: AgentProfile) -> OCELRecord:
+        return self.start_process_instance(context, profile)
+
+    def prompt_assembled(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        messages: list[ChatMessage],
+    ) -> OCELRecord:
+        return self.assemble_prompt(context, profile, messages)
+
+    def llm_call_started(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        messages: list[ChatMessage],
+        provider_name: str | None,
+        model_id: str | None,
+    ) -> OCELRecord:
+        return self.call_llm(context, profile, messages, provider_name, model_id)
+
+    def llm_response_received(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        response_text: str,
+        llm_call_id: str | None = None,
+    ) -> OCELRecord:
+        return self.receive_llm_response(context, profile, response_text, llm_call_id)
+
+    def agent_run_completed(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        response_text: str | None = None,
+    ) -> OCELRecord:
+        return self.complete_process_instance(context, profile, response_text)
+
+    def agent_run_failed(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        error: Exception,
+    ) -> OCELRecord:
+        return self.fail_process_instance(context, profile, error)
 
     def _event(
         self,
@@ -309,6 +413,7 @@ class OCELFactory:
             "trace_id": context.session_id,
             "actor_type": "agent",
             "actor_id": profile.agent_id,
+            "process_instance_id": self._process_id(context),
         }
         return OCELEvent(
             event_id=new_event_id("evt"),
@@ -322,39 +427,43 @@ class OCELFactory:
         context: ExecutionContext,
         profile: AgentProfile,
         timestamp: str,
+        *,
+        status: str = "running",
     ) -> list[OCELObject]:
         return [
-            OCELObject(
-                object_id=self._session_id(context),
-                object_type="session",
-                object_attrs={
-                    "object_key": context.session_id,
-                    "display_name": f"Session {context.session_id}",
-                    "session_id": context.session_id,
-                    "created_at": context.created_at,
-                    "updated_at": timestamp,
-                },
-            ),
-            OCELObject(
-                object_id=self._agent_id(profile),
-                object_type="agent",
-                object_attrs={
-                    "object_key": profile.agent_id,
-                    "display_name": profile.name,
-                    "role": profile.role,
-                    "created_at": timestamp,
-                    "updated_at": timestamp,
-                },
-            ),
+            self._session_object(context, timestamp),
+            self._agent_object(profile, timestamp),
             self._request_object(context, timestamp),
-            self._goal_object(context, timestamp),
+            self._process_object(context, timestamp, status=status),
         ]
 
-    def _request_object(
-        self,
-        context: ExecutionContext,
-        timestamp: str,
-    ) -> OCELObject:
+    def _session_object(self, context: ExecutionContext, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=self._session_id(context),
+            object_type="session",
+            object_attrs={
+                "object_key": context.session_id,
+                "display_name": f"Session {context.session_id}",
+                "session_id": context.session_id,
+                "created_at": context.created_at,
+                "updated_at": timestamp,
+            },
+        )
+
+    def _agent_object(self, profile: AgentProfile, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=self._agent_id(profile),
+            object_type="agent",
+            object_attrs={
+                "object_key": profile.agent_id,
+                "display_name": profile.name,
+                "role": profile.role,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+
+    def _request_object(self, context: ExecutionContext, timestamp: str) -> OCELObject:
         request_id = self._request_id(context)
         return OCELObject(
             object_id=request_id,
@@ -368,29 +477,50 @@ class OCELFactory:
             },
         )
 
-    def _goal_object(
+    def _process_object(
         self,
         context: ExecutionContext,
         timestamp: str,
+        *,
+        status: str,
     ) -> OCELObject:
-        goal_id = self._goal_id(context)
+        process_id = self._process_id(context)
         return OCELObject(
-            object_id=goal_id,
-            object_type="goal",
+            object_id=process_id,
+            object_type="process_instance",
             object_attrs={
-                "object_key": goal_id,
-                "display_name": "Runtime goal",
-                "goal_kind": "respond_to_user_request",
-                "created_at": timestamp,
+                "object_key": process_id,
+                "display_name": "Interactive user request process",
+                "process_kind": "interactive_user_request",
+                "source_type": "user_request",
+                "mission_text": None,
+                "goal_text": "Answer the user's request",
+                "objective_text": context.user_input,
+                "status": status,
+                "created_at": context.created_at,
                 "updated_at": timestamp,
             },
         )
 
-    def _prompt_object(
-        self,
-        messages: list[ChatMessage],
-        timestamp: str,
-    ) -> OCELObject:
+    def _skill_object(self, skill: Skill, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=skill.skill_id,
+            object_type="skill",
+            object_attrs={
+                "object_key": skill.skill_id,
+                "display_name": skill.skill_name,
+                "skill_name": skill.skill_name,
+                "description": skill.description,
+                "execution_type": skill.execution_type,
+                "input_schema": skill.input_schema,
+                "output_schema": skill.output_schema,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+                **skill.skill_attrs,
+            },
+        )
+
+    def _prompt_object(self, messages: list[ChatMessage], timestamp: str) -> OCELObject:
         prompt_text = json.dumps(messages, ensure_ascii=False, sort_keys=True)
         prompt_id = f"prompt:{short_hash(prompt_text)}"
         return OCELObject(
@@ -405,11 +535,7 @@ class OCELFactory:
             },
         )
 
-    def _llm_call_object(
-        self,
-        messages: list[ChatMessage],
-        timestamp: str,
-    ) -> OCELObject:
+    def _llm_call_object(self, messages: list[ChatMessage], timestamp: str) -> OCELObject:
         return OCELObject(
             object_id=new_object_id("llm_call"),
             object_type="llm_call",
@@ -422,11 +548,19 @@ class OCELFactory:
             },
         )
 
-    def _provider_object(
-        self,
-        provider_name: str | None,
-        timestamp: str,
-    ) -> OCELObject:
+    def _llm_call_placeholder(self, llm_call_id: str, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=llm_call_id,
+            object_type="llm_call",
+            object_attrs={
+                "object_key": llm_call_id,
+                "display_name": "LLM call",
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+
+    def _provider_object(self, provider_name: str | None, timestamp: str) -> OCELObject:
         provider_key = provider_name or "unknown"
         return OCELObject(
             object_id=f"provider:{provider_key}",
@@ -454,16 +588,48 @@ class OCELFactory:
             },
         )
 
-    def _goal_object_relations(
+    def _response_object(self, response_text: str, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=new_object_id("response"),
+            object_type="llm_response",
+            object_attrs={
+                "object_key": short_hash(response_text),
+                "display_name": "LLM response",
+                "response_text": response_text,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+
+    def _outcome_object(
+        self,
+        context: ExecutionContext,
+        timestamp: str,
+        response_text: str | None,
+        outcome_id: str | None,
+    ) -> OCELObject:
+        return OCELObject(
+            object_id=outcome_id or new_object_id("outcome"),
+            object_type="outcome",
+            object_attrs={
+                "object_key": context.session_id,
+                "display_name": "Process outcome",
+                "response_text": response_text,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+
+    def _process_object_relations(
         self,
         context: ExecutionContext,
         profile: AgentProfile,
     ) -> list[OCELRelation]:
         return [
             self._o2o(self._request_id(context), self._session_id(context), "belongs_to_session"),
-            self._o2o(self._goal_id(context), self._request_id(context), "derived_from_request"),
-            self._o2o(self._goal_id(context), self._session_id(context), "handled_in_session"),
-            self._o2o(self._goal_id(context), self._agent_id(profile), "executed_by_agent"),
+            self._o2o(self._process_id(context), self._request_id(context), "derived_from_request"),
+            self._o2o(self._process_id(context), self._session_id(context), "handled_in_session"),
+            self._o2o(self._process_id(context), self._agent_id(profile), "executed_by_agent"),
         ]
 
     @staticmethod
@@ -479,15 +645,11 @@ class OCELFactory:
         return f"request:{short_hash(f'{context.session_id}:{context.user_input}')}"
 
     @staticmethod
-    def _goal_id(context: ExecutionContext) -> str:
-        return f"goal:{short_hash(f'{context.session_id}:{context.user_input}:goal')}"
+    def _process_id(context: ExecutionContext) -> str:
+        return f"process_instance:{short_hash(f'{context.session_id}:{context.user_input}:process')}"
 
     @staticmethod
-    def _e2o(
-        event: OCELEvent,
-        object_id: str,
-        qualifier: str,
-    ) -> OCELRelation:
+    def _e2o(event: OCELEvent, object_id: str, qualifier: str) -> OCELRelation:
         return OCELRelation.event_object(
             event_id=event.event_id,
             object_id=object_id,
@@ -495,11 +657,7 @@ class OCELFactory:
         )
 
     @staticmethod
-    def _o2o(
-        source_object_id: str,
-        target_object_id: str,
-        qualifier: str,
-    ) -> OCELRelation:
+    def _o2o(source_object_id: str, target_object_id: str, qualifier: str) -> OCELRelation:
         return OCELRelation.object_object(
             source_object_id=source_object_id,
             target_object_id=target_object_id,

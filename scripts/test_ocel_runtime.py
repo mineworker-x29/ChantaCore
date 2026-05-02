@@ -1,12 +1,17 @@
 from dotenv import load_dotenv
+import sys
 
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocel.validators import OCELValidator
 from chanta_core.ocel.query import OCELQueryService
+from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.runtime.agent_runtime import AgentRuntime
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     load_dotenv()
     runtime = AgentRuntime()
     result = runtime.run("Say hello from ChantaCore OCEL runtime in one sentence.")
@@ -14,6 +19,9 @@ def main() -> None:
     print("session_id:", result.session_id)
 
     store = OCELStore()
+    loader = OCPXLoader(store)
+    process_instances = loader.load_session_process_instances(result.session_id)
+    print("process_instance_ids:", [item["object_id"] for item in process_instances])
     print("event_count:", store.fetch_event_count())
     print("object_count:", store.fetch_object_count())
     print("event_object_relations:", store.fetch_event_object_relation_count())

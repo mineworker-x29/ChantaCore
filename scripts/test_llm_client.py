@@ -1,9 +1,13 @@
 from dotenv import load_dotenv
+import sys
 
 from chanta_core.llm import LLMClient
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     load_dotenv()
 
     llm = LLMClient()

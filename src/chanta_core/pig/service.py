@@ -19,6 +19,10 @@ class PIGService:
         view = self.loader.load_session_view(session_id)
         return self._analyze_view(view)
 
+    def analyze_process_instance(self, process_instance_id: str) -> dict[str, Any]:
+        view = self.loader.load_process_instance_view(process_instance_id)
+        return self._analyze_view(view)
+
     def analyze_recent(self, limit: int = 20) -> dict[str, Any]:
         view = self.loader.load_recent_view(limit=limit)
         return self._analyze_view(view)

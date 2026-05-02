@@ -60,14 +60,18 @@ class PIGBuilder:
         )
 
     def build_guide_from_view(self, view: OCPXProcessView) -> dict[str, Any]:
+        object_type_counts = self.engine.count_objects_by_type(view)
         return {
             "event_count": len(view.events),
             "object_count": len(view.objects),
+            "activity_sequence": self.engine.activity_sequence(view),
+            "process_instance_count": object_type_counts.get("process_instance", 0),
+            "skill_usage_count": object_type_counts.get("skill", 0),
             "top_event_activities": self.engine.count_events_by_activity(view),
             "top_event_types": self.engine.count_events_by_type(view),
-            "top_object_types": self.engine.count_objects_by_type(view),
+            "top_object_types": object_type_counts,
             "note": (
-                "This is a foundational guide, not full process intelligence "
+                "This is foundational process intelligence, not full graph "
                 "reasoning yet."
             ),
         }

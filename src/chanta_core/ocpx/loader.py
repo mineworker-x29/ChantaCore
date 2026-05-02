@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import sqlite3
+from typing import Any
 from uuid import uuid4
 
 from chanta_core.ocel.store import OCELStore
@@ -27,6 +30,56 @@ class OCPXLoader:
             session_id=None,
             view_attrs={"loader": "OCPXLoader", "limit": limit},
         )
+
+    def load_process_instance_view(self, process_instance_id: str) -> OCPXProcessView:
+        rows = self.store.fetch_events_by_object(
+            process_instance_id,
+            qualifier="process_context",
+        )
+        return self._build_view(
+            rows=rows,
+            source="ocel_store:process_instance",
+            session_id=None,
+            view_attrs={
+                "loader": "OCPXLoader",
+                "process_instance_id": process_instance_id,
+            },
+        )
+
+    def load_session_process_instances(
+        self,
+        session_id: str,
+    ) -> list[dict[str, Any]]:
+        self.store.initialize()
+        session_object_id = f"session:{session_id}"
+        with sqlite3.connect(self.store.db_path) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                """
+                SELECT
+                    object_state.object_id,
+                    object_state.object_type,
+                    object_state.object_attrs_json,
+                    relation.qualifier
+                FROM chanta_object_object_relation_ext AS relation
+                JOIN chanta_object_state AS object_state
+                    ON object_state.object_id = relation.source_object_id
+                WHERE relation.target_object_id = ?
+                    AND relation.qualifier = 'handled_in_session'
+                    AND object_state.object_type = 'process_instance'
+                ORDER BY object_state.object_id ASC
+                """,
+                (session_object_id,),
+            ).fetchall()
+        return [
+            {
+                "object_id": row["object_id"],
+                "object_type": row["object_type"],
+                "object_attrs": json.loads(row["object_attrs_json"] or "{}"),
+                "qualifier": row["qualifier"],
+            }
+            for row in rows
+        ]
 
     def _build_view(
         self,

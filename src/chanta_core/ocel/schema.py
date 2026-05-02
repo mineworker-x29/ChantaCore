@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 REQUIRED_OBJECT_TYPES = {
+    "process_instance",
     "session",
     "agent",
     "worker",
     "user_request",
-    "goal",
-    "task_instance",
-    "step_instance",
     "message",
     "prompt",
     "llm_call",
@@ -48,7 +46,7 @@ EVENT_OBJECT_QUALIFIERS = {
     "produced_artifact",
     "observed_error",
     "produced_outcome",
-    "goal_context",
+    "process_context",
     "trace_context",
 }
 
@@ -58,6 +56,8 @@ OBJECT_OBJECT_QUALIFIERS = {
     "derived_from_request",
     "handled_in_session",
     "executed_by_agent",
+    "uses_skill",
+    "outcome_of_process",
     "handled_by_worker",
     "request_to_prompt",
     "prompt_to_llm_call",
@@ -72,22 +72,15 @@ OBJECT_OBJECT_QUALIFIERS = {
 
 CANONICAL_EVENT_ACTIVITIES = {
     "receive_user_request",
-    "register_goal",
-    "start_goal",
-    "plan_goal",
-    "create_task_instance",
-    "start_task",
+    "start_process_instance",
+    "assemble_prompt",
     "select_skill",
     "execute_skill",
-    "complete_task",
-    "fail_task",
-    "complete_goal",
-    "fail_goal",
-    "assemble_prompt",
     "call_llm",
     "receive_llm_response",
     "record_outcome",
-    "fail_run",
+    "complete_process_instance",
+    "fail_process_instance",
 }
 
 DDL_STATEMENTS = [

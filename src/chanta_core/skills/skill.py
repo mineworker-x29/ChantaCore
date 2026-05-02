@@ -6,9 +6,12 @@ from typing import Any
 
 @dataclass(frozen=True)
 class Skill:
-    """Minimal skill descriptor; execution contracts will be added later."""
+    """Minimal skill descriptor for object-centric runtime tracing."""
 
     skill_id: str
-    name: str
-    description: str = ""
-    metadata: dict[str, Any] = field(default_factory=dict)
+    skill_name: str
+    description: str
+    execution_type: str
+    input_schema: dict[str, Any] = field(default_factory=dict)
+    output_schema: dict[str, Any] = field(default_factory=dict)
+    skill_attrs: dict[str, Any] = field(default_factory=dict)

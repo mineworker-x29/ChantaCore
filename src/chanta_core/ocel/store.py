@@ -140,6 +140,20 @@ class OCELStore:
     def fetch_events_by_session(self, session_id: str) -> list[dict[str, Any]]:
         self.initialize()
         session_object_id = f"session:{session_id}"
+        return self.fetch_events_by_object(session_object_id, qualifier="session_context")
+
+    def fetch_events_by_object(
+        self,
+        object_id: str,
+        *,
+        qualifier: str | None = None,
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        qualifier_filter = ""
+        params: list[str] = [object_id]
+        if qualifier is not None:
+            qualifier_filter = "AND event_object.ocel_qualifier = ?"
+            params.append(qualifier)
         with sqlite3.connect(self.db_path) as connection:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(
@@ -155,12 +169,35 @@ class OCELStore:
                 JOIN event_object
                     ON event_object.ocel_event_id = event.ocel_id
                 WHERE event_object.ocel_object_id = ?
-                    AND event_object.ocel_qualifier = 'session_context'
+                    {qualifier_filter}
                 ORDER BY payload.event_timestamp ASC
-                """,
-                (session_object_id,),
+                """.format(qualifier_filter=qualifier_filter),
+                params,
             ).fetchall()
         return [self._event_row_to_dict(row) for row in rows]
+
+    def fetch_object_object_relations_for_object(
+        self,
+        object_id: str,
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        with sqlite3.connect(self.db_path) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                """
+                SELECT
+                    source_object_id,
+                    target_object_id,
+                    qualifier,
+                    relation_attrs_json
+                FROM chanta_object_object_relation_ext
+                WHERE source_object_id = ?
+                    OR target_object_id = ?
+                ORDER BY qualifier ASC, source_object_id ASC, target_object_id ASC
+                """,
+                (object_id, object_id),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def fetch_objects_by_type(self, object_type: str) -> list[dict[str, Any]]:
         self.initialize()

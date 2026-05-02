@@ -107,3 +107,29 @@ and returns timezone-aware UTC strings with a trailing `Z`.
 This remains an object-centric runtime trace foundation. Full worker events,
 skill runtime, process mining algorithms, and complete pm4py/ocpa compatibility
 are still future work.
+
+### v0.4 ProcessInstance & Skill Trace Ontology
+
+ChantaCore v0.4 uses `process_instance` as the executable process/case anchor
+for the basic AgentRuntime path. Mission, goal, and objective information is
+stored in `process_instance.object_attrs` instead of creating separate mission
+or goal objects.
+
+The canonical runtime activity sequence is:
+
+```text
+receive_user_request
+start_process_instance
+assemble_prompt
+select_skill
+execute_skill
+call_llm
+receive_llm_response
+record_outcome
+complete_process_instance
+```
+
+The current LLM response path is traced as selection and execution of the
+built-in `skill:llm_chat` object. This is trace ontology only; a full skill
+execution framework, worker runtime, task queue, and process mining algorithms
+remain future work.
