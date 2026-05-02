@@ -336,13 +336,23 @@ class TraceService:
         context: ExecutionContext,
         error: Exception,
         profile: AgentProfile | None = None,
+        failure_stage: str | None = None,
     ) -> AgentEvent:
         profile = self._profile(profile)
-        record = self.ocel_factory.fail_process_instance(context, profile, error)
+        record = self.ocel_factory.fail_process_instance(
+            context,
+            profile,
+            error,
+            failure_stage=failure_stage,
+        )
         return self._record(
             context,
             "process_instance_failed",
-            {"error_type": type(error).__name__, "error": str(error)},
+            {
+                "error_type": type(error).__name__,
+                "error": str(error),
+                "failure_stage": failure_stage,
+            },
             record,
         )
 

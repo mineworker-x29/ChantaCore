@@ -44,4 +44,15 @@ class PIGRecommendationService:
                     confidence=0.7,
                 )
             )
+        if "failed_process_instance" in diagnostic_ids:
+            recommendations.append(
+                PIGRecommendation(
+                    recommendation_id="inspect_error_object",
+                    recommendation_type="failure_analysis",
+                    title="Inspect error object and failure stage",
+                    payload={"action": "review_failure_stage"},
+                    rationale_refs=["failed_process_instance"],
+                    confidence=0.8,
+                )
+            )
         return recommendations

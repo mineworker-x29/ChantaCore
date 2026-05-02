@@ -6,6 +6,7 @@ from chanta_core.llm.client import LLMClient
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.loop.context import ProcessContextAssembler
 from chanta_core.runtime.loop.decider import ProcessActivityDecider
+from chanta_core.runtime.loop.evaluation import ProcessRunEvaluator
 from chanta_core.runtime.loop.observation import ProcessObservation
 from chanta_core.runtime.loop.policy import ProcessRunPolicy
 from chanta_core.runtime.loop.result import ProcessRunResult
@@ -25,6 +26,7 @@ class ProcessRunLoop:
         context_assembler: ProcessContextAssembler | None = None,
         policy: ProcessRunPolicy | None = None,
         decider: ProcessActivityDecider | None = None,
+        evaluator: ProcessRunEvaluator | None = None,
         agent_profile: AgentProfile | None = None,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
@@ -33,6 +35,7 @@ class ProcessRunLoop:
         self.context_assembler = context_assembler or ProcessContextAssembler()
         self.policy = policy or ProcessRunPolicy()
         self.decider = decider or ProcessActivityDecider()
+        self.evaluator = evaluator or ProcessRunEvaluator()
         self.agent_profile = agent_profile or load_default_agent_profile()
         self.events: list[AgentEvent] = []
 
@@ -191,6 +194,7 @@ class ProcessRunLoop:
                 response_text=response_text or "",
                 observations=observations,
                 result_attrs={
+                    **self.evaluator.evaluate(state),
                     "iteration_count": state.iteration,
                     "selected_skill_id": state.selected_skill_id,
                 },
@@ -198,14 +202,34 @@ class ProcessRunLoop:
         except Exception as error:
             state.status = "failed"
             state.last_error = str(error)
+            failure_stage = state.current_activity or "process_run_loop"
+            if state.current_activity == "execute_skill":
+                failure_stage = "call_llm"
+            state.state_attrs["exception_type"] = type(error).__name__
+            state.state_attrs["failure_stage"] = failure_stage
+            observation = ProcessObservation(
+                activity=state.current_activity or failure_stage,
+                success=False,
+                output_text=None,
+                output_attrs={
+                    "failure_stage": failure_stage,
+                    "exception_type": type(error).__name__,
+                    "iteration": state.iteration,
+                    "selected_skill_id": state.selected_skill_id,
+                },
+                error=str(error),
+            )
+            observations.append(observation)
+            state.observations.append(observation.to_dict())
             self._append_event(
                 self.trace_service.record_process_instance_failed(
                     context,
                     error,
                     profile=self.agent_profile,
+                    failure_stage=failure_stage,
                 )
             )
-            if self.policy.fail_on_exception:
+            if self.policy.raise_on_failure:
                 raise
             return ProcessRunResult(
                 process_instance_id=process_instance_id,
@@ -215,9 +239,12 @@ class ProcessRunLoop:
                 response_text="",
                 observations=observations,
                 result_attrs={
+                    **self.evaluator.evaluate(state),
                     "iteration_count": state.iteration,
                     "selected_skill_id": state.selected_skill_id,
                     "error": str(error),
+                    "exception_type": type(error).__name__,
+                    "failure_stage": failure_stage,
                 },
             )
 

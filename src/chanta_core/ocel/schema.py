@@ -67,6 +67,7 @@ OBJECT_OBJECT_QUALIFIERS = {
     "worker_for_agent",
     "artifact_from_request",
     "error_from_run",
+    "error_from_process",
     "outcome_of_run",
 }
 

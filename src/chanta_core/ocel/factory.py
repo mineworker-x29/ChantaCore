@@ -439,16 +439,22 @@ class OCELFactory:
         context: ExecutionContext,
         profile: AgentProfile,
         error: Exception,
+        *,
+        failure_stage: str | None = None,
     ) -> OCELRecord:
         timestamp = utc_now_iso()
+        failure_stage = failure_stage or "unknown"
         error_object = OCELObject(
             object_id=new_object_id("error"),
             object_type="error",
             object_attrs={
                 "object_key": type(error).__name__,
                 "display_name": type(error).__name__,
+                "error_message": str(error),
                 "error_type": type(error).__name__,
                 "error": str(error),
+                "failure_stage": failure_stage,
+                "process_instance_id": self._process_id(context),
                 "created_at": timestamp,
                 "updated_at": timestamp,
             },
@@ -460,7 +466,12 @@ class OCELFactory:
             profile=profile,
             timestamp=timestamp,
             lifecycle="failed",
-            event_attrs={"error_type": type(error).__name__, "error": str(error)},
+            event_attrs={
+                "error_message": str(error),
+                "error_type": type(error).__name__,
+                "error": str(error),
+                "failure_stage": failure_stage,
+            },
         )
         return self._record(
             event=event,
@@ -471,7 +482,7 @@ class OCELFactory:
                 self._e2o(event, self._session_id(context), "session_context"),
                 self._e2o(event, self._agent_id(profile), "acting_agent"),
                 *self._process_object_relations(context, profile),
-                self._o2o(error_object.object_id, self._process_id(context), "error_from_run"),
+                self._o2o(error_object.object_id, self._process_id(context), "error_from_process"),
             ],
         )
 

@@ -10,7 +10,7 @@ from chanta_core.runtime.loop.state import ProcessRunState
 class ProcessRunPolicy:
     max_iterations: int = 1
     stop_on_text_response: bool = True
-    fail_on_exception: bool = True
+    raise_on_failure: bool = True
 
     def should_continue(self, state: ProcessRunState) -> bool:
         return state.status == "running" and state.iteration < state.max_iterations
@@ -25,3 +25,7 @@ class ProcessRunPolicy:
         if self.stop_on_text_response and observation.success and observation.output_text:
             return True
         return False
+
+    @property
+    def fail_on_exception(self) -> bool:
+        return self.raise_on_failure

@@ -23,6 +23,7 @@ from chanta_core.runtime.loop import (
     ProcessActivityDecider,
     ProcessContextAssembler,
     ProcessObservation,
+    ProcessRunEvaluator,
     ProcessRunLoop,
     ProcessRunPolicy,
     ProcessRunResult,
@@ -43,6 +44,7 @@ def test_required_imports() -> None:
     assert ProcessActivityDecider is not None
     assert ProcessContextAssembler is not None
     assert ProcessObservation is not None
+    assert ProcessRunEvaluator is not None
     assert ProcessRunLoop is not None
     assert ProcessRunPolicy is not None
     assert ProcessRunResult is not None

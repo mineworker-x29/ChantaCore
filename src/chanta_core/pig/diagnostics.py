@@ -45,4 +45,30 @@ class PIGDiagnosticService:
                     metadata={"count": len(events_without_objects)},
                 )
             )
+        activity_sequence = [event.event_activity for event in view.events]
+        failed_process_objects = [
+            item.object_id
+            for item in view.objects
+            if item.object_type == "process_instance"
+            and item.object_attrs.get("status") == "failed"
+        ]
+        if "fail_process_instance" in activity_sequence or failed_process_objects:
+            evidence_refs = [
+                event.event_id
+                for event in view.events
+                if event.event_activity == "fail_process_instance"
+            ] or failed_process_objects
+            diagnostics.append(
+                PIGDiagnostic(
+                    diagnostic_id="failed_process_instance",
+                    severity="error",
+                    title="Failed process instance",
+                    description=(
+                        "The process view contains a failed process instance "
+                        "or a fail_process_instance event."
+                    ),
+                    evidence_refs=evidence_refs,
+                    metadata={"failed_process_objects": failed_process_objects},
+                )
+            )
         return diagnostics
