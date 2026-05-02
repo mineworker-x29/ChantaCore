@@ -17,6 +17,7 @@ class LLMClient:
         self.client = OpenAI(
             base_url=self.settings.base_url,
             api_key=self.settings.api_key,
+            timeout=self.settings.timeout_seconds,
         )
 
     def chat(
@@ -24,7 +25,7 @@ class LLMClient:
         user_message: str,
         system_message: str | None = None,
         temperature: float = 0.7,
-        max_tokens: int = 1024,
+        max_tokens: int = 384,
     ) -> str:
         return self.chat_messages(
             messages=build_messages(
@@ -39,7 +40,7 @@ class LLMClient:
         self,
         messages: list[ChatMessage],
         temperature: float = 0.7,
-        max_tokens: int = 1024,
+        max_tokens: int = 384,
     ) -> str:
         response = self.client.chat.completions.create(
             model=self.settings.model,
@@ -49,3 +50,7 @@ class LLMClient:
         )
 
         return response.choices[0].message.content or ""
+
+
+def create_llm_client(settings: LLMProviderSettings | None = None) -> LLMClient:
+    return LLMClient(settings=settings)

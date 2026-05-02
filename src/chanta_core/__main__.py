@@ -1,4 +1,4 @@
-from chanta_core.cli import main
+from chanta_core.cli.main import main
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1 @@
+DEFAULT_USER_PROMPT_TEMPLATE = "{user_input}"

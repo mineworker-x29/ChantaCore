@@ -4,15 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.1.0"
-description = "CLI utilities for ChantaCore LLM integrations."
+version = "0.2.0"
+description = "Trace-aware runtime core for ChantaResearchGroup agents."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]
-dependencies = []
+dependencies = [
+    "openai>=2.33.0",
+    "python-dotenv>=1.2.2",
+    "pytest>=8.0.0",
+]
 
 [project.scripts]
-chanta-cli = "chanta_core.cli:main"
+chanta-cli = "chanta_core.cli.main:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
