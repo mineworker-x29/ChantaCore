@@ -1,6 +1,8 @@
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.pig.builder import PIGBuilder
+from chanta_core.pig.context import PIGContext
+from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.pig.service import PIGService
 from tests.test_ocel_store import make_record
 
@@ -17,6 +19,8 @@ def test_pig_foundation_builds_outputs(tmp_path) -> None:
     assert graph.nodes
     assert PIGBuilder is not None
     assert PIGService is not None
+    assert PIGContext is not None
+    assert PIGFeedbackService is not None
     assert "event_count" in service_result["guide"]
     assert isinstance(service_result["diagnostics"], list)
     assert isinstance(service_result["recommendations"], list)

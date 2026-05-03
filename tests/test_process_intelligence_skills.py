@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from chanta_core.llm.types import ChatMessage
 from chanta_core.ocel.store import OCELStore
+from chanta_core.pig.context import PIGContext
+from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.runtime.loop import ProcessRunLoop
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.executor import SkillExecutor
@@ -30,6 +32,9 @@ class FakeLLMClient:
 
 
 def test_process_intelligence_skills_read_ocel_ocpx_pig_without_llm(tmp_path) -> None:
+    assert PIGContext is not None
+    assert PIGFeedbackService is not None
+
     store = OCELStore(tmp_path / "pi_skills.sqlite")
     trace_service = TraceService(ocel_store=store)
     loop = ProcessRunLoop(

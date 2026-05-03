@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from chanta_core.runtime.loop.observation import ProcessObservation
 from chanta_core.runtime.loop.state import ProcessRunState
@@ -11,6 +12,8 @@ class ProcessRunPolicy:
     max_iterations: int = 1
     stop_on_text_response: bool = True
     raise_on_failure: bool = True
+    include_pig_context: bool = False
+    pig_context_scope: Literal["recent", "process_instance", "session"] = "recent"
 
     def should_continue(self, state: ProcessRunState) -> bool:
         return state.status == "running" and state.iteration < state.max_iterations

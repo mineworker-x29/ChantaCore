@@ -3,6 +3,9 @@ from __future__ import annotations
 from chanta_core.agents.default_agent import load_default_agent_profile
 from chanta_core.agents.profile import AgentProfile
 from chanta_core.llm.client import LLMClient
+from chanta_core.ocpx.loader import OCPXLoader
+from chanta_core.pig.context import PIGContext
+from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.loop.context import ProcessContextAssembler
 from chanta_core.runtime.loop.decider import ProcessActivityDecider
@@ -31,6 +34,7 @@ class ProcessRunLoop:
         evaluator: ProcessRunEvaluator | None = None,
         agent_profile: AgentProfile | None = None,
         skill_executor: SkillExecutor | None = None,
+        pig_feedback_service: PIGFeedbackService | None = None,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.trace_service = trace_service or TraceService()
@@ -45,6 +49,7 @@ class ProcessRunLoop:
             context_assembler=self.context_assembler,
             trace_service=self.trace_service,
         )
+        self.pig_feedback_service = pig_feedback_service
         self.events: list[AgentEvent] = []
 
     def run(
@@ -124,6 +129,11 @@ class ProcessRunLoop:
 
                 # TODO: add permission gate before external tool or shell dispatch.
                 # TODO: add context compaction before long-running model calls.
+                pig_context = self._build_pig_context_if_enabled(
+                    state=state,
+                    process_instance_id=process_instance_id,
+                    session_id=session_id,
+                )
                 skill_context = SkillExecutionContext(
                     process_instance_id=process_instance_id,
                     session_id=session_id,
@@ -139,7 +149,9 @@ class ProcessRunLoop:
                         "temperature": self.agent_profile.default_temperature,
                         "max_tokens": self.agent_profile.max_tokens,
                         "agent_profile": self.agent_profile,
+                        "pig_context_included": pig_context is not None,
                     },
+                    pig_context=pig_context,
                 )
                 skill_result = self.skill_executor.execute(skill, skill_context)
                 self.events.extend(self.skill_executor.events)
@@ -199,6 +211,7 @@ class ProcessRunLoop:
                             **self.evaluator.evaluate(state),
                             "iteration_count": state.iteration,
                             "selected_skill_id": state.selected_skill_id,
+                            **self._pig_result_attrs(state),
                             "error": skill_result.error,
                             "exception_type": exception_type,
                             "failure_stage": failure_stage,
@@ -246,6 +259,7 @@ class ProcessRunLoop:
                     **self.evaluator.evaluate(state),
                     "iteration_count": state.iteration,
                     "selected_skill_id": state.selected_skill_id,
+                    **self._pig_result_attrs(state),
                 },
             )
         except Exception as error:
@@ -292,6 +306,7 @@ class ProcessRunLoop:
                     **self.evaluator.evaluate(state),
                     "iteration_count": state.iteration,
                     "selected_skill_id": state.selected_skill_id,
+                    **self._pig_result_attrs(state),
                     "error": str(error),
                     "exception_type": type(error).__name__,
                     "failure_stage": failure_stage,
@@ -300,3 +315,43 @@ class ProcessRunLoop:
 
     def _append_event(self, event: AgentEvent) -> None:
         self.events.append(event)
+
+    def _build_pig_context_if_enabled(
+        self,
+        *,
+        state: ProcessRunState,
+        process_instance_id: str,
+        session_id: str,
+    ) -> PIGContext | None:
+        if not self.policy.include_pig_context:
+            return None
+        try:
+            service = self.pig_feedback_service or PIGFeedbackService(
+                ocpx_loader=OCPXLoader(store=getattr(self.trace_service, "ocel_store", None))
+            )
+            if self.policy.pig_context_scope == "process_instance":
+                pig_context = service.build_process_instance_context(process_instance_id)
+            elif self.policy.pig_context_scope == "session":
+                pig_context = service.build_session_context(session_id)
+            else:
+                pig_context = service.build_recent_context()
+            state.state_attrs["pig_context_included"] = True
+            state.state_attrs["pig_context_scope"] = pig_context.scope
+            return pig_context
+        except Exception as error:
+            state.state_attrs["pig_context_included"] = False
+            state.state_attrs["pig_context_warning"] = str(error)
+            return None
+
+    @staticmethod
+    def _pig_result_attrs(state: ProcessRunState) -> dict[str, object]:
+        result: dict[str, object] = {}
+        if "pig_context_included" in state.state_attrs:
+            result["pig_context_included"] = bool(
+                state.state_attrs.get("pig_context_included")
+            )
+        if state.state_attrs.get("pig_context_scope"):
+            result["pig_context_scope"] = state.state_attrs["pig_context_scope"]
+        if state.state_attrs.get("pig_context_warning"):
+            result["pig_context_warning"] = state.state_attrs["pig_context_warning"]
+        return result

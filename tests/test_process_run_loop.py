@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from chanta_core.llm.types import ChatMessage
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocel.validators import OCELValidator
+from chanta_core.pig.context import PIGContext
+from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.runtime.loop import ProcessRunLoop
 from chanta_core.traces.trace_service import TraceService
 
@@ -28,6 +30,9 @@ class FakeLLMClient:
 
 
 def test_process_run_loop_records_bounded_loop_shape(tmp_path) -> None:
+    assert PIGContext is not None
+    assert PIGFeedbackService is not None
+
     store = OCELStore(tmp_path / "loop.sqlite")
     loop = ProcessRunLoop(
         llm_client=FakeLLMClient(),

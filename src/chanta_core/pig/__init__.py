@@ -1,4 +1,6 @@
 from chanta_core.pig.builder import PIGBuilder
+from chanta_core.pig.context import PIGContext
+from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.pig.models import (
     PIGDiagnostic,
     PIGEdge,
@@ -13,7 +15,9 @@ __all__ = [
     "PIGEdge",
     "PIGGraph",
     "PIGBuilder",
+    "PIGContext",
     "PIGNode",
+    "PIGFeedbackService",
     "PIGRecommendation",
     "PIGService",
 ]

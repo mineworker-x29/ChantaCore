@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from chanta_core.llm.types import ChatMessage
 from chanta_core.ocel.store import OCELStore
+from chanta_core.pig.context import PIGContext
+from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.runtime.loop import ProcessRunLoop
 from chanta_core.runtime.loop.context import ProcessContextAssembler
 from chanta_core.skills.context import SkillExecutionContext
@@ -45,6 +47,8 @@ def skill_context(name: str) -> SkillExecutionContext:
 def test_registry_registers_all_builtin_skills() -> None:
     registry = SkillRegistry()
 
+    assert PIGContext is not None
+    assert PIGFeedbackService is not None
     assert [skill.skill_id for skill in registry.list_skills()] == [
         "skill:echo",
         "skill:inspect_ocel_recent",

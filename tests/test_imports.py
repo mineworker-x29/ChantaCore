@@ -13,6 +13,8 @@ from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.ocpx.models import OCPXProcessView
 from chanta_core.pig.diagnostics import PIGDiagnosticService
 from chanta_core.pig.builder import PIGBuilder
+from chanta_core.pig.context import PIGContext
+from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.pig.models import PIGGraph
 from chanta_core.pig.recommendations import PIGRecommendationService
 from chanta_core.pig.service import PIGService
@@ -94,6 +96,8 @@ def test_required_imports() -> None:
     assert OCPXProcessView is not None
     assert PIGService is not None
     assert PIGBuilder is not None
+    assert PIGContext is not None
+    assert PIGFeedbackService is not None
     assert PIGGraph is not None
     assert PIGDiagnosticService is not None
     assert PIGRecommendationService is not None
