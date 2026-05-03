@@ -9,7 +9,14 @@ from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.ocpx.models import OCPXProcessView
 from chanta_core.pig.conformance import PIGConformanceService
 from chanta_core.pig.guidance import PIGGuidanceService
+from chanta_core.pig.queue_conformance import PIGQueueConformanceService
 from chanta_core.pig.service import PIGService
+from chanta_core.pig.artifact_store import PIArtifactStore
+from chanta_core.editing.store import EditProposalStore
+from chanta_core.editing.patch_store import PatchApplicationStore
+from chanta_core.scheduler.store import ProcessScheduleStore
+from chanta_core.workers.heartbeat import WorkerHeartbeatStore
+from chanta_core.workers.store import ProcessJobStore
 from chanta_core.utility.time import utc_now_iso
 
 
@@ -66,6 +73,13 @@ class PIGReportService:
         pig_service: PIGService | None = None,
         conformance_service: PIGConformanceService | None = None,
         guidance_service: PIGGuidanceService | None = None,
+        queue_conformance_service: PIGQueueConformanceService | None = None,
+        artifact_store: PIArtifactStore | None = None,
+        edit_proposal_store: EditProposalStore | None = None,
+        patch_application_store: PatchApplicationStore | None = None,
+        process_job_store: ProcessJobStore | None = None,
+        heartbeat_store: WorkerHeartbeatStore | None = None,
+        process_schedule_store: ProcessScheduleStore | None = None,
     ) -> None:
         self.ocpx_loader = ocpx_loader or OCPXLoader()
         self.ocpx_engine = ocpx_engine or OCPXEngine()
@@ -75,6 +89,15 @@ class PIGReportService:
             ocpx_engine=self.ocpx_engine,
         )
         self.guidance_service = guidance_service or PIGGuidanceService()
+        self.queue_conformance_service = (
+            queue_conformance_service or PIGQueueConformanceService()
+        )
+        self.artifact_store = artifact_store or PIArtifactStore()
+        self.edit_proposal_store = edit_proposal_store or EditProposalStore()
+        self.patch_application_store = patch_application_store or PatchApplicationStore()
+        self.process_job_store = process_job_store or ProcessJobStore()
+        self.heartbeat_store = heartbeat_store or WorkerHeartbeatStore()
+        self.process_schedule_store = process_schedule_store or ProcessScheduleStore()
 
     def build_recent_report(self, limit: int = 50) -> ProcessRunReport:
         view = self.ocpx_loader.load_recent_view(limit=limit)
@@ -124,23 +147,39 @@ class PIGReportService:
         guidance_summary = self._guidance_summary(view)
         skill_usage_summary = self._skill_usage_summary(view)
         tool_usage_summary = self._tool_usage_summary(view)
+        queue_conformance = self.queue_conformance_service.check_recent_jobs(limit=20).to_dict()
+        editing_summary = self._editing_summary()
+        worker_summary = self._worker_summary()
+        scheduler_summary = self._scheduler_summary()
+        pi_artifact_summary = self._pi_artifact_summary()
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
+            report_id="pending",
             scope=scope,
             generated_at=generated_at,
+            process_instance_id=process_instance_id or self._process_instance_id(view),
+            session_id=session_id or view.session_id,
             activity_sequence=activity_sequence,
+            event_activity_counts=event_activity_counts,
             object_type_counts=object_type_counts,
             relation_coverage=relation_coverage,
             variant_summary=variant_summary,
             performance_summary=performance_summary,
             conformance_report=conformance_report,
+            queue_conformance=queue_conformance,
             decision_summary=decision_summary,
             guidance_summary=guidance_summary,
             skill_usage_summary=skill_usage_summary,
             tool_usage_summary=tool_usage_summary,
+            editing_summary=editing_summary,
+            worker_summary=worker_summary,
+            scheduler_summary=scheduler_summary,
+            pi_artifact_summary=pi_artifact_summary,
         )
+        report_id = f"pig_report:{uuid4()}"
+        report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
         return ProcessRunReport(
-            report_id=f"pig_report:{uuid4()}",
+            report_id=report_id,
             scope=scope,
             process_instance_id=process_instance_id or self._process_instance_id(view),
             session_id=session_id or view.session_id,
@@ -163,6 +202,11 @@ class PIGReportService:
                 "view_id": view.view_id,
                 "view_source": view.source,
                 "diagnostic_only": True,
+                "queue_conformance": queue_conformance,
+                "editing_summary": editing_summary,
+                "worker_summary": worker_summary,
+                "scheduler_summary": scheduler_summary,
+                "pi_artifact_summary": pi_artifact_summary,
             },
         )
 
@@ -291,23 +335,48 @@ class PIGReportService:
     @staticmethod
     def _render_report_text(
         *,
+        report_id: str,
         scope: str,
         generated_at: str,
+        process_instance_id: str | None,
+        session_id: str | None,
         activity_sequence: list[str],
+        event_activity_counts: dict[str, int],
         object_type_counts: dict[str, int],
         relation_coverage: dict[str, Any],
         variant_summary: dict[str, Any],
         performance_summary: dict[str, Any],
         conformance_report: dict[str, Any] | None,
+        queue_conformance: dict[str, Any] | None,
         decision_summary: dict[str, Any] | None,
         guidance_summary: dict[str, Any] | None,
         skill_usage_summary: dict[str, Any] | None,
         tool_usage_summary: dict[str, Any] | None,
+        editing_summary: dict[str, Any] | None,
+        worker_summary: dict[str, Any] | None,
+        scheduler_summary: dict[str, Any] | None,
+        pi_artifact_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
         )
+        queue_issues = len((queue_conformance or {}).get("issues") or [])
         relation_ratio = float(relation_coverage.get("coverage_ratio") or 0.0)
+        important_object_counts = {
+            key: object_type_counts.get(key, 0)
+            for key in [
+                "process_instance",
+                "skill",
+                "tool",
+                "tool_request",
+                "tool_result",
+                "process_job",
+                "process_schedule",
+                "edit_proposal",
+                "patch_application",
+                "error",
+            ]
+        }
         skill_lines = PIGReportService._count_lines(
             (skill_usage_summary or {}).get("executed_skills") or {}
         )
@@ -317,23 +386,32 @@ class PIGReportService:
         return "\n".join(
             [
                 "ChantaCore PI Report",
+                f"Report ID: {report_id}",
                 f"Scope: {scope}",
                 f"Generated at: {generated_at}",
+                f"Process instance: {process_instance_id or 'unknown'}",
+                f"Session: {session_id or 'unknown'}",
                 "",
-                "Activity Sequence:",
+                "Trace:",
                 f"- {PIGReportService._sequence_text(activity_sequence)}",
+                f"- Event count: {len(activity_sequence)}",
+                f"- Top event activities: {PIGReportService._top_counts_text(event_activity_counts)}",
                 "",
-                "Counts:",
-                f"- Events: {len(activity_sequence)}",
-                f"- Objects: {sum(object_type_counts.values())}",
+                "Objects:",
+                f"- Total objects: {sum(object_type_counts.values())}",
+                f"- Important object types: {PIGReportService._inline_counts(important_object_counts)}",
+                "",
+                "Relation:",
                 f"- Relation coverage: {relation_ratio * 100:.1f}%",
+                f"- Events without related objects: {relation_coverage.get('events_without_related_objects', 0)}",
                 "",
                 "Variant:",
                 f"- Key: {variant_summary.get('variant_key') or 'none'}",
                 f"- Success count: {variant_summary.get('success_count', 0)}",
                 f"- Failure count: {variant_summary.get('failure_count', 0)}",
+                f"- Trace count: {variant_summary.get('trace_count', 'unknown')}",
                 "",
-                "Performance:",
+                "Performance Precursor:",
                 f"- Duration seconds: {performance_summary.get('duration_seconds')}",
                 f"- LLM calls: {performance_summary.get('llm_call_count', 0)}",
                 f"- Skill executions: {performance_summary.get('skill_execution_count', 0)}",
@@ -341,21 +419,40 @@ class PIGReportService:
                 f"- Failures: {performance_summary.get('failure_count', 0)}",
                 "",
                 "Conformance:",
-                f"- Status: {(conformance_report or {}).get('status', 'unknown')}",
-                f"- Issues: {conformance_issues}",
+                f"- Process status: {(conformance_report or {}).get('status', 'unknown')}",
+                f"- Process issues: {conformance_issues}",
+                f"- Queue status: {(queue_conformance or {}).get('status', 'unknown')}",
+                f"- Queue issues: {queue_issues}",
                 "",
-                "Guidance:",
+                "Guidance / Decision:",
                 f"- Active guidance: {(guidance_summary or {}).get('active_guidance_count', 0)}",
                 f"- Top suggested skill: {(guidance_summary or {}).get('top_suggested_skill') or 'none'}",
-                "",
-                "Decision:",
                 f"- Decision events: {(decision_summary or {}).get('decision_event_count', 0)}",
+                f"- Fallback count: {(decision_summary or {}).get('fallback_count', 0)}",
+                f"- Tie-break count: {(decision_summary or {}).get('tie_break_count', 0)}",
                 "",
                 "Skill Usage:",
                 skill_lines,
                 "",
                 "Tool Usage:",
                 tool_lines,
+                f"- Failed tool operations: {(tool_usage_summary or {}).get('failed_tool_operation_count', 0)}",
+                "",
+                "Editing / Patch:",
+                f"- Proposals: {(editing_summary or {}).get('proposal_count', 0)}",
+                f"- Patch applications: {(editing_summary or {}).get('patch_application_count', 0)}",
+                f"- Failed patches: {(editing_summary or {}).get('failed_patch_count', 0)}",
+                f"- Approved/applied patches: {(editing_summary or {}).get('applied_patch_count', 0)}",
+                "",
+                "Worker / Scheduler:",
+                f"- Job counts: {PIGReportService._inline_counts((worker_summary or {}).get('job_counts_by_status') or {})}",
+                f"- Heartbeats: {(worker_summary or {}).get('heartbeat_count', 0)}",
+                f"- Schedule counts: {PIGReportService._inline_counts((scheduler_summary or {}).get('schedule_counts_by_status') or {})}",
+                "",
+                "Human / External PI:",
+                f"- Artifact count: {(pi_artifact_summary or {}).get('artifact_count', 0)}",
+                f"- Recent artifacts: {PIGReportService._recent_artifacts_text((pi_artifact_summary or {}).get('recent_artifacts') or [])}",
+                "- Reminder: PI artifacts are advisory.",
             ]
         )
 
@@ -372,6 +469,76 @@ class PIGReportService:
         if not counts:
             return "- none"
         return "\n".join(f"- {key}: {counts[key]}" for key in sorted(counts))
+
+    @staticmethod
+    def _inline_counts(counts: dict[str, int]) -> str:
+        visible = {key: value for key, value in counts.items() if value}
+        if not visible:
+            return "none"
+        return ", ".join(f"{key}={visible[key]}" for key in sorted(visible))
+
+    @staticmethod
+    def _top_counts_text(counts: dict[str, int], limit: int = 5) -> str:
+        if not counts:
+            return "none"
+        top = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:limit]
+        return ", ".join(f"{key}={value}" for key, value in top)
+
+    @staticmethod
+    def _recent_artifacts_text(items: list[dict[str, Any]]) -> str:
+        if not items:
+            return "none"
+        return ", ".join(
+            str(item.get("title") or item.get("artifact_type") or item.get("artifact_id"))
+            for item in items[:3]
+        )
+
+    def _editing_summary(self) -> dict[str, Any]:
+        proposals = self.edit_proposal_store.recent(50)
+        patches = self.patch_application_store.recent(50)
+        return {
+            "proposal_count": len(proposals),
+            "patch_application_count": len(patches),
+            "failed_patch_count": sum(1 for item in patches if item.status == "failed"),
+            "applied_patch_count": sum(1 for item in patches if item.status == "applied"),
+            "proposal_targets": sorted({item.target_path for item in proposals})[:10],
+        }
+
+    def _worker_summary(self) -> dict[str, Any]:
+        jobs = list(self.process_job_store._state_by_id().values())
+        counts: dict[str, int] = {}
+        for job in jobs:
+            counts[job.status] = counts.get(job.status, 0) + 1
+        return {
+            "job_count": len(jobs),
+            "job_counts_by_status": counts,
+            "heartbeat_count": len(self.heartbeat_store.recent(50)),
+        }
+
+    def _scheduler_summary(self) -> dict[str, Any]:
+        schedules = self.process_schedule_store.load_all()
+        by_id = {item.schedule_id: item for item in schedules}
+        counts: dict[str, int] = {}
+        for schedule in by_id.values():
+            counts[schedule.status] = counts.get(schedule.status, 0) + 1
+        return {
+            "schedule_count": len(by_id),
+            "schedule_counts_by_status": counts,
+        }
+
+    def _pi_artifact_summary(self) -> dict[str, Any]:
+        artifacts = self.artifact_store.recent(20)
+        return {
+            "artifact_count": len(artifacts),
+            "recent_artifacts": [
+                {
+                    "artifact_id": item.artifact_id,
+                    "artifact_type": item.artifact_type,
+                    "title": item.title,
+                }
+                for item in artifacts[:5]
+            ],
+        }
 
     @staticmethod
     def _process_instance_id(view: OCPXProcessView) -> str | None:

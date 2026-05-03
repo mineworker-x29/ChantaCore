@@ -19,7 +19,9 @@ from chanta_core.ocel.external_import import (
     ExternalOCELNormalizer,
 )
 from chanta_core.ocel.external_source import ExternalOCELSource
+from chanta_core.ocel.export import OCELExporter
 from chanta_core.ocel.factory import OCELFactory
+from chanta_core.ocel.importers import OCELImporter
 from chanta_core.ocel.ingestion import OCELIngestionBatch, OCELIngestionResult
 from chanta_core.ocel.models import OCELObject, OCELRecord, OCELEvent, OCELRelation
 from chanta_core.ocel.query import OCELQueryService
@@ -268,6 +270,8 @@ def test_required_imports() -> None:
     assert OCELRecord is not None
     assert OCELStore is not None
     assert OCELFactory is not None
+    assert OCELExporter is not None
+    assert OCELImporter is not None
     assert ExternalOCELSource is not None
     assert ExternalOCELNormalizer is not None
     assert ExternalOCELIngestionService is not None

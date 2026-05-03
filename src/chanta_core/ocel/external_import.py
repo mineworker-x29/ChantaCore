@@ -6,6 +6,8 @@ from typing import Any
 from uuid import uuid4
 
 from chanta_core.ocel.external_source import ExternalOCELSource
+from chanta_core.ocel.export import CHANTA_OCEL_JSON_FORMAT
+from chanta_core.ocel.importers import OCELImporter
 from chanta_core.ocel.ingestion import OCELIngestionBatch, OCELIngestionResult
 from chanta_core.ocel.models import OCELObject, OCELRecord, OCELRelation, OCELEvent
 from chanta_core.ocel.store import OCELStore
@@ -199,6 +201,8 @@ class ExternalOCELIngestionService:
     ) -> OCELIngestionResult:
         file_path = Path(path)
         loaded = json.loads(file_path.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict) and loaded.get("format") == CHANTA_OCEL_JSON_FORMAT:
+            return OCELImporter(self.store).import_chanta_json(file_path)
         if isinstance(loaded, dict) and isinstance(loaded.get("records"), list):
             raw_records = loaded["records"]
         elif isinstance(loaded, list):

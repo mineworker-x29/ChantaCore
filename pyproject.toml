@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.8.8"
-description = "Process job FSM and queue conformance for ChantaCore internal harness tools."
+version = "0.8.9"
+description = "OCEL compatibility and report quality hardening for ChantaCore."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]
