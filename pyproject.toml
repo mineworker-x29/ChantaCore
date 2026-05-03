@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.8.2"
-description = "Read-only repository search and lightweight symbol scan for ChantaCore."
+version = "0.8.4"
+description = "Proposal-only edit planning for ChantaCore internal harness tools."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]

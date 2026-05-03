@@ -6,6 +6,7 @@ from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.engine import OCPXEngine
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.tools.builtin import (
+    execute_edit_tool,
     execute_echo_tool,
     execute_ocel_tool,
     execute_ocpx_tool,
@@ -40,6 +41,8 @@ class ToolDispatcher:
         repo_scanner=None,
         repo_search_service=None,
         repo_symbol_scanner=None,
+        edit_service=None,
+        edit_proposal_store=None,
     ) -> None:
         self.registry = registry or ToolRegistry()
         self.policy = policy or ToolPolicy()
@@ -55,7 +58,10 @@ class ToolDispatcher:
         self.repo_scanner = repo_scanner
         self.repo_search_service = repo_search_service
         self.repo_symbol_scanner = repo_symbol_scanner
+        self.edit_service = edit_service
+        self.edit_proposal_store = edit_proposal_store
         self._handlers: dict[str, Callable[..., ToolResult]] = {
+            "tool:edit": execute_edit_tool,
             "tool:echo": execute_echo_tool,
             "tool:ocel": execute_ocel_tool,
             "tool:ocpx": execute_ocpx_tool,
@@ -79,6 +85,32 @@ class ToolDispatcher:
             context,
             authorization=authorization.to_dict(),
         )
+        if authorization.requires_approval:
+            result = ToolResult.create(
+                tool_request_id=request.tool_request_id,
+                tool_id=tool.tool_id,
+                operation=request.operation,
+                success=False,
+                output_text=None,
+                output_attrs={
+                    "authorization_decision": authorization.to_dict(),
+                    "requires_approval": True,
+                    "risk_level": authorization.risk_level,
+                    "permission_mode": authorization.mode,
+                    "approval_required": True,
+                },
+                error=f"Tool operation requires approval: {authorization.reason}",
+            )
+            self._record(
+                "fail_tool_operation",
+                tool,
+                request,
+                context,
+                result=result,
+                error=result.error,
+            )
+            return result
+
         if not authorization.allowed:
             result = ToolResult.create(
                 tool_request_id=request.tool_request_id,
@@ -86,7 +118,13 @@ class ToolDispatcher:
                 operation=request.operation,
                 success=False,
                 output_text=None,
-                output_attrs={"authorization": authorization.to_dict()},
+                output_attrs={
+                    "authorization": authorization.to_dict(),
+                    "authorization_decision": authorization.to_dict(),
+                    "requires_approval": authorization.requires_approval,
+                    "risk_level": authorization.risk_level,
+                    "permission_mode": authorization.mode,
+                },
                 error=authorization.reason,
             )
             self._record(
@@ -128,6 +166,8 @@ class ToolDispatcher:
                 repo_scanner=self.repo_scanner,
                 repo_search_service=self.repo_search_service,
                 repo_symbol_scanner=self.repo_symbol_scanner,
+                edit_service=self.edit_service,
+                edit_proposal_store=self.edit_proposal_store,
             )
         except Exception as error:
             return self._failure(

@@ -43,6 +43,14 @@ def test_denied_safety_levels() -> None:
         assert policy.authorize(tool(level), request()).allowed is False
 
 
+def test_write_requires_approval_only_in_approval_required_mode() -> None:
+    decision = ToolPolicy(mode="approval_required").authorize(tool("write"), request())
+
+    assert decision.allowed is False
+    assert decision.decision == "approval_required"
+    assert decision.requires_approval is True
+
+
 def test_unknown_safety_level_denied() -> None:
     unsafe = tool("readonly")
     object.__setattr__(unsafe, "safety_level", "unknown")

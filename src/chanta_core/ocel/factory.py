@@ -596,6 +596,17 @@ class OCELFactory:
             "tool_request_id": request.tool_request_id,
             "authorization": authorization or {},
         }
+        if authorization:
+            event_attrs.update(
+                {
+                    "decision": authorization.get("decision"),
+                    "allowed": authorization.get("allowed"),
+                    "requires_approval": authorization.get("requires_approval"),
+                    "risk_level": authorization.get("risk_level"),
+                    "permission_mode": authorization.get("mode"),
+                    "reason": authorization.get("reason"),
+                }
+            )
         if result is not None:
             event_attrs.update(
                 {

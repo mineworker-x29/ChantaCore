@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from chanta_core.tools.builtin import (
+    create_edit_tool,
     create_echo_tool,
     create_ocel_tool,
     create_ocpx_tool,
@@ -54,6 +55,7 @@ class ToolRegistry:
         return [self._tools_by_id[tool_id] for tool_id in sorted(self._tools_by_id)]
 
     def register_builtin_tools(self) -> None:
+        self.register(create_edit_tool())
         self.register(create_echo_tool())
         self.register(create_ocel_tool())
         self.register(create_ocpx_tool())

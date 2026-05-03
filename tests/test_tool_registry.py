@@ -10,6 +10,7 @@ def test_builtin_tools_registered() -> None:
 
     assert [tool.tool_id for tool in registry.list_tools()] == [
         "tool:echo",
+        "tool:edit",
         "tool:ocel",
         "tool:ocpx",
         "tool:pig",

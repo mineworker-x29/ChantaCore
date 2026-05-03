@@ -1,5 +1,11 @@
 from chanta_core.agents.profile import AgentProfile
 from chanta_core.delegation.packet import DelegationPacket
+from chanta_core.editing import (
+    EditProposal,
+    EditProposalService,
+    EditProposalStore,
+    create_unified_diff,
+)
 from chanta_core.llm import LLMClient
 from chanta_core.memory.memory_record import MemoryRecord
 from chanta_core.missions.mission import Mission
@@ -73,6 +79,7 @@ from chanta_core.skills.builtin import (
     create_ingest_human_pi_skill,
     create_inspect_ocel_recent_skill,
     create_llm_chat_skill,
+    create_propose_file_edit_skill,
     create_summarize_pi_artifacts_skill,
     create_summarize_process_trace_skill,
     create_summarize_text_skill,
@@ -97,11 +104,15 @@ from chanta_core.tools import (
     ToolResult,
     ToolValidationError,
 )
+from chanta_core.tools.permission_rules import ToolPermissionRule, ToolPermissionRuleSet
+from chanta_core.tools.permissions import ToolPermissionDecision
+from chanta_core.tools.risk import ToolOperationRisk, ToolRiskClassifier
 from chanta_core.tools.builtin.workspace import (
     create_workspace_tool,
     execute_workspace_tool,
 )
 from chanta_core.tools.builtin.repo import create_repo_tool, execute_repo_tool
+from chanta_core.tools.builtin.edit import create_edit_tool, execute_edit_tool
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
 from chanta_core.utility.time import utc_now_iso
@@ -115,6 +126,10 @@ from chanta_core.workspace import (
 
 def test_required_imports() -> None:
     assert LLMClient is not None
+    assert EditProposal is not None
+    assert EditProposalService is not None
+    assert EditProposalStore is not None
+    assert create_unified_diff is not None
     assert AgentRuntime is not None
     assert ChatService is not None
     assert ProcessActivityDecider is not None
@@ -150,6 +165,11 @@ def test_required_imports() -> None:
     assert ToolRequest is not None
     assert ToolResult is not None
     assert ToolValidationError is not None
+    assert ToolPermissionDecision is not None
+    assert ToolRiskClassifier is not None
+    assert ToolOperationRisk is not None
+    assert ToolPermissionRule is not None
+    assert ToolPermissionRuleSet is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None
@@ -165,12 +185,15 @@ def test_required_imports() -> None:
     assert RepoTextMatch is not None
     assert create_repo_tool is not None
     assert execute_repo_tool is not None
+    assert create_edit_tool is not None
+    assert execute_edit_tool is not None
     assert builtin_llm_chat_skill is not None
     assert create_check_self_conformance_skill is not None
     assert create_echo_skill is not None
     assert create_ingest_human_pi_skill is not None
     assert create_inspect_ocel_recent_skill is not None
     assert create_llm_chat_skill is not None
+    assert create_propose_file_edit_skill is not None
     assert create_summarize_pi_artifacts_skill is not None
     assert create_summarize_process_trace_skill is not None
     assert create_summarize_text_skill is not None
