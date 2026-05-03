@@ -9,6 +9,7 @@ def main() -> None:
     print(context.context_text)
     print("activity_sequence:", context.activity_sequence)
     print("relation_coverage:", context.relation_coverage)
+    print("conformance_status:", (context.conformance_report or {}).get("status"))
     print("diagnostics:", context.diagnostics)
     print("recommendations:", context.recommendations)
 

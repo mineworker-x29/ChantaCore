@@ -23,6 +23,11 @@ from chanta_core.pig.artifacts import PIArtifact
 from chanta_core.pig.assimilation import HumanPIAssimilator
 from chanta_core.pig.diagnostics import PIGDiagnosticService
 from chanta_core.pig.builder import PIGBuilder
+from chanta_core.pig.conformance import (
+    PIGConformanceIssue,
+    PIGConformanceReport,
+    PIGConformanceService,
+)
 from chanta_core.pig.context import PIGContext
 from chanta_core.pig.evidence import PIEvidenceRef
 from chanta_core.pig.feedback import PIGFeedbackService
@@ -52,6 +57,7 @@ from chanta_core.runtime.loop import (
 )
 from chanta_core.skills.builtin import (
     builtin_llm_chat_skill,
+    create_check_self_conformance_skill,
     create_echo_skill,
     create_ingest_human_pi_skill,
     create_inspect_ocel_recent_skill,
@@ -97,6 +103,7 @@ def test_required_imports() -> None:
     assert SkillValidationError is not None
     assert SkillRegistry is not None
     assert builtin_llm_chat_skill is not None
+    assert create_check_self_conformance_skill is not None
     assert create_echo_skill is not None
     assert create_ingest_human_pi_skill is not None
     assert create_inspect_ocel_recent_skill is not None
@@ -125,6 +132,9 @@ def test_required_imports() -> None:
     assert OCPXVariantSummary is not None
     assert PIGService is not None
     assert PIGBuilder is not None
+    assert PIGConformanceIssue is not None
+    assert PIGConformanceReport is not None
+    assert PIGConformanceService is not None
     assert PIGContext is not None
     assert PIGFeedbackService is not None
     assert PIGGuidance is not None

@@ -39,7 +39,7 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
     )
 
     result = runtime.run(
-        "process instance test",
+        "runtime instance test",
         session_id="test-session-process-instance",
     )
 
@@ -54,6 +54,7 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
         "start_process_instance",
         "start_process_run_loop",
         "decide_next_activity",
+        "decide_skill",
         "select_skill",
         "execute_skill",
         "assemble_context",

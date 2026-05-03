@@ -7,6 +7,7 @@ from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.ocpx.models import OCPXProcessView
 from chanta_core.pig.artifact_store import PIArtifactStore
 from chanta_core.pig.artifacts import PIArtifact
+from chanta_core.pig.conformance import PIGConformanceService
 from chanta_core.pig.context import PIGContext
 from chanta_core.pig.service import PIGService
 
@@ -19,11 +20,16 @@ class PIGFeedbackService:
         ocpx_engine: OCPXEngine | None = None,
         pig_service: PIGService | None = None,
         artifact_store: PIArtifactStore | None = None,
+        conformance_service: PIGConformanceService | None = None,
     ) -> None:
         self.ocpx_loader = ocpx_loader or OCPXLoader()
         self.ocpx_engine = ocpx_engine or OCPXEngine()
         self.pig_service = pig_service or PIGService(loader=self.ocpx_loader)
         self.artifact_store = artifact_store or PIArtifactStore()
+        self.conformance_service = conformance_service or PIGConformanceService(
+            ocpx_loader=self.ocpx_loader,
+            ocpx_engine=self.ocpx_engine,
+        )
 
     def build_recent_context(
         self,
@@ -31,6 +37,7 @@ class PIGFeedbackService:
         *,
         include_pi_artifacts: bool = True,
         max_pi_artifacts: int = 5,
+        include_conformance: bool = True,
     ) -> PIGContext:
         view = self.ocpx_loader.load_recent_view(limit=limit)
         pig_result = self.pig_service.analyze_recent(limit=limit)
@@ -46,6 +53,11 @@ class PIGFeedbackService:
             process_instance_id=None,
             session_id=None,
             pi_artifacts=pi_artifacts,
+            conformance_report=(
+                self.conformance_service.check_view(view, scope="recent").to_dict()
+                if include_conformance
+                else None
+            ),
             context_attrs={"limit": limit},
         )
 
@@ -55,6 +67,7 @@ class PIGFeedbackService:
         *,
         include_pi_artifacts: bool = True,
         max_pi_artifacts: int = 5,
+        include_conformance: bool = True,
     ) -> PIGContext:
         view = self.ocpx_loader.load_process_instance_view(process_instance_id)
         pig_result = self.pig_service.analyze_process_instance(process_instance_id)
@@ -76,6 +89,14 @@ class PIGFeedbackService:
             process_instance_id=process_instance_id,
             session_id=view.session_id,
             pi_artifacts=pi_artifacts,
+            conformance_report=(
+                self.conformance_service.check_view(
+                    view,
+                    scope="process_instance",
+                ).to_dict()
+                if include_conformance
+                else None
+            ),
             context_attrs={},
         )
 
@@ -85,6 +106,7 @@ class PIGFeedbackService:
         *,
         include_pi_artifacts: bool = True,
         max_pi_artifacts: int = 5,
+        include_conformance: bool = True,
     ) -> PIGContext:
         view = self.ocpx_loader.load_session_view(session_id)
         pig_result = self.pig_service.analyze_session(session_id)
@@ -103,6 +125,11 @@ class PIGFeedbackService:
             process_instance_id=None,
             session_id=session_id,
             pi_artifacts=pi_artifacts,
+            conformance_report=(
+                self.conformance_service.check_view(view, scope="session").to_dict()
+                if include_conformance
+                else None
+            ),
             context_attrs={},
         )
 
@@ -117,6 +144,7 @@ class PIGFeedbackService:
         diagnostics: list[dict[str, Any]],
         recommendations: list[dict[str, Any]],
         pi_artifacts: list[dict[str, Any]] | None = None,
+        conformance_report: dict[str, Any] | None = None,
         max_chars: int = 1600,
     ) -> str:
         coverage_ratio = float(relation_coverage.get("coverage_ratio") or 0.0)
@@ -150,6 +178,19 @@ class PIGFeedbackService:
             f"- Diagnostics: {diagnostics_text}",
             f"- Recommendations: {recommendations_text}",
         ]
+        if conformance_report:
+            issues = list(conformance_report.get("issues") or [])
+            lines.extend(
+                [
+                    "Conformance:",
+                    f"- Status: {self._compact_label(conformance_report.get('status'))}",
+                    f"- Issues: {len(issues)}",
+                ]
+            )
+            if issues:
+                lines.append(
+                    f"- Top issue: {self._compact_label(issues[0].get('title'))}"
+                )
         if pi_artifacts:
             lines.append("Human / External PI:")
             for artifact in pi_artifacts[:5]:
@@ -171,6 +212,7 @@ class PIGFeedbackService:
         process_instance_id: str | None,
         session_id: str | None,
         pi_artifacts: list[PIArtifact],
+        conformance_report: dict[str, Any] | None,
         context_attrs: dict[str, Any],
     ) -> PIGContext:
         summary = self.ocpx_engine.summarize_for_pig_context(view)
@@ -187,6 +229,7 @@ class PIGFeedbackService:
             diagnostics=diagnostics,
             recommendations=recommendations,
             pi_artifacts=pi_artifact_dicts,
+            conformance_report=conformance_report,
         )
         return PIGContext(
             source="pig",
@@ -204,11 +247,15 @@ class PIGFeedbackService:
             recommendations=recommendations,
             context_text=context_text,
             pi_artifacts=pi_artifact_dicts,
+            conformance_report=conformance_report,
             context_attrs={
                 **context_attrs,
                 "view_id": view.view_id,
                 "view_source": view.source,
                 "pi_artifact_count": len(pi_artifact_dicts),
+                "conformance_status": (
+                    conformance_report.get("status") if conformance_report else None
+                ),
                 "variant_summary": summary.get("variant_summary"),
             },
         )

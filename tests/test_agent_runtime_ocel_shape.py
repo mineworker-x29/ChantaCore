@@ -46,6 +46,7 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "agent_run_started",
         "process_run_loop_started",
         "next_activity_decided",
+        "skill_decision_recorded",
         "skill_selected",
         "skill_executed",
         "context_assembled",
@@ -55,7 +56,7 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "outcome_recorded",
         "process_instance_completed",
     ]
-    assert store.fetch_event_count() == 12
+    assert store.fetch_event_count() == 13
     assert store.fetch_object_count() >= 11
     assert store.fetch_event_object_relation_count() > 0
     assert store.fetch_object_object_relation_count() > 0
@@ -97,6 +98,7 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "start_process_instance",
         "start_process_run_loop",
         "decide_next_activity",
+        "decide_skill",
         "select_skill",
         "execute_skill",
         "assemble_context",

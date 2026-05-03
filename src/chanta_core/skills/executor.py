@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from chanta_core.skills.builtin import (
+    execute_check_self_conformance_skill,
     execute_echo_skill,
     execute_ingest_human_pi_skill,
     execute_inspect_ocel_recent_skill,
@@ -44,6 +45,7 @@ class SkillExecutor:
         self.events: list[Any] = []
         self._handlers = {
             "skill:llm_chat": execute_llm_chat_skill,
+            "skill:check_self_conformance": execute_check_self_conformance_skill,
             "skill:echo": execute_echo_skill,
             "skill:ingest_human_pi": execute_ingest_human_pi_skill,
             "skill:summarize_text": execute_summarize_text_skill,

@@ -19,9 +19,12 @@ __all__ = [
     "SkillValidationError",
     "SkillRegistry",
     "builtin_llm_chat_skill",
+    "create_check_self_conformance_skill",
     "create_echo_skill",
+    "create_ingest_human_pi_skill",
     "create_inspect_ocel_recent_skill",
     "create_llm_chat_skill",
+    "create_summarize_pi_artifacts_skill",
     "create_summarize_process_trace_skill",
     "create_summarize_text_skill",
 ]
@@ -45,9 +48,12 @@ def __getattr__(name: str) -> Any:
         return import_module("chanta_core.skills.registry").SkillRegistry
     if name in {
         "builtin_llm_chat_skill",
+        "create_check_self_conformance_skill",
         "create_echo_skill",
+        "create_ingest_human_pi_skill",
         "create_inspect_ocel_recent_skill",
         "create_llm_chat_skill",
+        "create_summarize_pi_artifacts_skill",
         "create_summarize_process_trace_skill",
         "create_summarize_text_skill",
     }:

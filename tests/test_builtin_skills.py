@@ -50,6 +50,7 @@ def test_registry_registers_all_builtin_skills() -> None:
     assert PIGContext is not None
     assert PIGFeedbackService is not None
     assert [skill.skill_id for skill in registry.list_skills()] == [
+        "skill:check_self_conformance",
         "skill:echo",
         "skill:ingest_human_pi",
         "skill:inspect_ocel_recent",
@@ -136,3 +137,20 @@ def test_builtin_pi_skills_execute_without_llm(tmp_path) -> None:
     assert trace_result.success is True
     assert trace_result.output_attrs["scope"] == "process_instance"
     assert trace_result.output_attrs["activity_sequence"]
+
+    conformance_result = executor.execute(
+        SkillRegistry().require("skill:check_self_conformance"),
+        SkillExecutionContext(
+            process_instance_id="process_instance:pi-builtins",
+            session_id="test-session-check-conformance",
+            agent_id="chanta_core_default",
+            user_input="check self conformance",
+            system_prompt=None,
+            event_attrs={},
+            context_attrs={"process_instance_id": "process_instance:pi-builtins"},
+        ),
+    )
+
+    assert conformance_result.success is True
+    assert conformance_result.output_attrs["scope"] == "process_instance"
+    assert conformance_result.output_attrs["diagnostic_only"] is True

@@ -21,6 +21,7 @@ class PIGContext:
     recommendations: list[dict[str, Any]]
     context_text: str
     pi_artifacts: list[dict[str, Any]] = field(default_factory=list)
+    conformance_report: dict[str, Any] | None = None
     context_attrs: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -40,5 +41,6 @@ class PIGContext:
             "recommendations": self.recommendations,
             "context_text": self.context_text,
             "pi_artifacts": self.pi_artifacts,
+            "conformance_report": self.conformance_report,
             "context_attrs": self.context_attrs,
         }

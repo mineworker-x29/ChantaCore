@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from chanta_core.skills.builtin import (
+    create_check_self_conformance_skill,
     create_echo_skill,
     create_ingest_human_pi_skill,
     create_inspect_ocel_recent_skill,
@@ -62,6 +63,7 @@ class SkillRegistry:
 
     def register_builtin_skills(self) -> None:
         self.register(create_llm_chat_skill())
+        self.register(create_check_self_conformance_skill())
         self.register(create_echo_skill())
         self.register(create_ingest_human_pi_skill())
         self.register(create_summarize_text_skill())
