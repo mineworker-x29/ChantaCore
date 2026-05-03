@@ -7,6 +7,7 @@ from chanta_core.tools.builtin import (
     create_ocpx_tool,
     create_pig_tool,
     create_repo_tool,
+    create_worker_tool,
     create_workspace_tool,
 )
 from chanta_core.tools.errors import ToolRegistryError
@@ -61,4 +62,5 @@ class ToolRegistry:
         self.register(create_ocpx_tool())
         self.register(create_pig_tool())
         self.register(create_repo_tool())
+        self.register(create_worker_tool())
         self.register(create_workspace_tool())

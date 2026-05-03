@@ -691,6 +691,86 @@ class OCELFactory:
             )
         return self._record(event, objects, relations)
 
+    def worker_lifecycle_event(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        *,
+        event_activity: str,
+        worker,
+        job=None,
+        status: str,
+        event_attrs: dict[str, Any] | None = None,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        attrs = {
+            "worker_id": worker.worker_id,
+            "worker_name": worker.worker_name,
+            "worker_status": status,
+            "job_id": getattr(job, "job_id", None),
+            "job_status": getattr(job, "status", None),
+            **(event_attrs or {}),
+        }
+        event = self._event(
+            runtime_event_type=event_activity,
+            event_activity=event_activity,
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle=status,
+            event_attrs=attrs,
+        )
+        worker_object = OCELObject(
+            object_id=worker.worker_id,
+            object_type="worker",
+            object_attrs={
+                "object_key": worker.worker_id,
+                "display_name": worker.worker_name,
+                "worker_name": worker.worker_name,
+                "status": status,
+                "created_at": worker.created_at,
+                "updated_at": timestamp,
+                **worker.worker_attrs,
+            },
+        )
+        objects = self._base_objects(context, profile, timestamp) + [worker_object]
+        relations = [
+            self._e2o(event, self._process_id(context), "process_context"),
+            self._e2o(event, worker.worker_id, "worker"),
+            self._e2o(event, self._session_id(context), "session_context"),
+            self._e2o(event, self._agent_id(profile), "acting_agent"),
+            *self._process_object_relations(context, profile),
+        ]
+        if job is not None:
+            job_object = OCELObject(
+                object_id=job.job_id,
+                object_type="process_job",
+                object_attrs={
+                    "object_key": job.job_id,
+                    "display_name": job.job_id,
+                    "job_type": job.job_type,
+                    "status": job.status,
+                    "priority": job.priority,
+                    "retry_count": job.retry_count,
+                    "max_retries": job.max_retries,
+                    "created_at": job.created_at,
+                    "updated_at": timestamp,
+                    **job.job_attrs,
+                },
+            )
+            objects.append(job_object)
+            relations.extend(
+                [
+                    self._e2o(event, job.job_id, "process_job"),
+                    self._o2o(job.job_id, worker.worker_id, "claimed_by_worker"),
+                ]
+            )
+            if job.process_instance_id:
+                relations.append(
+                    self._o2o(job.job_id, job.process_instance_id, "runs_process_instance")
+                )
+        return self._record(event, objects, relations)
+
     # Backward-compatible wrappers used by v0.3 scripts/tests.
     def user_request_received(self, context: ExecutionContext, profile: AgentProfile) -> OCELRecord:
         return self.receive_user_request(context, profile)

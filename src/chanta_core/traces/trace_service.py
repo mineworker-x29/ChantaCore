@@ -313,6 +313,45 @@ class TraceService:
             payload["error"] = error
         return self._record(execution_context, event_activity, payload, record)
 
+    def record_worker_lifecycle_event(
+        self,
+        *,
+        event_activity: str,
+        worker,
+        job=None,
+        status: str,
+        event_attrs: dict[str, Any] | None = None,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        process_instance_id = getattr(job, "process_instance_id", None) or (
+            f"process_instance:{getattr(job, 'job_id', 'worker')}" if job is not None else None
+        )
+        session_id = getattr(job, "session_id", None) or "worker-session"
+        agent_id = getattr(job, "agent_id", None) or profile.agent_id
+        execution_context = ExecutionContext.create(
+            agent_id=agent_id,
+            user_input=getattr(job, "user_input", "") if job is not None else event_activity,
+            session_id=session_id,
+            metadata={"process_instance_id": process_instance_id},
+        )
+        record = self.ocel_factory.worker_lifecycle_event(
+            execution_context,
+            profile,
+            event_activity=event_activity,
+            worker=worker,
+            job=job,
+            status=status,
+            event_attrs=event_attrs or {},
+        )
+        payload = {
+            "worker_id": worker.worker_id,
+            "job_id": getattr(job, "job_id", None),
+            "status": status,
+            **(event_attrs or {}),
+        }
+        return self._record(execution_context, event_activity, payload, record)
+
     def record_llm_call_started(
         self,
         context: ExecutionContext,

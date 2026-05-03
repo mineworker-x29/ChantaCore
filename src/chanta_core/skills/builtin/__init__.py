@@ -23,6 +23,10 @@ from chanta_core.skills.builtin.propose_file_edit import (
     create_propose_file_edit_skill,
     execute_propose_file_edit_skill,
 )
+from chanta_core.skills.builtin.run_worker_once import (
+    create_run_worker_once_skill,
+    execute_run_worker_once_skill,
+)
 from chanta_core.skills.builtin.summarize_process_trace import (
     create_summarize_process_trace_skill,
     execute_summarize_process_trace_skill,
@@ -47,6 +51,7 @@ __all__ = [
     "create_inspect_ocel_recent_skill",
     "create_llm_chat_skill",
     "create_propose_file_edit_skill",
+    "create_run_worker_once_skill",
     "create_summarize_pi_artifacts_skill",
     "create_summarize_process_trace_skill",
     "create_summarize_text_skill",
@@ -57,6 +62,7 @@ __all__ = [
     "execute_inspect_ocel_recent_skill",
     "execute_llm_chat_skill",
     "execute_propose_file_edit_skill",
+    "execute_run_worker_once_skill",
     "execute_summarize_pi_artifacts_skill",
     "execute_summarize_process_trace_skill",
     "execute_summarize_text_skill",

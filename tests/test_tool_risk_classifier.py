@@ -25,6 +25,7 @@ def test_known_builtin_tool_risks() -> None:
     assert classifier.classify(registry.require("tool:pig"), request("tool:pig")).risk_level == "internal_intelligence"
     assert classifier.classify(registry.require("tool:workspace"), request("tool:workspace")).risk_level == "internal_readonly"
     assert classifier.classify(registry.require("tool:repo"), request("tool:repo")).risk_level == "internal_readonly"
+    assert classifier.classify(registry.require("tool:worker"), request("tool:worker")).risk_level == "internal_compute"
 
 
 def test_unknown_tool_risk_unknown() -> None:

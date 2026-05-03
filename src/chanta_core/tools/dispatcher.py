@@ -12,6 +12,7 @@ from chanta_core.tools.builtin import (
     execute_ocpx_tool,
     execute_pig_tool,
     execute_repo_tool,
+    execute_worker_tool,
     execute_workspace_tool,
 )
 from chanta_core.tools.context import ToolExecutionContext
@@ -45,6 +46,10 @@ class ToolDispatcher:
         edit_proposal_store=None,
         patch_application_service=None,
         patch_application_store=None,
+        process_job_store=None,
+        queue_service=None,
+        worker_runner=None,
+        worker_heartbeat_store=None,
     ) -> None:
         self.registry = registry or ToolRegistry()
         self.policy = policy or ToolPolicy()
@@ -64,6 +69,10 @@ class ToolDispatcher:
         self.edit_proposal_store = edit_proposal_store
         self.patch_application_service = patch_application_service
         self.patch_application_store = patch_application_store
+        self.process_job_store = process_job_store
+        self.queue_service = queue_service
+        self.worker_runner = worker_runner
+        self.worker_heartbeat_store = worker_heartbeat_store
         self._handlers: dict[str, Callable[..., ToolResult]] = {
             "tool:edit": execute_edit_tool,
             "tool:echo": execute_echo_tool,
@@ -71,6 +80,7 @@ class ToolDispatcher:
             "tool:ocpx": execute_ocpx_tool,
             "tool:pig": execute_pig_tool,
             "tool:repo": execute_repo_tool,
+            "tool:worker": execute_worker_tool,
             "tool:workspace": execute_workspace_tool,
         }
 
@@ -174,6 +184,11 @@ class ToolDispatcher:
                 edit_proposal_store=self.edit_proposal_store,
                 patch_application_service=self.patch_application_service,
                 patch_application_store=self.patch_application_store,
+                process_job_store=self.process_job_store,
+                queue_service=self.queue_service,
+                worker_runner=self.worker_runner,
+                heartbeat_store=self.worker_heartbeat_store,
+                trace_service=self.trace_service,
             )
         except Exception as error:
             return self._failure(

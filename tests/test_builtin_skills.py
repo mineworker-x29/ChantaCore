@@ -57,6 +57,7 @@ def test_registry_registers_all_builtin_skills() -> None:
         "skill:inspect_ocel_recent",
         "skill:llm_chat",
         "skill:propose_file_edit",
+        "skill:run_worker_once",
         "skill:summarize_pi_artifacts",
         "skill:summarize_process_trace",
         "skill:summarize_text",

@@ -26,6 +26,7 @@ KNOWN_TOOL_RISKS = {
     "tool:pig": "internal_intelligence",
     "tool:workspace": "internal_readonly",
     "tool:repo": "internal_readonly",
+    "tool:worker": "internal_compute",
 }
 
 EDIT_PROPOSAL_OPERATIONS = {
