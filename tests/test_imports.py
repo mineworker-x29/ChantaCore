@@ -47,6 +47,15 @@ from chanta_core.runtime.decision import (
     DecisionService,
     ProcessDecision,
 )
+from chanta_core.repo import (
+    RepoFileMatch,
+    RepoScanner,
+    RepoSearchResult,
+    RepoSearchService,
+    RepoSymbol,
+    RepoSymbolScanner,
+    RepoTextMatch,
+)
 from chanta_core.runtime.loop import (
     ProcessActivityDecider,
     ProcessContextAssembler,
@@ -92,6 +101,7 @@ from chanta_core.tools.builtin.workspace import (
     create_workspace_tool,
     execute_workspace_tool,
 )
+from chanta_core.tools.builtin.repo import create_repo_tool, execute_repo_tool
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
 from chanta_core.utility.time import utc_now_iso
@@ -146,6 +156,15 @@ def test_required_imports() -> None:
     assert WorkspaceConfig is not None
     assert WorkspaceInspector is not None
     assert WorkspacePathGuard is not None
+    assert RepoFileMatch is not None
+    assert RepoScanner is not None
+    assert RepoSearchResult is not None
+    assert RepoSearchService is not None
+    assert RepoSymbol is not None
+    assert RepoSymbolScanner is not None
+    assert RepoTextMatch is not None
+    assert create_repo_tool is not None
+    assert execute_repo_tool is not None
     assert builtin_llm_chat_skill is not None
     assert create_check_self_conformance_skill is not None
     assert create_echo_skill is not None

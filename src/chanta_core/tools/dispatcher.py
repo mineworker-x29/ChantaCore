@@ -10,6 +10,7 @@ from chanta_core.tools.builtin import (
     execute_ocel_tool,
     execute_ocpx_tool,
     execute_pig_tool,
+    execute_repo_tool,
     execute_workspace_tool,
 )
 from chanta_core.tools.context import ToolExecutionContext
@@ -36,6 +37,9 @@ class ToolDispatcher:
         pig_conformance_service=None,
         artifact_store=None,
         workspace_inspector=None,
+        repo_scanner=None,
+        repo_search_service=None,
+        repo_symbol_scanner=None,
     ) -> None:
         self.registry = registry or ToolRegistry()
         self.policy = policy or ToolPolicy()
@@ -48,11 +52,15 @@ class ToolDispatcher:
         self.pig_conformance_service = pig_conformance_service
         self.artifact_store = artifact_store
         self.workspace_inspector = workspace_inspector
+        self.repo_scanner = repo_scanner
+        self.repo_search_service = repo_search_service
+        self.repo_symbol_scanner = repo_symbol_scanner
         self._handlers: dict[str, Callable[..., ToolResult]] = {
             "tool:echo": execute_echo_tool,
             "tool:ocel": execute_ocel_tool,
             "tool:ocpx": execute_ocpx_tool,
             "tool:pig": execute_pig_tool,
+            "tool:repo": execute_repo_tool,
             "tool:workspace": execute_workspace_tool,
         }
 
@@ -117,6 +125,9 @@ class ToolDispatcher:
                 pig_conformance_service=self.pig_conformance_service,
                 artifact_store=self.artifact_store,
                 workspace_inspector=self.workspace_inspector,
+                repo_scanner=self.repo_scanner,
+                repo_search_service=self.repo_search_service,
+                repo_symbol_scanner=self.repo_symbol_scanner,
             )
         except Exception as error:
             return self._failure(

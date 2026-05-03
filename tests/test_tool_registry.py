@@ -13,6 +13,7 @@ def test_builtin_tools_registered() -> None:
         "tool:ocel",
         "tool:ocpx",
         "tool:pig",
+        "tool:repo",
         "tool:workspace",
     ]
     assert registry.get("tool:ocel").tool_name == "ocel"
