@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from chanta_core.skills.builtin import (
+    execute_apply_approved_patch_skill,
     execute_check_self_conformance_skill,
     execute_echo_skill,
     execute_ingest_human_pi_skill,
@@ -45,6 +46,7 @@ class SkillExecutor:
         self.policy = policy or SkillExecutionPolicy()
         self.events: list[Any] = []
         self._handlers = {
+            "skill:apply_approved_patch": execute_apply_approved_patch_skill,
             "skill:llm_chat": execute_llm_chat_skill,
             "skill:check_self_conformance": execute_check_self_conformance_skill,
             "skill:echo": execute_echo_skill,

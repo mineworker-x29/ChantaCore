@@ -32,6 +32,8 @@ EDIT_PROPOSAL_OPERATIONS = {
     "propose_text_replacement",
     "propose_comment_only",
     "summarize_recent_proposals",
+    "dry_run_approved_proposal",
+    "summarize_recent_patch_applications",
 }
 
 RISKY_OPERATION_KEYWORDS = {
@@ -70,6 +72,22 @@ class ToolOperationRisk:
 
 class ToolRiskClassifier:
     def classify(self, tool: Tool, request: ToolRequest) -> ToolOperationRisk:
+        if tool.tool_id == "tool:edit" and request.operation == "apply_approved_proposal":
+            explicit_risk = self._explicit_risk(request)
+            risk_level = _stricter("write", explicit_risk)
+            return ToolOperationRisk(
+                tool_id=tool.tool_id,
+                operation=request.operation,
+                risk_level=risk_level,
+                reason="approved_patch_application_operation",
+                risk_attrs={
+                    "base_risk": tool.safety_level,
+                    "operation_risk": "write",
+                    "explicit_risk": explicit_risk,
+                    "approval_text_present": bool(request.input_attrs.get("approval_text")),
+                    "approved_by_present": bool(request.input_attrs.get("approved_by")),
+                },
+            )
         if tool.tool_id == "tool:edit" and request.operation in EDIT_PROPOSAL_OPERATIONS:
             explicit_risk = self._explicit_risk(request)
             risk_level = _stricter("internal_readonly", explicit_risk)

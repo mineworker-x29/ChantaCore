@@ -50,6 +50,7 @@ def test_registry_registers_all_builtin_skills() -> None:
     assert PIGContext is not None
     assert PIGFeedbackService is not None
     assert [skill.skill_id for skill in registry.list_skills()] == [
+        "skill:apply_approved_patch",
         "skill:check_self_conformance",
         "skill:echo",
         "skill:ingest_human_pi",

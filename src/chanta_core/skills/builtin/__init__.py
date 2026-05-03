@@ -1,3 +1,7 @@
+from chanta_core.skills.builtin.apply_approved_patch import (
+    create_apply_approved_patch_skill,
+    execute_apply_approved_patch_skill,
+)
 from chanta_core.skills.builtin.echo import create_echo_skill, execute_echo_skill
 from chanta_core.skills.builtin.check_self_conformance import (
     create_check_self_conformance_skill,
@@ -36,6 +40,7 @@ builtin_llm_chat_skill = create_llm_chat_skill
 
 __all__ = [
     "builtin_llm_chat_skill",
+    "create_apply_approved_patch_skill",
     "create_check_self_conformance_skill",
     "create_echo_skill",
     "create_ingest_human_pi_skill",
@@ -46,6 +51,7 @@ __all__ = [
     "create_summarize_process_trace_skill",
     "create_summarize_text_skill",
     "execute_echo_skill",
+    "execute_apply_approved_patch_skill",
     "execute_check_self_conformance_skill",
     "execute_ingest_human_pi_skill",
     "execute_inspect_ocel_recent_skill",

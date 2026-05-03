@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from chanta_core.editing import EditProposalService, EditProposalStore
+from chanta_core.editing import (
+    EditProposalService,
+    EditProposalStore,
+    PatchApplicationService,
+    PatchApplicationStore,
+    PatchApproval,
+)
 from chanta_core.tools.context import ToolExecutionContext
 from chanta_core.tools.request import ToolRequest
 from chanta_core.tools.result import ToolResult
@@ -19,6 +25,9 @@ def create_edit_tool() -> Tool:
             "propose_text_replacement",
             "propose_comment_only",
             "summarize_recent_proposals",
+            "apply_approved_proposal",
+            "dry_run_approved_proposal",
+            "summarize_recent_patch_applications",
         ],
         input_schema={},
         output_schema={},
@@ -38,13 +47,22 @@ def execute_edit_tool(
     request: ToolRequest,
     context: ToolExecutionContext,
     edit_service: EditProposalService | None = None,
+    patch_application_service: PatchApplicationService | None = None,
     workspace_inspector: WorkspaceInspector | None = None,
     edit_proposal_store: EditProposalStore | None = None,
+    patch_application_store: PatchApplicationStore | None = None,
     **_,
 ) -> ToolResult:
+    inspector = workspace_inspector or WorkspaceInspector()
+    proposal_store = edit_proposal_store or EditProposalStore()
     service = edit_service or EditProposalService(
-        workspace_inspector=workspace_inspector or WorkspaceInspector(),
-        store=edit_proposal_store,
+        workspace_inspector=inspector,
+        store=proposal_store,
+    )
+    patch_service = patch_application_service or PatchApplicationService(
+        workspace_inspector=inspector,
+        proposal_store=proposal_store,
+        patch_store=patch_application_store,
     )
     operation = request.operation
     try:
@@ -82,6 +100,32 @@ def execute_edit_tool(
                     "proposal_only": True,
                     "workspace_file_mutated": False,
                 },
+            )
+        if operation == "apply_approved_proposal":
+            approval = _approval_from_request(request)
+            application = patch_service.apply_approved_proposal(
+                proposal_id=str(request.input_attrs.get("proposal_id") or ""),
+                approval=approval,
+            )
+            return _patch_result(tool, request, application)
+        if operation == "dry_run_approved_proposal":
+            approval = _approval_from_request(request)
+            application = patch_service.dry_run_approved_proposal(
+                proposal_id=str(request.input_attrs.get("proposal_id") or ""),
+                approval=approval,
+            )
+            return _patch_result(tool, request, application)
+        if operation == "summarize_recent_patch_applications":
+            summary = patch_service.summarize_recent_patch_applications(
+                limit=int(request.input_attrs.get("limit", 20))
+            )
+            return ToolResult.create(
+                tool_request_id=request.tool_request_id,
+                tool_id=tool.tool_id,
+                operation=request.operation,
+                success=True,
+                output_text=f"Patch applications: {summary['patch_application_count']}",
+                output_attrs={"summary": summary},
             )
     except Exception as error:
         return ToolResult.create(
@@ -133,4 +177,37 @@ def _proposal_result(tool: Tool, request: ToolRequest, proposal) -> ToolResult:
             "proposal_only": True,
             "workspace_file_mutated": False,
         },
+    )
+
+
+def _approval_from_request(request: ToolRequest) -> PatchApproval:
+    return PatchApproval.create(
+        proposal_id=str(request.input_attrs.get("proposal_id") or ""),
+        approved_by=str(request.input_attrs.get("approved_by") or ""),
+        approval_text=str(request.input_attrs.get("approval_text") or ""),
+        approval_attrs=dict(request.input_attrs.get("approval_attrs") or {}),
+    )
+
+
+def _patch_result(tool: Tool, request: ToolRequest, application) -> ToolResult:
+    return ToolResult.create(
+        tool_request_id=request.tool_request_id,
+        tool_id=tool.tool_id,
+        operation=request.operation,
+        success=application.status in {"applied", "pending"},
+        output_text=(
+            f"Patch application {application.status}: "
+            f"{application.patch_application_id}"
+        ),
+        output_attrs={
+            "patch_application": application.to_dict(),
+            "patch_application_id": application.patch_application_id,
+            "proposal_id": application.proposal_id,
+            "approval_id": application.approval_id,
+            "target_path": application.target_path,
+            "status": application.status,
+            "backup_path": application.backup_path,
+            "workspace_file_mutated": application.status == "applied",
+        },
+        error=application.error,
     )

@@ -43,6 +43,8 @@ class ToolDispatcher:
         repo_symbol_scanner=None,
         edit_service=None,
         edit_proposal_store=None,
+        patch_application_service=None,
+        patch_application_store=None,
     ) -> None:
         self.registry = registry or ToolRegistry()
         self.policy = policy or ToolPolicy()
@@ -60,6 +62,8 @@ class ToolDispatcher:
         self.repo_symbol_scanner = repo_symbol_scanner
         self.edit_service = edit_service
         self.edit_proposal_store = edit_proposal_store
+        self.patch_application_service = patch_application_service
+        self.patch_application_store = patch_application_store
         self._handlers: dict[str, Callable[..., ToolResult]] = {
             "tool:edit": execute_edit_tool,
             "tool:echo": execute_echo_tool,
@@ -168,6 +172,8 @@ class ToolDispatcher:
                 repo_symbol_scanner=self.repo_symbol_scanner,
                 edit_service=self.edit_service,
                 edit_proposal_store=self.edit_proposal_store,
+                patch_application_service=self.patch_application_service,
+                patch_application_store=self.patch_application_store,
             )
         except Exception as error:
             return self._failure(

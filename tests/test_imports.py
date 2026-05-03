@@ -4,6 +4,11 @@ from chanta_core.editing import (
     EditProposal,
     EditProposalService,
     EditProposalStore,
+    PatchApplication,
+    PatchApplicationService,
+    PatchApplicationStore,
+    PatchApproval,
+    PatchBackupService,
     create_unified_diff,
 )
 from chanta_core.llm import LLMClient
@@ -73,6 +78,7 @@ from chanta_core.runtime.loop import (
     ProcessRunState,
 )
 from chanta_core.skills.builtin import (
+    create_apply_approved_patch_skill,
     builtin_llm_chat_skill,
     create_check_self_conformance_skill,
     create_echo_skill,
@@ -129,6 +135,11 @@ def test_required_imports() -> None:
     assert EditProposal is not None
     assert EditProposalService is not None
     assert EditProposalStore is not None
+    assert PatchApproval is not None
+    assert PatchApplication is not None
+    assert PatchApplicationStore is not None
+    assert PatchApplicationService is not None
+    assert PatchBackupService is not None
     assert create_unified_diff is not None
     assert AgentRuntime is not None
     assert ChatService is not None
@@ -188,6 +199,7 @@ def test_required_imports() -> None:
     assert create_edit_tool is not None
     assert execute_edit_tool is not None
     assert builtin_llm_chat_skill is not None
+    assert create_apply_approved_patch_skill is not None
     assert create_check_self_conformance_skill is not None
     assert create_echo_skill is not None
     assert create_ingest_human_pi_skill is not None
