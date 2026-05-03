@@ -352,6 +352,40 @@ class TraceService:
         }
         return self._record(execution_context, event_activity, payload, record)
 
+    def record_scheduler_lifecycle_event(
+        self,
+        *,
+        event_activity: str,
+        schedule=None,
+        job_id: str | None = None,
+        status: str,
+        event_attrs: dict[str, Any] | None = None,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        execution_context = ExecutionContext.create(
+            agent_id=getattr(schedule, "agent_id", None) or profile.agent_id,
+            user_input=getattr(schedule, "user_input", "") if schedule is not None else event_activity,
+            session_id="scheduler-session",
+            metadata={"process_instance_id": f"process_instance:scheduler:{event_activity}"},
+        )
+        record = self.ocel_factory.scheduler_lifecycle_event(
+            execution_context,
+            profile,
+            event_activity=event_activity,
+            schedule=schedule,
+            job_id=job_id,
+            status=status,
+            event_attrs=event_attrs or {},
+        )
+        payload = {
+            "schedule_id": getattr(schedule, "schedule_id", None),
+            "job_id": job_id,
+            "status": status,
+            **(event_attrs or {}),
+        }
+        return self._record(execution_context, event_activity, payload, record)
+
     def record_llm_call_started(
         self,
         context: ExecutionContext,

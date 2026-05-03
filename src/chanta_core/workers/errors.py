@@ -14,5 +14,9 @@ class ProcessJobClaimError(ProcessJobError):
     pass
 
 
+class ProcessJobInvalidTransitionError(ProcessJobError):
+    pass
+
+
 class WorkerRunError(WorkerError):
     pass

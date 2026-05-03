@@ -41,9 +41,11 @@ def main() -> None:
         )
         summary = dispatcher.dispatch(request("queue_summary"), context)
         recent = dispatcher.dispatch(request("recent_jobs"), context)
+        conformance = dispatcher.dispatch(request("check_queue_conformance"), context)
         print(enqueue.output_text)
         print(summary.output_attrs["summary"])
         print(f"recent_jobs={len(recent.output_attrs['jobs'])}")
+        print(f"queue_conformance={conformance.output_attrs['status']}")
 
 
 if __name__ == "__main__":

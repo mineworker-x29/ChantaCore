@@ -43,7 +43,8 @@ def test_mark_failed_without_retry(tmp_path) -> None:
     service = queue(tmp_path)
     job = service.enqueue_process_run(user_input="run", agent_id="agent")
     claimed = service.claim_next("worker:one")
-    failed = service.mark_failed(claimed.job_id, "worker:one", "boom")
+    running = service.mark_running(claimed.job_id, "worker:one")
+    failed = service.mark_failed(running.job_id, "worker:one", "boom")
 
     assert failed.status == "failed"
     assert failed.last_error == "boom"
@@ -53,7 +54,8 @@ def test_mark_failed_with_retry_requeues(tmp_path) -> None:
     service = queue(tmp_path)
     job = service.enqueue_process_run(user_input="run", agent_id="agent", max_retries=1)
     claimed = service.claim_next("worker:one")
-    retried = service.mark_failed(claimed.job_id, "worker:one", "boom")
+    running = service.mark_running(claimed.job_id, "worker:one")
+    retried = service.mark_failed(running.job_id, "worker:one", "boom")
 
     assert retried.status == "queued"
     assert retried.retry_count == 1

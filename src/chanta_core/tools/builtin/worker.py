@@ -29,6 +29,7 @@ def create_worker_tool() -> Tool:
             "queue_summary",
             "recent_jobs",
             "recent_heartbeats",
+            "check_queue_conformance",
         ],
         input_schema={},
         output_schema={},
@@ -51,11 +52,12 @@ def execute_worker_tool(
     worker_runner: "WorkerRunner | None" = None,
     heartbeat_store: WorkerHeartbeatStore | None = None,
     process_job_store: ProcessJobStore | None = None,
+    queue_conformance_service=None,
     trace_service=None,
     **_,
 ) -> ToolResult:
     job_store = process_job_store or ProcessJobStore()
-    queue = queue_service or WorkerQueueService(job_store)
+    queue = queue_service or WorkerQueueService(job_store, trace_service=trace_service)
     heartbeats = heartbeat_store or WorkerHeartbeatStore()
     if worker_runner is None:
         from chanta_core.workers.runner import WorkerRunner
@@ -133,6 +135,23 @@ def execute_worker_tool(
                 tool,
                 f"Recent worker heartbeats: {len(rows)}",
                 {"heartbeats": rows},
+            )
+        if operation == "check_queue_conformance":
+            service = queue_conformance_service
+            if service is None:
+                from chanta_core.pig.queue_conformance import PIGQueueConformanceService
+
+                service = PIGQueueConformanceService(job_store=job_store)
+            job_id = request.input_attrs.get("job_id")
+            if job_id:
+                report = service.check_job(str(job_id))
+            else:
+                report = service.check_recent_jobs(int(request.input_attrs.get("limit") or 20))
+            return _success(
+                request,
+                tool,
+                f"Queue conformance status: {report.status}",
+                {"report": report.to_dict(), "status": report.status},
             )
     except Exception as error:
         return ToolResult.create(

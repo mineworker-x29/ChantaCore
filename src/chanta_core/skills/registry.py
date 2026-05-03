@@ -9,6 +9,7 @@ from chanta_core.skills.builtin import (
     create_llm_chat_skill,
     create_propose_file_edit_skill,
     create_run_worker_once_skill,
+    create_run_scheduler_once_skill,
     create_summarize_pi_artifacts_skill,
     create_summarize_process_trace_skill,
     create_summarize_text_skill,
@@ -72,6 +73,7 @@ class SkillRegistry:
         self.register(create_ingest_human_pi_skill())
         self.register(create_propose_file_edit_skill())
         self.register(create_run_worker_once_skill())
+        self.register(create_run_scheduler_once_skill())
         self.register(create_summarize_text_skill())
         self.register(create_inspect_ocel_recent_skill())
         self.register(create_summarize_pi_artifacts_skill())

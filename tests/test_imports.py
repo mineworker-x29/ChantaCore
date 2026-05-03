@@ -45,6 +45,11 @@ from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.pig.guidance import PIGGuidance, PIGGuidanceService
 from chanta_core.pig.inspector import PISubstrateInspection, PISubstrateInspector
 from chanta_core.pig.models import PIGGraph
+from chanta_core.pig.queue_conformance import (
+    PIGQueueConformanceService,
+    QueueConformanceIssue,
+    QueueConformanceReport,
+)
 from chanta_core.pig.recommendations import PIGRecommendationService
 from chanta_core.pig.reports import ProcessRunReport, PIGReportService
 from chanta_core.pig.service import PIGService
@@ -67,6 +72,14 @@ from chanta_core.repo import (
     RepoSymbolScanner,
     RepoTextMatch,
 )
+from chanta_core.scheduler import (
+    ProcessSchedule,
+    ProcessScheduleStore,
+    ScheduleEvaluation,
+    ScheduleEvaluator,
+    SchedulerRunner,
+    SchedulerService,
+)
 from chanta_core.runtime.loop import (
     ProcessActivityDecider,
     ProcessContextAssembler,
@@ -87,6 +100,7 @@ from chanta_core.skills.builtin import (
     create_llm_chat_skill,
     create_propose_file_edit_skill,
     create_run_worker_once_skill,
+    create_run_scheduler_once_skill,
     create_summarize_pi_artifacts_skill,
     create_summarize_process_trace_skill,
     create_summarize_text_skill,
@@ -121,6 +135,7 @@ from chanta_core.tools.builtin.workspace import (
 from chanta_core.tools.builtin.repo import create_repo_tool, execute_repo_tool
 from chanta_core.tools.builtin.edit import create_edit_tool, execute_edit_tool
 from chanta_core.tools.builtin.worker import create_worker_tool, execute_worker_tool
+from chanta_core.tools.builtin.scheduler import create_scheduler_tool, execute_scheduler_tool
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
 from chanta_core.utility.time import utc_now_iso
@@ -132,7 +147,10 @@ from chanta_core.workspace import (
 )
 from chanta_core.workers import (
     ProcessJob,
+    ProcessJobInvalidTransitionError,
     ProcessJobStore,
+    ProcessJobStateMachine,
+    ProcessJobStateTransition,
     Worker,
     WorkerHeartbeat,
     WorkerHeartbeatStore,
@@ -211,8 +229,19 @@ def test_required_imports() -> None:
     assert execute_edit_tool is not None
     assert create_worker_tool is not None
     assert execute_worker_tool is not None
+    assert create_scheduler_tool is not None
+    assert execute_scheduler_tool is not None
+    assert ProcessSchedule is not None
+    assert ProcessScheduleStore is not None
+    assert ScheduleEvaluation is not None
+    assert ScheduleEvaluator is not None
+    assert SchedulerService is not None
+    assert SchedulerRunner is not None
     assert ProcessJob is not None
+    assert ProcessJobInvalidTransitionError is not None
     assert ProcessJobStore is not None
+    assert ProcessJobStateMachine is not None
+    assert ProcessJobStateTransition is not None
     assert Worker is not None
     assert WorkerHeartbeat is not None
     assert WorkerHeartbeatStore is not None
@@ -227,6 +256,7 @@ def test_required_imports() -> None:
     assert create_llm_chat_skill is not None
     assert create_propose_file_edit_skill is not None
     assert create_run_worker_once_skill is not None
+    assert create_run_scheduler_once_skill is not None
     assert create_summarize_pi_artifacts_skill is not None
     assert create_summarize_process_trace_skill is not None
     assert create_summarize_text_skill is not None
@@ -259,6 +289,9 @@ def test_required_imports() -> None:
     assert PIGGuidance is not None
     assert PIGGuidanceService is not None
     assert PIGReportService is not None
+    assert QueueConformanceIssue is not None
+    assert QueueConformanceReport is not None
+    assert PIGQueueConformanceService is not None
     assert PISubstrateInspection is not None
     assert PISubstrateInspector is not None
     assert ProcessRunReport is not None

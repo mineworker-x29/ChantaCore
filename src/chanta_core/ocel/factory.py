@@ -771,6 +771,84 @@ class OCELFactory:
                 )
         return self._record(event, objects, relations)
 
+    def scheduler_lifecycle_event(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        *,
+        event_activity: str,
+        schedule=None,
+        job_id: str | None = None,
+        status: str,
+        event_attrs: dict[str, Any] | None = None,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        attrs = {
+            "schedule_id": getattr(schedule, "schedule_id", None),
+            "schedule_name": getattr(schedule, "schedule_name", None),
+            "schedule_status": status,
+            "job_id": job_id,
+            **(event_attrs or {}),
+        }
+        event = self._event(
+            runtime_event_type=event_activity,
+            event_activity=event_activity,
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle=status,
+            event_attrs=attrs,
+        )
+        objects = self._base_objects(context, profile, timestamp)
+        relations = [
+            self._e2o(event, self._process_id(context), "process_context"),
+            self._e2o(event, self._session_id(context), "session_context"),
+            self._e2o(event, self._agent_id(profile), "acting_agent"),
+            *self._process_object_relations(context, profile),
+        ]
+        if schedule is not None:
+            schedule_object = OCELObject(
+                object_id=schedule.schedule_id,
+                object_type="process_schedule",
+                object_attrs={
+                    "object_key": schedule.schedule_id,
+                    "display_name": schedule.schedule_name,
+                    "schedule_name": schedule.schedule_name,
+                    "schedule_type": schedule.schedule_type,
+                    "status": schedule.status,
+                    "interval_seconds": schedule.interval_seconds,
+                    "run_at": schedule.run_at,
+                    "next_run_at": schedule.next_run_at,
+                    "last_run_at": schedule.last_run_at,
+                    "created_at": schedule.created_at,
+                    "updated_at": timestamp,
+                    **schedule.schedule_attrs,
+                },
+            )
+            objects.append(schedule_object)
+            relations.extend(
+                [
+                    self._e2o(event, schedule.schedule_id, "process_schedule"),
+                    self._o2o(schedule.schedule_id, self._agent_id(profile), "scheduled_for_agent"),
+                ]
+            )
+        if job_id:
+            job_object = OCELObject(
+                object_id=job_id,
+                object_type="process_job",
+                object_attrs={
+                    "object_key": job_id,
+                    "display_name": job_id,
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                },
+            )
+            objects.append(job_object)
+            relations.append(self._e2o(event, job_id, "process_job"))
+            if schedule is not None:
+                relations.append(self._o2o(schedule.schedule_id, job_id, "creates_process_job"))
+        return self._record(event, objects, relations)
+
     # Backward-compatible wrappers used by v0.3 scripts/tests.
     def user_request_received(self, context: ExecutionContext, profile: AgentProfile) -> OCELRecord:
         return self.receive_user_request(context, profile)

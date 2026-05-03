@@ -15,6 +15,7 @@ def test_builtin_tools_registered() -> None:
         "tool:ocpx",
         "tool:pig",
         "tool:repo",
+        "tool:scheduler",
         "tool:worker",
         "tool:workspace",
     ]

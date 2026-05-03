@@ -1,10 +1,12 @@
 from chanta_core.workers.errors import (
     ProcessJobClaimError,
     ProcessJobError,
+    ProcessJobInvalidTransitionError,
     ProcessJobNotFoundError,
     WorkerError,
     WorkerRunError,
 )
+from chanta_core.workers.fsm import ProcessJobStateMachine, ProcessJobStateTransition
 from chanta_core.workers.heartbeat import WorkerHeartbeat, WorkerHeartbeatStore
 from chanta_core.workers.job import ProcessJob, new_process_job_id
 from chanta_core.workers.queue import WorkerQueueService
@@ -15,6 +17,9 @@ __all__ = [
     "ProcessJob",
     "ProcessJobClaimError",
     "ProcessJobError",
+    "ProcessJobInvalidTransitionError",
+    "ProcessJobStateMachine",
+    "ProcessJobStateTransition",
     "ProcessJobNotFoundError",
     "ProcessJobStore",
     "Worker",

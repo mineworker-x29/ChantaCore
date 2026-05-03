@@ -4,6 +4,10 @@ from chanta_core.tools.builtin.ocel import create_ocel_tool, execute_ocel_tool
 from chanta_core.tools.builtin.ocpx import create_ocpx_tool, execute_ocpx_tool
 from chanta_core.tools.builtin.pig import create_pig_tool, execute_pig_tool
 from chanta_core.tools.builtin.repo import create_repo_tool, execute_repo_tool
+from chanta_core.tools.builtin.scheduler import (
+    create_scheduler_tool,
+    execute_scheduler_tool,
+)
 from chanta_core.tools.builtin.worker import create_worker_tool, execute_worker_tool
 from chanta_core.tools.builtin.workspace import (
     create_workspace_tool,
@@ -17,6 +21,7 @@ __all__ = [
     "create_ocpx_tool",
     "create_pig_tool",
     "create_repo_tool",
+    "create_scheduler_tool",
     "create_workspace_tool",
     "create_worker_tool",
     "execute_echo_tool",
@@ -25,6 +30,7 @@ __all__ = [
     "execute_ocpx_tool",
     "execute_pig_tool",
     "execute_repo_tool",
+    "execute_scheduler_tool",
     "execute_workspace_tool",
     "execute_worker_tool",
 ]

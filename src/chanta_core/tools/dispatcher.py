@@ -12,6 +12,7 @@ from chanta_core.tools.builtin import (
     execute_ocpx_tool,
     execute_pig_tool,
     execute_repo_tool,
+    execute_scheduler_tool,
     execute_worker_tool,
     execute_workspace_tool,
 )
@@ -48,8 +49,12 @@ class ToolDispatcher:
         patch_application_store=None,
         process_job_store=None,
         queue_service=None,
+        queue_conformance_service=None,
         worker_runner=None,
         worker_heartbeat_store=None,
+        process_schedule_store=None,
+        scheduler_service=None,
+        scheduler_runner=None,
     ) -> None:
         self.registry = registry or ToolRegistry()
         self.policy = policy or ToolPolicy()
@@ -71,8 +76,12 @@ class ToolDispatcher:
         self.patch_application_store = patch_application_store
         self.process_job_store = process_job_store
         self.queue_service = queue_service
+        self.queue_conformance_service = queue_conformance_service
         self.worker_runner = worker_runner
         self.worker_heartbeat_store = worker_heartbeat_store
+        self.process_schedule_store = process_schedule_store
+        self.scheduler_service = scheduler_service
+        self.scheduler_runner = scheduler_runner
         self._handlers: dict[str, Callable[..., ToolResult]] = {
             "tool:edit": execute_edit_tool,
             "tool:echo": execute_echo_tool,
@@ -80,6 +89,7 @@ class ToolDispatcher:
             "tool:ocpx": execute_ocpx_tool,
             "tool:pig": execute_pig_tool,
             "tool:repo": execute_repo_tool,
+            "tool:scheduler": execute_scheduler_tool,
             "tool:worker": execute_worker_tool,
             "tool:workspace": execute_workspace_tool,
         }
@@ -186,8 +196,12 @@ class ToolDispatcher:
                 patch_application_store=self.patch_application_store,
                 process_job_store=self.process_job_store,
                 queue_service=self.queue_service,
+                queue_conformance_service=self.queue_conformance_service,
                 worker_runner=self.worker_runner,
                 heartbeat_store=self.worker_heartbeat_store,
+                process_schedule_store=self.process_schedule_store,
+                scheduler_service=self.scheduler_service,
+                scheduler_runner=self.scheduler_runner,
                 trace_service=self.trace_service,
             )
         except Exception as error:
