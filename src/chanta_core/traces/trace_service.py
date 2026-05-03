@@ -178,6 +178,41 @@ class TraceService:
             record,
         )
 
+    def record_skill_decision(
+        self,
+        context: ExecutionContext,
+        skill: Skill,
+        *,
+        decision,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        decision_attrs = {
+            "selected_skill_id": decision.selected_skill_id,
+            "decision_mode": decision.decision_mode,
+            "applied_guidance_ids": decision.applied_guidance_ids,
+            "tie_break_used": bool(decision.decision_attrs.get("tie_break_used")),
+            "fallback_used": bool(decision.decision_attrs.get("fallback_used")),
+            "rationale": decision.rationale,
+            "advisory": True,
+            "hard_policy": False,
+        }
+        record = self.ocel_factory.decide_skill(
+            context,
+            profile,
+            skill,
+            decision_attrs=decision_attrs,
+        )
+        return self._record(
+            context,
+            "skill_decision_recorded",
+            {
+                "process_instance_id": context.metadata.get("process_instance_id"),
+                **decision_attrs,
+            },
+            record,
+        )
+
     def record_skill_executed(
         self,
         context: ExecutionContext,

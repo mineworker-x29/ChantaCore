@@ -5,8 +5,10 @@ from typing import Any
 
 from chanta_core.skills.builtin import (
     execute_echo_skill,
+    execute_ingest_human_pi_skill,
     execute_inspect_ocel_recent_skill,
     execute_llm_chat_skill,
+    execute_summarize_pi_artifacts_skill,
     execute_summarize_process_trace_skill,
     execute_summarize_text_skill,
 )
@@ -43,8 +45,10 @@ class SkillExecutor:
         self._handlers = {
             "skill:llm_chat": execute_llm_chat_skill,
             "skill:echo": execute_echo_skill,
+            "skill:ingest_human_pi": execute_ingest_human_pi_skill,
             "skill:summarize_text": execute_summarize_text_skill,
             "skill:inspect_ocel_recent": execute_inspect_ocel_recent_skill,
+            "skill:summarize_pi_artifacts": execute_summarize_pi_artifacts_skill,
             "skill:summarize_process_trace": execute_summarize_process_trace_skill,
         }
 

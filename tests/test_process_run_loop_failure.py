@@ -63,6 +63,7 @@ def test_process_run_loop_failure_records_ocel_error_shape(tmp_path) -> None:
     assert activities == [
         "start_process_run_loop",
         "decide_next_activity",
+        "decide_skill",
         "select_skill",
         "execute_skill",
         "assemble_context",

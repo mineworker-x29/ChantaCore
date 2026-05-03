@@ -51,8 +51,10 @@ def test_registry_registers_all_builtin_skills() -> None:
     assert PIGFeedbackService is not None
     assert [skill.skill_id for skill in registry.list_skills()] == [
         "skill:echo",
+        "skill:ingest_human_pi",
         "skill:inspect_ocel_recent",
         "skill:llm_chat",
+        "skill:summarize_pi_artifacts",
         "skill:summarize_process_trace",
         "skill:summarize_text",
     ]

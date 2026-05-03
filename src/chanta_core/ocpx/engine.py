@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from chanta_core.ocpx.models import OCPXEventView, OCPXProcessView
+from chanta_core.ocpx.variant import OCPXVariantSummary
 
 
 class OCPXEngine:
@@ -74,6 +75,73 @@ class OCPXEngine:
             "event_count": len(activity_sequence),
         }
 
+    def compute_variant_summary(self, view: OCPXProcessView) -> OCPXVariantSummary:
+        activity_sequence = self.activity_sequence(view)
+        activity_set = set(activity_sequence)
+        failure_count = (
+            1
+            if "fail_process_instance" in activity_set
+            or "fail_skill_execution" in activity_set
+            else 0
+        )
+        success_count = (
+            1
+            if "complete_process_instance" in activity_set
+            and "fail_process_instance" not in activity_set
+            else 0
+        )
+        return OCPXVariantSummary(
+            variant_key=">".join(activity_sequence),
+            activity_sequence=activity_sequence,
+            trace_count=1,
+            success_count=success_count,
+            failure_count=failure_count,
+            skill_ids=self._extract_skill_ids(view),
+            example_process_instance_ids=self._extract_process_instance_ids(view)[:5],
+            variant_attrs={"source_view_id": view.view_id, "source": view.source},
+        )
+
+    def compute_variant_summaries(
+        self,
+        views: list[OCPXProcessView],
+    ) -> list[OCPXVariantSummary]:
+        grouped: dict[str, dict[str, Any]] = {}
+        for view in views:
+            summary = self.compute_variant_summary(view)
+            item = grouped.setdefault(
+                summary.variant_key,
+                {
+                    "activity_sequence": summary.activity_sequence,
+                    "trace_count": 0,
+                    "success_count": 0,
+                    "failure_count": 0,
+                    "skill_ids": set(),
+                    "example_process_instance_ids": [],
+                },
+            )
+            item["trace_count"] += summary.trace_count
+            item["success_count"] += summary.success_count
+            item["failure_count"] += summary.failure_count
+            item["skill_ids"].update(summary.skill_ids)
+            for process_instance_id in summary.example_process_instance_ids:
+                if process_instance_id not in item["example_process_instance_ids"]:
+                    item["example_process_instance_ids"].append(process_instance_id)
+
+        summaries = [
+            OCPXVariantSummary(
+                variant_key=variant_key,
+                activity_sequence=list(item["activity_sequence"]),
+                trace_count=int(item["trace_count"]),
+                success_count=int(item["success_count"]),
+                failure_count=int(item["failure_count"]),
+                skill_ids=sorted(item["skill_ids"]),
+                example_process_instance_ids=item["example_process_instance_ids"][:5],
+                variant_attrs={"grouped": True},
+            )
+            for variant_key, item in grouped.items()
+        ]
+        return sorted(summaries, key=lambda item: item.variant_key)
+
     def compute_basic_performance(self, view: OCPXProcessView) -> dict[str, Any]:
         ordered_events = self._events_in_timestamp_order(view)
         start_timestamp = ordered_events[0].event_timestamp if ordered_events else None
@@ -116,6 +184,7 @@ class OCPXEngine:
             "object_type_counts": self.count_objects_by_type(view),
             "relation_coverage": self.compute_relation_coverage(view),
             "basic_variant": self.compute_basic_variant(view),
+            "variant_summary": self.compute_variant_summary(view).to_dict(),
             "performance_summary": self.compute_basic_performance(view),
         }
 
@@ -155,3 +224,32 @@ class OCPXEngine:
             return datetime.fromisoformat(normalized)
         except ValueError:
             return None
+
+    @staticmethod
+    def _extract_skill_ids(view: OCPXProcessView) -> list[str]:
+        skill_ids = {
+            item.object_id
+            for item in view.objects
+            if item.object_type == "skill"
+        }
+        skill_ids.update(
+            str(event.event_attrs["skill_id"])
+            for event in view.events
+            if event.event_attrs.get("skill_id")
+        )
+        return sorted(skill_ids)
+
+    @staticmethod
+    def _extract_process_instance_ids(view: OCPXProcessView) -> list[str]:
+        process_instance_ids = [
+            item.object_id
+            for item in view.objects
+            if item.object_type == "process_instance"
+        ]
+        if not process_instance_ids:
+            process_instance_ids = [
+                str(event.event_attrs["process_instance_id"])
+                for event in view.events
+                if event.event_attrs.get("process_instance_id")
+            ]
+        return sorted(dict.fromkeys(process_instance_ids))

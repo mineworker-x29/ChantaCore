@@ -57,6 +57,7 @@ def test_process_run_loop_records_skill_and_process_failure(tmp_path) -> None:
     assert activities == [
         "start_process_run_loop",
         "decide_next_activity",
+        "decide_skill",
         "select_skill",
         "execute_skill",
         "assemble_context",

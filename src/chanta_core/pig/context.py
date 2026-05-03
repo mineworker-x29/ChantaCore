@@ -20,6 +20,7 @@ class PIGContext:
     diagnostics: list[dict[str, Any]]
     recommendations: list[dict[str, Any]]
     context_text: str
+    pi_artifacts: list[dict[str, Any]] = field(default_factory=list)
     context_attrs: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -38,5 +39,6 @@ class PIGContext:
             "diagnostics": self.diagnostics,
             "recommendations": self.recommendations,
             "context_text": self.context_text,
+            "pi_artifacts": self.pi_artifacts,
             "context_attrs": self.context_attrs,
         }

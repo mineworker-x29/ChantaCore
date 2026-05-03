@@ -240,6 +240,37 @@ class OCELFactory:
             ],
         )
 
+    def decide_skill(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        skill: Skill,
+        *,
+        decision_attrs: dict[str, Any],
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        event = self._event(
+            runtime_event_type="skill_decided",
+            event_activity="decide_skill",
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle="decided",
+            event_attrs=decision_attrs,
+        )
+        return self._record(
+            event=event,
+            objects=self._base_objects(context, profile, timestamp)
+            + [self._skill_object(skill, timestamp)],
+            relations=[
+                self._e2o(event, self._process_id(context), "process_context"),
+                self._e2o(event, skill.skill_id, "selected_skill"),
+                self._e2o(event, self._session_id(context), "session_context"),
+                self._e2o(event, self._agent_id(profile), "acting_agent"),
+                *self._process_object_relations(context, profile),
+            ],
+        )
+
     def execute_skill(
         self,
         context: ExecutionContext,

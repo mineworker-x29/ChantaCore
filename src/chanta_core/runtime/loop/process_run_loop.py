@@ -6,6 +6,10 @@ from chanta_core.llm.client import LLMClient
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.pig.context import PIGContext
 from chanta_core.pig.feedback import PIGFeedbackService
+from chanta_core.pig.guidance import PIGGuidance, PIGGuidanceService
+from chanta_core.runtime.decision.context import DecisionContext
+from chanta_core.runtime.decision.decision import ProcessDecision
+from chanta_core.runtime.decision.service import DecisionService
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.loop.context import ProcessContextAssembler
 from chanta_core.runtime.loop.decider import ProcessActivityDecider
@@ -35,6 +39,8 @@ class ProcessRunLoop:
         agent_profile: AgentProfile | None = None,
         skill_executor: SkillExecutor | None = None,
         pig_feedback_service: PIGFeedbackService | None = None,
+        pig_guidance_service: PIGGuidanceService | None = None,
+        decision_service: DecisionService | None = None,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.trace_service = trace_service or TraceService()
@@ -50,6 +56,8 @@ class ProcessRunLoop:
             trace_service=self.trace_service,
         )
         self.pig_feedback_service = pig_feedback_service
+        self.pig_guidance_service = pig_guidance_service
+        self.decision_service = decision_service
         self.events: list[AgentEvent] = []
 
     def run(
@@ -106,12 +114,30 @@ class ProcessRunLoop:
                 if next_activity != "execute_skill":
                     break
 
-                skill = (
-                    self.skill_registry.require(skill_id)
-                    if skill_id
-                    else self.skill_registry.get_builtin_llm_chat()
+                pig_guidance = self._build_pig_guidance_if_enabled(
+                    state=state,
+                    process_instance_id=process_instance_id,
+                    session_id=session_id,
                 )
+                decision = self._decide_skill(
+                    process_instance_id=process_instance_id,
+                    session_id=session_id,
+                    agent_id=agent_id,
+                    user_input=user_input,
+                    explicit_skill_id=skill_id,
+                    pig_guidance=pig_guidance,
+                )
+                skill = self.skill_registry.require(decision.selected_skill_id)
                 state.selected_skill_id = skill.skill_id
+                self._record_decision_attrs(state, decision)
+                self._append_event(
+                    self.trace_service.record_skill_decision(
+                        context,
+                        skill,
+                        decision=decision,
+                        profile=self.agent_profile,
+                    )
+                )
                 self._append_event(
                     self.trace_service.record_skill_selected(
                         context,
@@ -211,6 +237,7 @@ class ProcessRunLoop:
                             **self.evaluator.evaluate(state),
                             "iteration_count": state.iteration,
                             "selected_skill_id": state.selected_skill_id,
+                            **self._decision_result_attrs(state),
                             **self._pig_result_attrs(state),
                             "error": skill_result.error,
                             "exception_type": exception_type,
@@ -259,6 +286,7 @@ class ProcessRunLoop:
                     **self.evaluator.evaluate(state),
                     "iteration_count": state.iteration,
                     "selected_skill_id": state.selected_skill_id,
+                    **self._decision_result_attrs(state),
                     **self._pig_result_attrs(state),
                 },
             )
@@ -306,6 +334,7 @@ class ProcessRunLoop:
                     **self.evaluator.evaluate(state),
                     "iteration_count": state.iteration,
                     "selected_skill_id": state.selected_skill_id,
+                    **self._decision_result_attrs(state),
                     **self._pig_result_attrs(state),
                     "error": str(error),
                     "exception_type": type(error).__name__,
@@ -315,6 +344,93 @@ class ProcessRunLoop:
 
     def _append_event(self, event: AgentEvent) -> None:
         self.events.append(event)
+
+    def _decide_skill(
+        self,
+        *,
+        process_instance_id: str,
+        session_id: str,
+        agent_id: str,
+        user_input: str,
+        explicit_skill_id: str | None,
+        pig_guidance: list[PIGGuidance],
+    ) -> ProcessDecision:
+        if explicit_skill_id:
+            self.skill_registry.require(explicit_skill_id)
+        available_skill_ids = [skill.skill_id for skill in self.skill_registry.list_skills()]
+        if not self.policy.use_decision_service:
+            selected_skill_id = explicit_skill_id or "skill:llm_chat"
+            return ProcessDecision(
+                selected_skill_id=selected_skill_id,
+                decision_mode="explicit" if explicit_skill_id else "fallback",
+                base_scores={skill_id: 0.0 for skill_id in available_skill_ids},
+                final_scores={skill_id: 0.0 for skill_id in available_skill_ids},
+                applied_guidance_ids=[],
+                rationale=(
+                    "Explicit skill_id was provided."
+                    if explicit_skill_id
+                    else "Decision service disabled; using safe LLM chat fallback."
+                ),
+                evidence_refs=[],
+                decision_attrs={"advisory": True, "hard_policy": False},
+            )
+        service = self.decision_service or DecisionService(
+            skill_registry=self.skill_registry,
+        )
+        return service.decide_skill(
+            DecisionContext(
+                process_instance_id=process_instance_id,
+                session_id=session_id,
+                agent_id=agent_id,
+                user_input=user_input,
+                available_skill_ids=available_skill_ids,
+                explicit_skill_id=explicit_skill_id,
+                pig_guidance=pig_guidance,
+                context_attrs={"policy_use_pig_guidance": self.policy.use_pig_guidance},
+            )
+        )
+
+    def _build_pig_guidance_if_enabled(
+        self,
+        *,
+        state: ProcessRunState,
+        process_instance_id: str,
+        session_id: str,
+    ) -> list[PIGGuidance]:
+        if not self.policy.use_pig_guidance:
+            return []
+        try:
+            service = self.pig_guidance_service or PIGGuidanceService(
+                feedback_service=self.pig_feedback_service
+                or PIGFeedbackService(
+                    ocpx_loader=OCPXLoader(
+                        store=getattr(self.trace_service, "ocel_store", None)
+                    )
+                )
+            )
+            if self.policy.guidance_scope == "process_instance":
+                guidance = service.build_process_instance_guidance(process_instance_id)
+            elif self.policy.guidance_scope == "session":
+                context = service.feedback_service.build_session_context(session_id)
+                guidance = service.build_from_context(context)
+            else:
+                guidance = service.build_recent_guidance()
+            state.state_attrs["pig_guidance_count"] = len(guidance)
+            return guidance
+        except Exception as error:
+            state.state_attrs["pig_guidance_warning"] = str(error)
+            return []
+
+    @staticmethod
+    def _record_decision_attrs(
+        state: ProcessRunState,
+        decision: ProcessDecision,
+    ) -> None:
+        state.state_attrs["decision_mode"] = decision.decision_mode
+        state.state_attrs["applied_guidance_ids"] = decision.applied_guidance_ids
+        state.state_attrs["decision_final_scores"] = decision.final_scores
+        state.state_attrs["decision_rationale"] = decision.rationale
+        state.state_attrs["decision_attrs"] = decision.decision_attrs
 
     def _build_pig_context_if_enabled(
         self,
@@ -354,4 +470,23 @@ class ProcessRunLoop:
             result["pig_context_scope"] = state.state_attrs["pig_context_scope"]
         if state.state_attrs.get("pig_context_warning"):
             result["pig_context_warning"] = state.state_attrs["pig_context_warning"]
+        return result
+
+    @staticmethod
+    def _decision_result_attrs(state: ProcessRunState) -> dict[str, object]:
+        result: dict[str, object] = {}
+        if state.state_attrs.get("decision_mode"):
+            result["decision_mode"] = state.state_attrs["decision_mode"]
+        if "applied_guidance_ids" in state.state_attrs:
+            result["applied_guidance_ids"] = state.state_attrs["applied_guidance_ids"]
+        if "decision_final_scores" in state.state_attrs:
+            result["decision_final_scores"] = state.state_attrs["decision_final_scores"]
+        if state.state_attrs.get("decision_rationale"):
+            result["decision_rationale"] = state.state_attrs["decision_rationale"]
+        if state.state_attrs.get("decision_attrs"):
+            result["decision_attrs"] = state.state_attrs["decision_attrs"]
+        if "pig_guidance_count" in state.state_attrs:
+            result["pig_guidance_count"] = state.state_attrs["pig_guidance_count"]
+        if state.state_attrs.get("pig_guidance_warning"):
+            result["pig_guidance_warning"] = state.state_attrs["pig_guidance_warning"]
         return result

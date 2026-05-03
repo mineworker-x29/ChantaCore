@@ -14,6 +14,9 @@ class ProcessRunPolicy:
     raise_on_failure: bool = True
     include_pig_context: bool = False
     pig_context_scope: Literal["recent", "process_instance", "session"] = "recent"
+    use_decision_service: bool = True
+    use_pig_guidance: bool = False
+    guidance_scope: Literal["recent", "process_instance", "session"] = "recent"
 
     def should_continue(self, state: ProcessRunState) -> bool:
         return state.status == "running" and state.iteration < state.max_iterations
