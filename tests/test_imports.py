@@ -32,8 +32,10 @@ from chanta_core.pig.context import PIGContext
 from chanta_core.pig.evidence import PIEvidenceRef
 from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.pig.guidance import PIGGuidance, PIGGuidanceService
+from chanta_core.pig.inspector import PISubstrateInspection, PISubstrateInspector
 from chanta_core.pig.models import PIGGraph
 from chanta_core.pig.recommendations import PIGRecommendationService
+from chanta_core.pig.reports import ProcessRunReport, PIGReportService
 from chanta_core.pig.service import PIGService
 from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.agent_runtime import AgentRuntime
@@ -72,6 +74,20 @@ from chanta_core.skills.executor import SkillExecutionPolicy, SkillExecutor
 from chanta_core.skills.registry import SkillRegistry
 from chanta_core.skills.result import SkillExecutionResult
 from chanta_core.skills.skill import Skill
+from chanta_core.tools import (
+    Tool,
+    ToolAuthorization,
+    ToolAuthorizationError,
+    ToolDispatchError,
+    ToolDispatcher,
+    ToolExecutionContext,
+    ToolPolicy,
+    ToolRegistry,
+    ToolRegistryError,
+    ToolRequest,
+    ToolResult,
+    ToolValidationError,
+)
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
 from chanta_core.utility.time import utc_now_iso
@@ -102,6 +118,18 @@ def test_required_imports() -> None:
     assert SkillRegistryError is not None
     assert SkillValidationError is not None
     assert SkillRegistry is not None
+    assert Tool is not None
+    assert ToolAuthorization is not None
+    assert ToolAuthorizationError is not None
+    assert ToolDispatchError is not None
+    assert ToolDispatcher is not None
+    assert ToolExecutionContext is not None
+    assert ToolPolicy is not None
+    assert ToolRegistry is not None
+    assert ToolRegistryError is not None
+    assert ToolRequest is not None
+    assert ToolResult is not None
+    assert ToolValidationError is not None
     assert builtin_llm_chat_skill is not None
     assert create_check_self_conformance_skill is not None
     assert create_echo_skill is not None
@@ -139,6 +167,10 @@ def test_required_imports() -> None:
     assert PIGFeedbackService is not None
     assert PIGGuidance is not None
     assert PIGGuidanceService is not None
+    assert PIGReportService is not None
+    assert PISubstrateInspection is not None
+    assert PISubstrateInspector is not None
+    assert ProcessRunReport is not None
     assert PIArtifact is not None
     assert PIArtifactStore is not None
     assert PIEvidenceRef is not None

@@ -260,6 +260,59 @@ class TraceService:
             record,
         )
 
+    def record_tool_lifecycle_event(
+        self,
+        *,
+        tool,
+        request,
+        context,
+        event_activity: str,
+        result=None,
+        authorization: dict[str, Any] | None = None,
+        error: str | None = None,
+        profile: AgentProfile | None = None,
+    ) -> AgentEvent:
+        profile = self._profile(profile)
+        execution_context = ExecutionContext.create(
+            agent_id=context.agent_id,
+            user_input=f"{request.tool_id}:{request.operation}",
+            session_id=context.session_id,
+            metadata={"process_instance_id": context.process_instance_id},
+        )
+        lifecycle = {
+            "create_tool_request": "created",
+            "authorize_tool_request": "authorized",
+            "dispatch_tool": "dispatched",
+            "execute_tool_operation": "executed",
+            "complete_tool_operation": "completed",
+            "fail_tool_operation": "failed",
+            "observe_tool_result": "observed",
+        }.get(event_activity, "recorded")
+        record = self.ocel_factory.tool_lifecycle_event(
+            execution_context,
+            profile,
+            event_activity=event_activity,
+            lifecycle=lifecycle,
+            tool=tool,
+            request=request,
+            result=result,
+            authorization=authorization,
+            error_message=error,
+        )
+        payload: dict[str, Any] = {
+            "tool_id": tool.tool_id,
+            "tool_name": tool.tool_name,
+            "tool_request_id": request.tool_request_id,
+            "operation": request.operation,
+            "authorization": authorization or {},
+        }
+        if result is not None:
+            payload["tool_result_id"] = result.tool_result_id
+            payload["success"] = result.success
+        if error:
+            payload["error"] = error
+        return self._record(execution_context, event_activity, payload, record)
+
     def record_llm_call_started(
         self,
         context: ExecutionContext,

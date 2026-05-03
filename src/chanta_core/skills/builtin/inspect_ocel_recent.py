@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from chanta_core.ocel.store import OCELStore
-from chanta_core.ocel.validators import OCELValidator
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.result import SkillExecutionResult
 from chanta_core.skills.skill import Skill
+from chanta_core.tools.context import ToolExecutionContext
+from chanta_core.tools.dispatcher import ToolDispatcher
+from chanta_core.tools.request import ToolRequest
 
 
 def create_inspect_ocel_recent_skill() -> Skill:
@@ -33,17 +35,41 @@ def execute_inspect_ocel_recent_skill(
     skill: Skill,
     context: SkillExecutionContext,
     ocel_store: OCELStore | None = None,
+    trace_service=None,
     **_,
 ) -> SkillExecutionResult:
     store = ocel_store or OCELStore()
     limit = int(context.context_attrs.get("limit", 10))
-    recent_events = store.fetch_recent_events(limit=limit)
-    duplicate_validation = OCELValidator(store).validate_duplicate_relations()
+    dispatcher = ToolDispatcher(trace_service=trace_service, ocel_store=store)
+    tool_context = ToolExecutionContext(
+        process_instance_id=context.process_instance_id,
+        session_id=context.session_id,
+        agent_id=context.agent_id,
+        context_attrs=context.context_attrs,
+    )
+    recent_result = _dispatch_ocel(
+        dispatcher,
+        tool_context,
+        context,
+        skill.skill_id,
+        "query_recent_events",
+        {"limit": limit},
+    )
+    events_result = _dispatch_ocel(dispatcher, tool_context, context, skill.skill_id, "count_events")
+    objects_result = _dispatch_ocel(dispatcher, tool_context, context, skill.skill_id, "count_objects")
+    relations_result = _dispatch_ocel(dispatcher, tool_context, context, skill.skill_id, "count_relations")
+    validation_result = _dispatch_ocel(dispatcher, tool_context, context, skill.skill_id, "validate_relations")
+    recent_events = list(recent_result.output_attrs.get("recent_events") or [])
+    duplicate_validation = dict(validation_result.output_attrs.get("validation") or {})
     recent_activities = [str(event["event_activity"]) for event in recent_events]
-    event_count = store.fetch_event_count()
-    object_count = store.fetch_object_count()
-    event_object_relation_count = store.fetch_event_object_relation_count()
-    object_object_relation_count = store.fetch_object_object_relation_count()
+    event_count = int(events_result.output_attrs.get("event_count") or 0)
+    object_count = int(objects_result.output_attrs.get("object_count") or 0)
+    event_object_relation_count = int(
+        relations_result.output_attrs.get("event_object_relation_count") or 0
+    )
+    object_object_relation_count = int(
+        relations_result.output_attrs.get("object_object_relation_count") or 0
+    )
     output_text = (
         "OCEL recent inspection: "
         f"{event_count} events, {object_count} objects, "
@@ -63,5 +89,37 @@ def execute_inspect_ocel_recent_skill(
             "object_object_relation_count": object_object_relation_count,
             "recent_event_activities": recent_activities,
             "duplicate_relations_valid": bool(duplicate_validation.get("valid")),
+            "tool_results": [
+                recent_result.to_dict(),
+                events_result.to_dict(),
+                objects_result.to_dict(),
+                relations_result.to_dict(),
+                validation_result.to_dict(),
+            ],
         },
     )
+
+
+def _dispatch_ocel(
+    dispatcher: ToolDispatcher,
+    tool_context: ToolExecutionContext,
+    context: SkillExecutionContext,
+    skill_id: str,
+    operation: str,
+    input_attrs: dict | None = None,
+):
+    result = dispatcher.dispatch(
+        ToolRequest.create(
+            tool_id="tool:ocel",
+            operation=operation,
+            process_instance_id=context.process_instance_id,
+            session_id=context.session_id,
+            agent_id=context.agent_id,
+            input_attrs=input_attrs or {},
+            request_attrs={"source_skill_id": skill_id},
+        ),
+        tool_context,
+    )
+    if not result.success:
+        raise RuntimeError(result.error or f"tool:ocel {operation} failed")
+    return result

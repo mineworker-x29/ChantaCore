@@ -11,6 +11,7 @@ from chanta_core.pig.context import PIGContext
 from chanta_core.pig.evidence import PIEvidenceRef
 from chanta_core.pig.feedback import PIGFeedbackService
 from chanta_core.pig.guidance import PIGGuidance, PIGGuidanceService
+from chanta_core.pig.inspector import PISubstrateInspection, PISubstrateInspector
 from chanta_core.pig.models import (
     PIGDiagnostic,
     PIGEdge,
@@ -18,6 +19,7 @@ from chanta_core.pig.models import (
     PIGNode,
     PIGRecommendation,
 )
+from chanta_core.pig.reports import ProcessRunReport, PIGReportService
 from chanta_core.pig.service import PIGService
 
 __all__ = [
@@ -37,6 +39,10 @@ __all__ = [
     "PIGFeedbackService",
     "PIGGuidance",
     "PIGGuidanceService",
+    "PIGReportService",
     "PIGRecommendation",
     "PIGService",
+    "PISubstrateInspection",
+    "PISubstrateInspector",
+    "ProcessRunReport",
 ]

@@ -40,6 +40,34 @@ class PIGService:
             process_instance_id,
         ).to_dict()
 
+    def report_recent(self, limit: int = 50) -> dict[str, Any]:
+        from chanta_core.pig.reports import PIGReportService
+
+        return PIGReportService(ocpx_loader=self.loader).build_recent_report(
+            limit=limit,
+        ).to_dict()
+
+    def report_process_instance(self, process_instance_id: str) -> dict[str, Any]:
+        from chanta_core.pig.reports import PIGReportService
+
+        return PIGReportService(ocpx_loader=self.loader).build_process_instance_report(
+            process_instance_id,
+        ).to_dict()
+
+    def report_session(self, session_id: str) -> dict[str, Any]:
+        from chanta_core.pig.reports import PIGReportService
+
+        return PIGReportService(ocpx_loader=self.loader).build_session_report(
+            session_id,
+        ).to_dict()
+
+    def inspect_substrate(self, limit: int = 50) -> dict[str, Any]:
+        from chanta_core.pig.inspector import PISubstrateInspector
+
+        return PISubstrateInspector(ocpx_loader=self.loader).inspect(
+            limit=limit,
+        ).to_dict()
+
     def _analyze_view(self, view) -> dict[str, Any]:
         graph = self.builder.build_from_ocpx_view(view)
         guide = self.builder.build_guide_from_view(view)

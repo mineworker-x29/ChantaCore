@@ -575,6 +575,102 @@ class OCELFactory:
             ],
         )
 
+    def tool_lifecycle_event(
+        self,
+        context: ExecutionContext,
+        profile: AgentProfile,
+        *,
+        event_activity: str,
+        lifecycle: str,
+        tool,
+        request,
+        result=None,
+        authorization: dict[str, Any] | None = None,
+        error_message: str | None = None,
+    ) -> OCELRecord:
+        timestamp = utc_now_iso()
+        event_attrs: dict[str, Any] = {
+            "tool_id": tool.tool_id,
+            "tool_name": tool.tool_name,
+            "operation": request.operation,
+            "tool_request_id": request.tool_request_id,
+            "authorization": authorization or {},
+        }
+        if result is not None:
+            event_attrs.update(
+                {
+                    "tool_result_id": result.tool_result_id,
+                    "tool_success": result.success,
+                    "tool_error": result.error,
+                }
+            )
+        if error_message:
+            event_attrs["error_message"] = error_message
+
+        event = self._event(
+            runtime_event_type=event_activity,
+            event_activity=event_activity,
+            context=context,
+            profile=profile,
+            timestamp=timestamp,
+            lifecycle=lifecycle,
+            event_attrs=event_attrs,
+        )
+        tool_object = self._tool_object(tool, timestamp)
+        request_object = self._tool_request_object(request, timestamp)
+        objects = self._base_objects(context, profile, timestamp) + [
+            tool_object,
+            request_object,
+        ]
+        relations = [
+            self._e2o(event, self._process_id(context), "process_context"),
+            self._e2o(event, tool.tool_id, "requested_tool"),
+            self._e2o(event, request.tool_request_id, "tool_request"),
+            self._e2o(event, self._session_id(context), "session_context"),
+            self._e2o(event, self._agent_id(profile), "acting_agent"),
+            *self._process_object_relations(context, profile),
+            self._o2o(request.tool_request_id, tool.tool_id, "requests_tool"),
+        ]
+        if event_activity in {
+            "dispatch_tool",
+            "execute_tool_operation",
+            "complete_tool_operation",
+            "fail_tool_operation",
+            "observe_tool_result",
+        }:
+            relations.append(self._e2o(event, tool.tool_id, "executed_tool"))
+        if result is not None:
+            result_object = self._tool_result_object(result, timestamp)
+            objects.append(result_object)
+            relations.extend(
+                [
+                    self._e2o(event, result.tool_result_id, "tool_result"),
+                    self._o2o(
+                        result.tool_result_id,
+                        request.tool_request_id,
+                        "result_of_tool_request",
+                    ),
+                ]
+            )
+        if error_message:
+            error_object = self._tool_error_object(
+                request=request,
+                error_message=error_message,
+                timestamp=timestamp,
+            )
+            objects.append(error_object)
+            relations.extend(
+                [
+                    self._e2o(event, error_object.object_id, "observed_error"),
+                    self._o2o(
+                        error_object.object_id,
+                        request.tool_request_id,
+                        "error_from_tool_execution",
+                    ),
+                ]
+            )
+        return self._record(event, objects, relations)
+
     # Backward-compatible wrappers used by v0.3 scripts/tests.
     def user_request_received(self, context: ExecutionContext, profile: AgentProfile) -> OCELRecord:
         return self.receive_user_request(context, profile)
@@ -750,6 +846,86 @@ class OCELFactory:
                 "created_at": timestamp,
                 "updated_at": timestamp,
                 **skill.skill_attrs,
+            },
+        )
+
+    def _tool_object(self, tool, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=tool.tool_id,
+            object_type="tool",
+            object_attrs={
+                "object_key": tool.tool_id,
+                "display_name": tool.tool_name,
+                "tool_name": tool.tool_name,
+                "description": tool.description,
+                "tool_kind": tool.tool_kind,
+                "safety_level": tool.safety_level,
+                "supported_operations": tool.supported_operations,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+                **tool.tool_attrs,
+            },
+        )
+
+    def _tool_request_object(self, request, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=request.tool_request_id,
+            object_type="tool_request",
+            object_attrs={
+                "object_key": request.tool_request_id,
+                "display_name": "Tool request",
+                "tool_id": request.tool_id,
+                "operation": request.operation,
+                "process_instance_id": request.process_instance_id,
+                "session_id": request.session_id,
+                "agent_id": request.agent_id,
+                "input_attrs": request.input_attrs,
+                "request_attrs": request.request_attrs,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+
+    def _tool_result_object(self, result, timestamp: str) -> OCELObject:
+        return OCELObject(
+            object_id=result.tool_result_id,
+            object_type="tool_result",
+            object_attrs={
+                "object_key": result.tool_result_id,
+                "display_name": "Tool result",
+                "tool_request_id": result.tool_request_id,
+                "tool_id": result.tool_id,
+                "operation": result.operation,
+                "success": result.success,
+                "output_text": result.output_text,
+                "output_attrs": result.output_attrs,
+                "error": result.error,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+
+    def _tool_error_object(
+        self,
+        *,
+        request,
+        error_message: str,
+        timestamp: str,
+    ) -> OCELObject:
+        error_id = new_object_id("error")
+        return OCELObject(
+            object_id=error_id,
+            object_type="error",
+            object_attrs={
+                "object_key": "ToolDispatchError",
+                "display_name": "Tool dispatch error",
+                "error_message": error_message,
+                "error_type": "ToolDispatchError",
+                "tool_id": request.tool_id,
+                "operation": request.operation,
+                "tool_request_id": request.tool_request_id,
+                "created_at": timestamp,
+                "updated_at": timestamp,
             },
         )
 

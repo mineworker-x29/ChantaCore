@@ -3,6 +3,9 @@ from __future__ import annotations
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.result import SkillExecutionResult
 from chanta_core.skills.skill import Skill
+from chanta_core.tools.context import ToolExecutionContext
+from chanta_core.tools.dispatcher import ToolDispatcher
+from chanta_core.tools.request import ToolRequest
 
 
 def create_echo_skill() -> Skill:
@@ -26,16 +29,39 @@ def execute_echo_skill(
     *,
     skill: Skill,
     context: SkillExecutionContext,
+    trace_service=None,
+    ocel_store=None,
     **_,
 ) -> SkillExecutionResult:
+    tool_result = ToolDispatcher(
+        trace_service=trace_service,
+        ocel_store=ocel_store,
+    ).dispatch(
+        ToolRequest.create(
+            tool_id="tool:echo",
+            operation="echo",
+            process_instance_id=context.process_instance_id,
+            session_id=context.session_id,
+            agent_id=context.agent_id,
+            input_attrs={"text": context.user_input},
+            request_attrs={"source_skill_id": skill.skill_id},
+        ),
+        ToolExecutionContext(
+            process_instance_id=context.process_instance_id,
+            session_id=context.session_id,
+            agent_id=context.agent_id,
+            context_attrs=context.context_attrs,
+        ),
+    )
     return SkillExecutionResult(
         skill_id=skill.skill_id,
         skill_name=skill.skill_name,
-        success=True,
-        output_text=context.user_input,
+        success=tool_result.success,
+        output_text=tool_result.output_text,
         output_attrs={
             "execution_type": skill.execution_type,
-            "echoed": True,
-            "response_length": len(context.user_input),
+            **tool_result.output_attrs,
+            "tool_result": tool_result.to_dict(),
         },
+        error=tool_result.error,
     )
