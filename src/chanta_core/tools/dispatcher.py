@@ -10,6 +10,7 @@ from chanta_core.tools.builtin import (
     execute_ocel_tool,
     execute_ocpx_tool,
     execute_pig_tool,
+    execute_workspace_tool,
 )
 from chanta_core.tools.context import ToolExecutionContext
 from chanta_core.tools.errors import ToolDispatchError
@@ -34,6 +35,7 @@ class ToolDispatcher:
         pig_guidance_service=None,
         pig_conformance_service=None,
         artifact_store=None,
+        workspace_inspector=None,
     ) -> None:
         self.registry = registry or ToolRegistry()
         self.policy = policy or ToolPolicy()
@@ -45,11 +47,13 @@ class ToolDispatcher:
         self.pig_guidance_service = pig_guidance_service
         self.pig_conformance_service = pig_conformance_service
         self.artifact_store = artifact_store
+        self.workspace_inspector = workspace_inspector
         self._handlers: dict[str, Callable[..., ToolResult]] = {
             "tool:echo": execute_echo_tool,
             "tool:ocel": execute_ocel_tool,
             "tool:ocpx": execute_ocpx_tool,
             "tool:pig": execute_pig_tool,
+            "tool:workspace": execute_workspace_tool,
         }
 
     def dispatch(
@@ -112,6 +116,7 @@ class ToolDispatcher:
                 pig_guidance_service=self.pig_guidance_service,
                 pig_conformance_service=self.pig_conformance_service,
                 artifact_store=self.artifact_store,
+                workspace_inspector=self.workspace_inspector,
             )
         except Exception as error:
             return self._failure(

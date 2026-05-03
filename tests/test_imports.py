@@ -88,9 +88,19 @@ from chanta_core.tools import (
     ToolResult,
     ToolValidationError,
 )
+from chanta_core.tools.builtin.workspace import (
+    create_workspace_tool,
+    execute_workspace_tool,
+)
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
 from chanta_core.utility.time import utc_now_iso
+from chanta_core.workspace import (
+    WorkspaceAccessError,
+    WorkspaceConfig,
+    WorkspaceInspector,
+    WorkspacePathGuard,
+)
 
 
 def test_required_imports() -> None:
@@ -130,6 +140,12 @@ def test_required_imports() -> None:
     assert ToolRequest is not None
     assert ToolResult is not None
     assert ToolValidationError is not None
+    assert create_workspace_tool is not None
+    assert execute_workspace_tool is not None
+    assert WorkspaceAccessError is not None
+    assert WorkspaceConfig is not None
+    assert WorkspaceInspector is not None
+    assert WorkspacePathGuard is not None
     assert builtin_llm_chat_skill is not None
     assert create_check_self_conformance_skill is not None
     assert create_echo_skill is not None

@@ -631,6 +631,15 @@ class OCELFactory:
             *self._process_object_relations(context, profile),
             self._o2o(request.tool_request_id, tool.tool_id, "requests_tool"),
         ]
+        workspace_objects, workspace_relations = self._workspace_tool_context(
+            event=event,
+            tool=tool,
+            request=request,
+            result=result,
+            timestamp=timestamp,
+        )
+        objects.extend(workspace_objects)
+        relations.extend(workspace_relations)
         if event_activity in {
             "dispatch_tool",
             "execute_tool_operation",
@@ -928,6 +937,63 @@ class OCELFactory:
                 "updated_at": timestamp,
             },
         )
+
+    def _workspace_tool_context(
+        self,
+        *,
+        event: OCELEvent,
+        tool,
+        request,
+        result,
+        timestamp: str,
+    ) -> tuple[list[OCELObject], list[OCELRelation]]:
+        if getattr(tool, "tool_id", None) != "tool:workspace":
+            return [], []
+        output_attrs = getattr(result, "output_attrs", {}) if result is not None else {}
+        workspace_label = str(output_attrs.get("workspace_root_name") or "workspace")
+        workspace_id = f"workspace:{short_hash(workspace_label)}"
+        workspace = OCELObject(
+            object_id=workspace_id,
+            object_type="workspace",
+            object_attrs={
+                "object_key": workspace_id,
+                "display_name": workspace_label,
+                "workspace_root_name": workspace_label,
+                "read_only": True,
+                "created_at": timestamp,
+                "updated_at": timestamp,
+            },
+        )
+        objects: list[OCELObject] = [workspace]
+        relations: list[OCELRelation] = [
+            self._e2o(event, workspace_id, "workspace_context"),
+        ]
+        relative_path = output_attrs.get("path") or request.input_attrs.get("path")
+        if relative_path and str(relative_path) != ".":
+            safe_path = str(relative_path).replace("\\", "/")
+            file_id = f"file:{short_hash(safe_path)}"
+            file_object = OCELObject(
+                object_id=file_id,
+                object_type="file",
+                object_attrs={
+                    "object_key": file_id,
+                    "display_name": safe_path,
+                    "relative_path": safe_path,
+                    "size_bytes": output_attrs.get("size_bytes"),
+                    "read_only": True,
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                },
+            )
+            objects.append(file_object)
+            relations.extend(
+                [
+                    self._e2o(event, file_id, "target_file"),
+                    self._o2o(request.tool_request_id, file_id, "targets_file"),
+                    self._o2o(file_id, workspace_id, "belongs_to_workspace"),
+                ]
+            )
+        return objects, relations
 
     def _prompt_object(self, messages: list[ChatMessage], timestamp: str) -> OCELObject:
         prompt_text = json.dumps(messages, ensure_ascii=False, sort_keys=True)
