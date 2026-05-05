@@ -166,6 +166,10 @@ class PIGReportService:
             event_activity_counts,
             view,
         )
+        session_continuity_summary = self._session_continuity_summary(
+            object_type_counts,
+            event_activity_counts,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -191,6 +195,7 @@ class PIGReportService:
             pi_artifact_summary=pi_artifact_summary,
             memory_instruction_summary=memory_instruction_summary,
             hook_lifecycle_summary=hook_lifecycle_summary,
+            session_continuity_summary=session_continuity_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -225,6 +230,7 @@ class PIGReportService:
                 "pi_artifact_summary": pi_artifact_summary,
                 "memory_instruction_summary": memory_instruction_summary,
                 "hook_lifecycle_summary": hook_lifecycle_summary,
+                "session_continuity_summary": session_continuity_summary,
             },
         )
 
@@ -376,6 +382,7 @@ class PIGReportService:
         pi_artifact_summary: dict[str, Any] | None,
         memory_instruction_summary: dict[str, Any] | None,
         hook_lifecycle_summary: dict[str, Any] | None,
+        session_continuity_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -493,6 +500,13 @@ class PIGReportService:
                 f"- Hook failed events: {(hook_lifecycle_summary or {}).get('hook_failed_count', 0)}",
                 f"- Hook skipped events: {(hook_lifecycle_summary or {}).get('hook_skipped_count', 0)}",
                 f"- Hook invocations by stage: {PIGReportService._inline_counts((hook_lifecycle_summary or {}).get('hook_invocation_by_stage') or {})}",
+                "",
+                "Session Continuity:",
+                f"- Session resumes: {(session_continuity_summary or {}).get('session_resume_count', 0)}",
+                f"- Session forks: {(session_continuity_summary or {}).get('session_fork_count', 0)}",
+                f"- Context snapshots: {(session_continuity_summary or {}).get('session_context_snapshot_count', 0)}",
+                f"- Permission resets: {(session_continuity_summary or {}).get('session_permission_reset_count', 0)}",
+                f"- Fork lineage relations: {(session_continuity_summary or {}).get('fork_lineage_count', 0)}",
             ]
         )
 
@@ -643,6 +657,21 @@ class PIGReportService:
             "hook_skipped_count": event_activity_counts.get("hook_skipped", 0),
             "hook_result_recorded_count": event_activity_counts.get("hook_result_recorded", 0),
             "hook_invocation_by_stage": by_stage,
+        }
+
+    @staticmethod
+    def _session_continuity_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+    ) -> dict[str, Any]:
+        return {
+            "session_resume_count": object_type_counts.get("session_resume", 0),
+            "session_fork_count": object_type_counts.get("session_fork", 0),
+            "session_context_snapshot_count": object_type_counts.get("session_context_snapshot", 0),
+            "session_permission_reset_count": event_activity_counts.get("session_permissions_reset", 0),
+            "session_resumed_count": event_activity_counts.get("session_resumed", 0),
+            "session_forked_count": event_activity_counts.get("session_forked", 0),
+            "fork_lineage_count": event_activity_counts.get("session_forked", 0),
         }
 
     @staticmethod

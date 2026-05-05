@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from chanta_core.context.history import ContextHistoryEntry, new_context_history_entry_id
+from chanta_core.session.continuity import session_context_snapshot_to_history_entries
 from chanta_core.session.models import SessionMessage
 
 

@@ -13,3 +13,15 @@ def new_conversation_turn_id() -> str:
 
 def new_session_message_id() -> str:
     return f"message:{uuid4()}"
+
+
+def new_session_context_snapshot_id() -> str:
+    return f"session_context_snapshot:{uuid4()}"
+
+
+def new_session_resume_id() -> str:
+    return f"session_resume:{uuid4()}"
+
+
+def new_session_fork_id() -> str:
+    return f"session_fork:{uuid4()}"

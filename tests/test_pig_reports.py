@@ -10,6 +10,7 @@ from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.pig.reports import PIGReportService, ProcessRunReport
 from chanta_core.runtime.loop import ProcessRunLoop
+from chanta_core.session import SessionContinuityService, SessionService
 from chanta_core.traces.trace_service import TraceService
 
 
@@ -155,3 +156,29 @@ def test_report_includes_hook_lifecycle_counts(tmp_path) -> None:
     assert summary["hook_completed_count"] >= 1
     assert summary["hook_invocation_by_stage"]["pre_process_run"] >= 1
     assert "Hook Lifecycle Observability" in report.report_text
+
+
+def test_report_includes_session_continuity_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_continuity.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    session_service = SessionService(trace_service=trace_service)
+    session = session_service.start_session(session_name="continuity-report")
+    session_service.record_user_message(
+        session_id=session.session_id,
+        turn_id=None,
+        content="continue",
+    )
+    continuity = SessionContinuityService(trace_service=trace_service)
+    continuity.resume_session(session_id=session.session_id)
+    continuity.fork_session(parent_session_id=session.session_id)
+    service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = service.build_recent_report(limit=100)
+    summary = report.report_attrs["session_continuity_summary"]
+
+    assert summary["session_resume_count"] >= 1
+    assert summary["session_fork_count"] >= 1
+    assert summary["session_context_snapshot_count"] >= 1
+    assert summary["session_permission_reset_count"] >= 2
+    assert summary["fork_lineage_count"] >= 1
+    assert "Session Continuity" in report.report_text

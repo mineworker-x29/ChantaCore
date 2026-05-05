@@ -162,8 +162,15 @@ from chanta_core.scheduler import (
 from chanta_core.session import (
     AgentSession,
     ConversationTurn,
+    SessionContextSnapshot,
+    SessionContinuityService,
+    SessionForkRequest,
+    SessionForkResult,
     SessionMessage,
+    SessionResumeRequest,
+    SessionResumeResult,
     SessionService,
+    session_context_snapshot_to_history_entries,
     session_messages_to_history_entries,
 )
 from chanta_core.runtime.loop import (
@@ -390,8 +397,15 @@ def test_required_imports() -> None:
     assert SchedulerRunner is not None
     assert AgentSession is not None
     assert ConversationTurn is not None
+    assert SessionContextSnapshot is not None
+    assert SessionContinuityService is not None
+    assert SessionResumeRequest is not None
+    assert SessionResumeResult is not None
+    assert SessionForkRequest is not None
+    assert SessionForkResult is not None
     assert SessionMessage is not None
     assert SessionService is not None
+    assert session_context_snapshot_to_history_entries is not None
     assert session_messages_to_history_entries is not None
     assert ProcessJob is not None
     assert ProcessJobInvalidTransitionError is not None
