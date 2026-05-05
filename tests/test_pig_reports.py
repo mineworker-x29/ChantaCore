@@ -11,6 +11,7 @@ from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.pig.reports import PIGReportService, ProcessRunReport
 from chanta_core.runtime.loop import ProcessRunLoop
 from chanta_core.session import SessionContinuityService, SessionService
+from chanta_core.tool_registry import ToolRegistryViewService
 from chanta_core.traces.trace_service import TraceService
 
 
@@ -182,3 +183,50 @@ def test_report_includes_session_continuity_counts(tmp_path) -> None:
     assert summary["session_permission_reset_count"] >= 2
     assert summary["fork_lineage_count"] >= 1
     assert "Session Continuity" in report.report_text
+
+
+def test_report_includes_tool_registry_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_tool_registry.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = ToolRegistryViewService(trace_service=trace_service, root=tmp_path)
+    read_tool = service.register_tool_descriptor(
+        tool_name="read_file",
+        tool_type="builtin",
+        risk_level="read_only",
+    )
+    write_tool = service.register_tool_descriptor(
+        tool_name="write_file",
+        tool_type="builtin",
+        risk_level="high",
+    )
+    snapshot = service.create_registry_snapshot(tools=[read_tool, write_tool])
+    note = service.register_tool_policy_note(
+        tool_id=write_tool.tool_id,
+        tool_name=write_tool.tool_name,
+        note_type="review_needed",
+        text="Review write operations.",
+    )
+    annotation = service.register_tool_risk_annotation(
+        tool_id=write_tool.tool_id,
+        risk_level="high",
+        risk_category="write",
+    )
+    service.write_tool_views(
+        tools=[read_tool, write_tool],
+        snapshot=snapshot,
+        policy_notes=[note],
+        risk_annotations=[annotation],
+        root=tmp_path,
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["tool_registry_summary"]
+
+    assert summary["tool_descriptor_count"] >= 2
+    assert summary["tool_registry_snapshot_count"] >= 1
+    assert summary["tool_policy_note_count"] >= 1
+    assert summary["tool_risk_annotation_count"] >= 1
+    assert summary["tool_type_distribution"]["builtin"] >= 2
+    assert summary["tool_risk_level_distribution"]["high"] >= 1
+    assert "Tool Registry / Policy View" in report.report_text

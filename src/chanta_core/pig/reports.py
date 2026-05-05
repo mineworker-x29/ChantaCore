@@ -170,6 +170,11 @@ class PIGReportService:
             object_type_counts,
             event_activity_counts,
         )
+        tool_registry_summary = self._tool_registry_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -196,6 +201,7 @@ class PIGReportService:
             memory_instruction_summary=memory_instruction_summary,
             hook_lifecycle_summary=hook_lifecycle_summary,
             session_continuity_summary=session_continuity_summary,
+            tool_registry_summary=tool_registry_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -231,6 +237,7 @@ class PIGReportService:
                 "memory_instruction_summary": memory_instruction_summary,
                 "hook_lifecycle_summary": hook_lifecycle_summary,
                 "session_continuity_summary": session_continuity_summary,
+                "tool_registry_summary": tool_registry_summary,
             },
         )
 
@@ -383,6 +390,7 @@ class PIGReportService:
         memory_instruction_summary: dict[str, Any] | None,
         hook_lifecycle_summary: dict[str, Any] | None,
         session_continuity_summary: dict[str, Any] | None,
+        tool_registry_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -507,6 +515,14 @@ class PIGReportService:
                 f"- Context snapshots: {(session_continuity_summary or {}).get('session_context_snapshot_count', 0)}",
                 f"- Permission resets: {(session_continuity_summary or {}).get('session_permission_reset_count', 0)}",
                 f"- Fork lineage relations: {(session_continuity_summary or {}).get('fork_lineage_count', 0)}",
+                "",
+                "Tool Registry / Policy View:",
+                f"- Tool descriptors: {(tool_registry_summary or {}).get('tool_descriptor_count', 0)}",
+                f"- Registry snapshots: {(tool_registry_summary or {}).get('tool_registry_snapshot_count', 0)}",
+                f"- Policy notes: {(tool_registry_summary or {}).get('tool_policy_note_count', 0)}",
+                f"- Risk annotations: {(tool_registry_summary or {}).get('tool_risk_annotation_count', 0)}",
+                f"- Tool types: {PIGReportService._inline_counts((tool_registry_summary or {}).get('tool_type_distribution') or {})}",
+                f"- Risk levels: {PIGReportService._inline_counts((tool_registry_summary or {}).get('tool_risk_level_distribution') or {})}",
             ]
         )
 
@@ -672,6 +688,36 @@ class PIGReportService:
             "session_resumed_count": event_activity_counts.get("session_resumed", 0),
             "session_forked_count": event_activity_counts.get("session_forked", 0),
             "fork_lineage_count": event_activity_counts.get("session_forked", 0),
+        }
+
+    @staticmethod
+    def _tool_registry_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        tool_type_distribution: dict[str, int] = {}
+        risk_level_distribution: dict[str, int] = {}
+        for item in view.objects:
+            if item.object_type != "tool_descriptor":
+                continue
+            tool_type = str(item.object_attrs.get("tool_type") or "other")
+            risk_level = str(item.object_attrs.get("risk_level") or "unknown")
+            tool_type_distribution[tool_type] = tool_type_distribution.get(tool_type, 0) + 1
+            risk_level_distribution[risk_level] = risk_level_distribution.get(risk_level, 0) + 1
+        return {
+            "tool_descriptor_count": object_type_counts.get("tool_descriptor", 0),
+            "tool_registry_snapshot_count": object_type_counts.get("tool_registry_snapshot", 0),
+            "tool_policy_note_count": object_type_counts.get("tool_policy_note", 0),
+            "tool_risk_annotation_count": object_type_counts.get("tool_risk_annotation", 0),
+            "tool_descriptor_registered_count": event_activity_counts.get("tool_descriptor_registered", 0),
+            "tool_registry_snapshot_created_count": event_activity_counts.get("tool_registry_snapshot_created", 0),
+            "tool_policy_note_registered_count": event_activity_counts.get("tool_policy_note_registered", 0),
+            "tool_risk_annotation_registered_count": event_activity_counts.get("tool_risk_annotation_registered", 0),
+            "tool_registry_view_written_count": event_activity_counts.get("tool_registry_view_written", 0),
+            "tool_policy_view_written_count": event_activity_counts.get("tool_policy_view_written", 0),
+            "tool_type_distribution": tool_type_distribution,
+            "tool_risk_level_distribution": risk_level_distribution,
         }
 
     @staticmethod

@@ -218,6 +218,15 @@ from chanta_core.tools import (
     ToolResult,
     ToolValidationError,
 )
+from chanta_core.tool_registry import (
+    ToolDescriptor,
+    ToolPolicyNote,
+    ToolRegistrySnapshot,
+    ToolRegistryViewService,
+    ToolRiskAnnotation,
+    render_tool_policy_view,
+    render_tools_view,
+)
 from chanta_core.tools.permission_rules import ToolPermissionRule, ToolPermissionRuleSet
 from chanta_core.tools.permissions import ToolPermissionDecision
 from chanta_core.tools.risk import ToolOperationRisk, ToolRiskClassifier
@@ -368,6 +377,13 @@ def test_required_imports() -> None:
     assert ToolOperationRisk is not None
     assert ToolPermissionRule is not None
     assert ToolPermissionRuleSet is not None
+    assert ToolDescriptor is not None
+    assert ToolRegistrySnapshot is not None
+    assert ToolPolicyNote is not None
+    assert ToolRiskAnnotation is not None
+    assert ToolRegistryViewService is not None
+    assert render_tools_view is not None
+    assert render_tool_policy_view is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None
