@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.9.0"
-description = "Context budget and five-layer compaction foundation for ChantaCore."
+version = "0.9.2"
+description = "Deterministic microcompact and structured context rendering for ChantaCore."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]

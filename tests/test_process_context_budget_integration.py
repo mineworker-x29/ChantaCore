@@ -41,6 +41,7 @@ def test_long_pig_context_compacted_before_chat_message() -> None:
     assert "hello" in [message["content"] for message in messages if message["role"] == "user"]
     assert "system" in rendered
     assert "Process Intelligence Context" in rendered
-    assert "BudgetReductionLayer" in rendered
+    assert "content compacted/truncated by context pipeline" in rendered
     assert len(rendered) < 900
     assert assembler.last_compaction_result is not None
+    assert assembler.last_compaction_result.truncated_block_ids

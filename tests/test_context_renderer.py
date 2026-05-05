@@ -10,7 +10,10 @@ def test_render_block() -> None:
         source="test",
     )
 
-    assert ContextRenderer().render_block(block).startswith("[other] Title\nbody")
+    rendered = ContextRenderer().render_block(block)
+
+    assert rendered.startswith("[other] Title\nmetadata:")
+    assert rendered.splitlines()[2] == "body"
 
 
 def test_render_truncated_block_marker() -> None:
@@ -23,7 +26,7 @@ def test_render_truncated_block_marker() -> None:
         was_truncated=True,
     )
 
-    assert "content truncated by context compaction" in ContextRenderer().render_block(block)
+    assert "content compacted/truncated by context pipeline" in ContextRenderer().render_block(block)
 
 
 def test_render_refs_concisely() -> None:

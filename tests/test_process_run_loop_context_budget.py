@@ -78,7 +78,7 @@ def test_process_run_loop_compacts_long_pig_context_without_lm_studio() -> None:
         for message in messages
     )
     assert result.status == "completed"
-    assert "BudgetReductionLayer" in rendered
+    assert "content compacted/truncated by context pipeline" in rendered
     assert "context_compaction" in result.result_attrs
     assert result.result_attrs["context_compaction"]["truncated_block_count"] >= 1
     assert len(rendered) < 900

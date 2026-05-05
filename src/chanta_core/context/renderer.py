@@ -1,16 +1,31 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from chanta_core.context.block import ContextBlock
 
 
+@dataclass(frozen=True)
+class ContextRenderPolicy:
+    include_refs: bool = True
+    max_refs_per_block: int = 5
+    include_block_metadata: bool = True
+
+
 class ContextRenderer:
+    def __init__(self, policy: ContextRenderPolicy | None = None) -> None:
+        self.policy = policy or ContextRenderPolicy()
+
     def render_block(self, block: ContextBlock) -> str:
-        parts = [f"[{block.block_type}] {block.title}", block.content]
+        parts = [f"[{block.block_type}] {block.title}"]
+        metadata = self._render_metadata(block)
+        if metadata:
+            parts.append(metadata)
+        parts.append(block.content)
         if block.was_truncated:
-            parts.append("(content truncated by context compaction)")
-        refs_text = self._render_refs(block.refs)
+            parts.append("(content compacted/truncated by context pipeline)")
+        refs_text = self._render_refs(block.refs) if self.policy.include_refs else ""
         if refs_text:
             parts.append(refs_text)
         return "\n".join(part for part in parts if part)
@@ -22,15 +37,38 @@ class ContextRenderer:
         if not refs:
             return ""
         lines = ["Refs:"]
-        for ref in refs[:5]:
+        max_refs = max(0, self.policy.max_refs_per_block)
+        for ref in refs[:max_refs]:
             visible = []
-            for key in sorted(ref):
+            preferred_keys = ["ref_type", "ref_id", "event_id", "artifact_id", "report_id"]
+            keys = preferred_keys + [
+                key for key in sorted(ref) if key not in preferred_keys
+            ]
+            for key in keys:
+                if key not in ref:
+                    continue
                 value = ref[key]
                 if value is not None:
-                    visible.append(f"{key}={value}")
+                    rendered = str(value)
+                    if len(rendered) > 80:
+                        rendered = f"{rendered[:77]}..."
+                    visible.append(f"{key}={rendered}")
                 if len(visible) >= 4:
                     break
             lines.append(f"- {', '.join(visible) if visible else 'none'}")
-        if len(refs) > 5:
-            lines.append(f"- ... {len(refs) - 5} more ref(s)")
+        if len(refs) > max_refs:
+            lines.append(f"- ... {len(refs) - max_refs} more ref(s)")
         return "\n".join(lines)
+
+    def _render_metadata(self, block: ContextBlock) -> str:
+        if not self.policy.include_block_metadata:
+            return ""
+        values = [
+            f"source={block.source}",
+            f"priority={block.priority}",
+            f"truncated={block.was_truncated}",
+            f"refs={len(block.refs)}",
+        ]
+        if block.block_attrs.get("microcompacted"):
+            values.append("microcompacted=True")
+        return f"metadata: {', '.join(values)}"

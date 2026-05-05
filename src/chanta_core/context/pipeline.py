@@ -11,6 +11,8 @@ from chanta_core.context.layers import (
     SnipLayer,
 )
 from chanta_core.context.layers.base import total_chars, total_estimated_tokens
+from chanta_core.context.microcompact_policy import MicrocompactPolicy
+from chanta_core.context.policy import ContextHistoryPolicy, SessionContextPolicy
 from chanta_core.context.result import (
     ContextCompactionLayerResult,
     ContextCompactionResult,
@@ -22,12 +24,20 @@ class ContextCompactionPipeline:
         self.layers = layers or []
 
     @classmethod
-    def default(cls) -> "ContextCompactionPipeline":
+    def default(
+        cls,
+        history_policy: ContextHistoryPolicy | None = None,
+        session_context_policy: SessionContextPolicy | None = None,
+        microcompact_policy: MicrocompactPolicy | None = None,
+    ) -> "ContextCompactionPipeline":
         return cls(
             layers=[
                 BudgetReductionLayer(),
-                SnipLayer(),
-                MicrocompactLayer(),
+                SnipLayer(
+                    history_policy=history_policy,
+                    session_context_policy=session_context_policy,
+                ),
+                MicrocompactLayer(policy=microcompact_policy),
                 ContextCollapseLayer(),
                 AutoCompactLayer(enabled=False),
             ]
@@ -40,6 +50,11 @@ class ContextCompactionPipeline:
     ) -> ContextCompactionResult:
         budget.validate()
         current_blocks = list(blocks)
+        history_block_count_before = sum(
+            1
+            for block in current_blocks
+            if block.block_type == "history" or block.block_attrs.get("is_history")
+        )
         layer_results: list[ContextCompactionLayerResult] = []
         truncated: list[str] = []
         dropped: list[str] = []
@@ -54,6 +69,19 @@ class ContextCompactionPipeline:
 
         chars = total_chars(current_blocks)
         tokens = total_estimated_tokens(current_blocks)
+        history_block_count_after = sum(
+            1
+            for block in current_blocks
+            if block.block_type == "history" or block.block_attrs.get("is_history")
+        )
+        snipped_history_count = sum(
+            len(result.result_attrs.get("dropped_history_block_ids") or [])
+            for result in layer_results
+        )
+        protected_block_count = sum(
+            len(result.result_attrs.get("protected_block_ids") or [])
+            for result in layer_results
+        )
         if chars > budget.usable_chars():
             warnings.append(
                 "Context exceeds usable character budget after all deterministic layers."
@@ -73,5 +101,10 @@ class ContextCompactionPipeline:
             result_attrs={
                 "layer_count": len(self.layers),
                 "budget": budget.to_dict(),
+                "selected_block_count": len(current_blocks),
+                "history_block_count_before": history_block_count_before,
+                "history_block_count_after": history_block_count_after,
+                "snipped_history_count": snipped_history_count,
+                "protected_block_count": protected_block_count,
             },
         )

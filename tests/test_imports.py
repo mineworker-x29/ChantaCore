@@ -14,9 +14,19 @@ from chanta_core.editing import (
 from chanta_core.context import (
     ContextBlock,
     ContextBudget,
+    ContextHistoryBuilder,
+    ContextHistoryEntry,
+    ContextHistoryPolicy,
     ContextCompactionPipeline,
     ContextCompactionResult,
     ContextRenderer,
+    MicrocompactPolicy,
+    SessionContextPolicy,
+    compact_activity_sequence,
+    compact_json_like_text,
+    compact_lines,
+    compact_mapping,
+    compact_report_text,
 )
 from chanta_core.context.layers import (
     AutoCompactLayer,
@@ -188,9 +198,19 @@ def test_required_imports() -> None:
     assert create_unified_diff is not None
     assert ContextBlock is not None
     assert ContextBudget is not None
+    assert ContextHistoryBuilder is not None
+    assert ContextHistoryEntry is not None
+    assert ContextHistoryPolicy is not None
     assert ContextCompactionPipeline is not None
     assert ContextCompactionResult is not None
     assert ContextRenderer is not None
+    assert MicrocompactPolicy is not None
+    assert SessionContextPolicy is not None
+    assert compact_lines is not None
+    assert compact_activity_sequence is not None
+    assert compact_mapping is not None
+    assert compact_json_like_text is not None
+    assert compact_report_text is not None
     assert BudgetReductionLayer is not None
     assert SnipLayer is not None
     assert MicrocompactLayer is not None

@@ -7,7 +7,10 @@ from chanta_core.context import (
     ContextBudget,
     ContextCompactionPipeline,
     ContextCompactionResult,
+    ContextHistoryBuilder,
+    ContextHistoryEntry,
     ContextRenderer,
+    SessionContextPolicy,
     make_context_block,
 )
 from chanta_core.llm.types import ChatMessage
@@ -28,9 +31,16 @@ class ProcessContextAssembler:
         extra_blocks: list[ContextBlock] | None = None,
         context_budget: ContextBudget | None = None,
         compaction_pipeline: ContextCompactionPipeline | None = None,
+        history_entries: list[ContextHistoryEntry] | None = None,
+        session_context_policy: SessionContextPolicy | None = None,
     ) -> list[ChatMessage]:
         self.last_compaction_result = None
-        if context_budget is None and not extra_blocks:
+        if (
+            context_budget is None
+            and not extra_blocks
+            and not history_entries
+            and session_context_policy is None
+        ):
             return self._assemble_legacy(
                 user_input=user_input,
                 system_prompt=system_prompt,
@@ -41,10 +51,14 @@ class ProcessContextAssembler:
             user_input=user_input,
             system_prompt=system_prompt,
             pig_context=pig_context,
+            history_entries=history_entries,
+            session_context_policy=session_context_policy,
             extra_blocks=extra_blocks,
         )
         if context_budget is not None:
-            pipeline = compaction_pipeline or ContextCompactionPipeline.default()
+            pipeline = compaction_pipeline or ContextCompactionPipeline.default(
+                session_context_policy=session_context_policy,
+            )
             self.last_compaction_result = pipeline.run(blocks, context_budget)
             blocks = self.last_compaction_result.blocks
 
@@ -78,6 +92,8 @@ class ProcessContextAssembler:
         user_input: str,
         system_prompt: str | None,
         pig_context: PIGContext | None,
+        history_entries: list[ContextHistoryEntry] | None,
+        session_context_policy: SessionContextPolicy | None,
         extra_blocks: list[ContextBlock] | None,
     ) -> list[ContextBlock]:
         blocks: list[ContextBlock] = []
@@ -93,6 +109,17 @@ class ProcessContextAssembler:
             )
         if pig_context is not None:
             blocks.append(pig_context.to_context_block(priority=70))
+        if history_entries:
+            builder = ContextHistoryBuilder()
+            if session_context_policy is not None:
+                blocks.extend(
+                    builder.build_recent_history_blocks(
+                        history_entries,
+                        session_policy=session_context_policy,
+                    )
+                )
+            else:
+                blocks.extend(builder.build_from_entries(history_entries))
         blocks.extend(extra_blocks or [])
         blocks.append(
             make_context_block(

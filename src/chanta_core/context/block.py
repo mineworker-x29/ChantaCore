@@ -16,6 +16,7 @@ BLOCK_TYPES = {
     "tool_result",
     "conformance",
     "decision",
+    "history",
     "memory",
     "artifact",
     "workspace",
@@ -159,16 +160,28 @@ def from_pig_context(pig_context: Any, priority: int = 70) -> ContextBlock:
         source="pig",
         refs=refs,
         block_attrs={
+            "scope": getattr(pig_context, "scope", None),
             "activity_count": len(getattr(pig_context, "activity_sequence", None) or []),
+            "activity_sequence": list(
+                getattr(pig_context, "activity_sequence", None) or []
+            ),
             "diagnostic_count": len(getattr(pig_context, "diagnostics", None) or []),
             "recommendation_count": len(
                 getattr(pig_context, "recommendations", None) or []
+            ),
+            "conformance_status": (
+                (getattr(pig_context, "conformance_report", None) or {}).get("status")
+                if isinstance(getattr(pig_context, "conformance_report", None), dict)
+                else None
             ),
             "has_conformance_report": getattr(
                 pig_context, "conformance_report", None
             )
             is not None,
             "pi_artifact_count": len(pi_artifacts),
+            "process_instance_id": getattr(pig_context, "process_instance_id", None),
+            "session_id": getattr(pig_context, "session_id", None),
+            "source": getattr(pig_context, "source", None),
         },
     )
 
@@ -197,7 +210,13 @@ def from_tool_result(tool_result: Any, priority: int = 40) -> ContextBlock:
                 "tool_request_id": getattr(tool_result, "tool_request_id", None),
             }
         ],
-        block_attrs={"success": bool(getattr(tool_result, "success", False))},
+        block_attrs={
+            "tool_id": getattr(tool_result, "tool_id", None),
+            "operation": getattr(tool_result, "operation", None),
+            "success": bool(getattr(tool_result, "success", False)),
+            "output_keys": sorted(str(key) for key in output_attrs),
+            "error_present": getattr(tool_result, "error", None) is not None,
+        },
     )
 
 
@@ -219,5 +238,20 @@ def from_process_report(report: Any, priority: int = 50) -> ContextBlock:
         block_attrs={
             "scope": getattr(report, "scope", None),
             "generated_at": getattr(report, "generated_at", None),
+            "activity_sequence": list(getattr(report, "activity_sequence", None) or []),
+            "event_activity_counts": dict(
+                getattr(report, "event_activity_counts", None) or {}
+            ),
+            "object_type_counts": dict(getattr(report, "object_type_counts", None) or {}),
+            "relation_coverage": dict(getattr(report, "relation_coverage", None) or {}),
+            "conformance_status": (
+                (getattr(report, "conformance_report", None) or {}).get("status")
+                if isinstance(getattr(report, "conformance_report", None), dict)
+                else None
+            ),
+            "skill_usage_summary": getattr(report, "skill_usage_summary", None),
+            "tool_usage_summary": getattr(report, "tool_usage_summary", None),
+            "process_instance_id": getattr(report, "process_instance_id", None),
+            "session_id": getattr(report, "session_id", None),
         },
     )
