@@ -11,6 +11,7 @@ from chanta_core.context.layers import (
     SnipLayer,
 )
 from chanta_core.context.layers.base import total_chars, total_estimated_tokens
+from chanta_core.context.collapse_policy import ContextCollapsePolicy
 from chanta_core.context.microcompact_policy import MicrocompactPolicy
 from chanta_core.context.policy import ContextHistoryPolicy, SessionContextPolicy
 from chanta_core.context.result import (
@@ -29,6 +30,7 @@ class ContextCompactionPipeline:
         history_policy: ContextHistoryPolicy | None = None,
         session_context_policy: SessionContextPolicy | None = None,
         microcompact_policy: MicrocompactPolicy | None = None,
+        collapse_policy: ContextCollapsePolicy | None = None,
     ) -> "ContextCompactionPipeline":
         return cls(
             layers=[
@@ -38,7 +40,7 @@ class ContextCompactionPipeline:
                     session_context_policy=session_context_policy,
                 ),
                 MicrocompactLayer(policy=microcompact_policy),
-                ContextCollapseLayer(),
+                ContextCollapseLayer(policy=collapse_policy),
                 AutoCompactLayer(enabled=False),
             ]
         )
@@ -58,13 +60,25 @@ class ContextCompactionPipeline:
         layer_results: list[ContextCompactionLayerResult] = []
         truncated: list[str] = []
         dropped: list[str] = []
+        dropped_blocks_by_id: dict[str, ContextBlock] = {}
         warnings: list[str] = []
         for layer in self.layers:
-            result = layer.apply(current_blocks, budget)
+            before_blocks_by_id = {block.block_id: block for block in current_blocks}
+            if isinstance(layer, ContextCollapseLayer):
+                result = layer.apply_with_projected_blocks(
+                    current_blocks,
+                    budget,
+                    projected_blocks=list(dropped_blocks_by_id.values()),
+                )
+            else:
+                result = layer.apply(current_blocks, budget)
             current_blocks = result.blocks
             layer_results.append(result)
             truncated.extend(result.truncated_block_ids)
             dropped.extend(result.dropped_block_ids)
+            for block_id in result.dropped_block_ids:
+                if block_id in before_blocks_by_id:
+                    dropped_blocks_by_id[block_id] = before_blocks_by_id[block_id]
             warnings.extend(result.warnings)
 
         chars = total_chars(current_blocks)
@@ -82,6 +96,14 @@ class ContextCompactionPipeline:
             len(result.result_attrs.get("protected_block_ids") or [])
             for result in layer_results
         )
+        collapsed_reference_count = sum(
+            int(result.result_attrs.get("reference_count") or 0)
+            for result in layer_results
+        )
+        collapsed_block_count = sum(
+            int(result.result_attrs.get("collapsed_block_count") or 0)
+            for result in layer_results
+        )
         if chars > budget.usable_chars():
             warnings.append(
                 "Context exceeds usable character budget after all deterministic layers."
@@ -95,8 +117,8 @@ class ContextCompactionPipeline:
             layer_results=layer_results,
             total_chars=chars,
             total_estimated_tokens=tokens,
-            truncated_block_ids=truncated,
-            dropped_block_ids=dropped,
+            truncated_block_ids=_dedupe_ids(truncated),
+            dropped_block_ids=_dedupe_ids(dropped),
             warnings=warnings,
             result_attrs={
                 "layer_count": len(self.layers),
@@ -106,5 +128,18 @@ class ContextCompactionPipeline:
                 "history_block_count_after": history_block_count_after,
                 "snipped_history_count": snipped_history_count,
                 "protected_block_count": protected_block_count,
+                "collapsed_reference_count": collapsed_reference_count,
+                "collapsed_block_count": collapsed_block_count,
             },
         )
+
+
+def _dedupe_ids(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
+    return result

@@ -17,6 +17,7 @@ BLOCK_TYPES = {
     "conformance",
     "decision",
     "history",
+    "collapsed_context",
     "memory",
     "artifact",
     "workspace",

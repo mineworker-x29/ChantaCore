@@ -12,8 +12,11 @@ from chanta_core.editing import (
     create_unified_diff,
 )
 from chanta_core.context import (
+    CollapsedContextManifest,
+    ContextCollapsePolicy,
     ContextBlock,
     ContextBudget,
+    ContextReference,
     ContextHistoryBuilder,
     ContextHistoryEntry,
     ContextHistoryPolicy,
@@ -198,6 +201,9 @@ def test_required_imports() -> None:
     assert create_unified_diff is not None
     assert ContextBlock is not None
     assert ContextBudget is not None
+    assert CollapsedContextManifest is not None
+    assert ContextCollapsePolicy is not None
+    assert ContextReference is not None
     assert ContextHistoryBuilder is not None
     assert ContextHistoryEntry is not None
     assert ContextHistoryPolicy is not None

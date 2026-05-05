@@ -10,6 +10,7 @@ from chanta_core.context.block import ContextBlock
 class ContextRenderPolicy:
     include_refs: bool = True
     max_refs_per_block: int = 5
+    max_collapsed_refs: int = 10
     include_block_metadata: bool = True
 
 
@@ -18,6 +19,8 @@ class ContextRenderer:
         self.policy = policy or ContextRenderPolicy()
 
     def render_block(self, block: ContextBlock) -> str:
+        if block.block_type == "collapsed_context":
+            return self._render_collapsed_context(block)
         parts = [f"[{block.block_type}] {block.title}"]
         metadata = self._render_metadata(block)
         if metadata:
@@ -30,14 +33,28 @@ class ContextRenderer:
             parts.append(refs_text)
         return "\n".join(part for part in parts if part)
 
+    def _render_collapsed_context(self, block: ContextBlock) -> str:
+        parts = [f"[{block.block_type}] {block.title}"]
+        metadata = self._render_metadata(block)
+        if metadata:
+            parts.append(metadata)
+        parts.append(block.content)
+        if block.was_truncated:
+            parts.append("(content compacted/truncated by context pipeline)")
+        if self.policy.include_refs and block.refs:
+            parts.append(
+                self._render_refs(block.refs, max_refs=self.policy.max_collapsed_refs)
+            )
+        return "\n".join(part for part in parts if part)
+
     def render_blocks(self, blocks: list[ContextBlock]) -> str:
         return "\n\n".join(self.render_block(block) for block in blocks)
 
-    def _render_refs(self, refs: list[dict[str, Any]]) -> str:
+    def _render_refs(self, refs: list[dict[str, Any]], max_refs: int | None = None) -> str:
         if not refs:
             return ""
         lines = ["Refs:"]
-        max_refs = max(0, self.policy.max_refs_per_block)
+        max_refs = max(0, self.policy.max_refs_per_block if max_refs is None else max_refs)
         for ref in refs[:max_refs]:
             visible = []
             preferred_keys = ["ref_type", "ref_id", "event_id", "artifact_id", "report_id"]
@@ -46,6 +63,8 @@ class ContextRenderer:
             ]
             for key in keys:
                 if key not in ref:
+                    continue
+                if key == "attrs":
                     continue
                 value = ref[key]
                 if value is not None:

@@ -8,6 +8,8 @@ from chanta_core.context.block import (
     new_context_block_id,
 )
 from chanta_core.context.budget import ContextBudget
+from chanta_core.context.collapse import CollapsedContextManifest
+from chanta_core.context.collapse_policy import ContextCollapsePolicy
 from chanta_core.context.adapters import (
     context_block_from_pi_artifact,
     context_block_from_pig_context,
@@ -39,6 +41,7 @@ from chanta_core.context.microcompact import (
 from chanta_core.context.microcompact_policy import MicrocompactPolicy
 from chanta_core.context.policy import ContextHistoryPolicy, SessionContextPolicy
 from chanta_core.context.renderer import ContextRenderPolicy, ContextRenderer
+from chanta_core.context.references import ContextReference, new_context_reference_id
 from chanta_core.context.result import (
     ContextCompactionLayerResult,
     ContextCompactionResult,
@@ -50,6 +53,8 @@ __all__ = [
     "ContextBudget",
     "ContextBudgetError",
     "ContextBudgetExceededWarning",
+    "CollapsedContextManifest",
+    "ContextCollapsePolicy",
     "ContextCompactionError",
     "ContextCompactionLayerResult",
     "ContextCompactionPipeline",
@@ -61,6 +66,7 @@ __all__ = [
     "ContextRenderPolicy",
     "MicrocompactPolicy",
     "ContextRenderer",
+    "ContextReference",
     "SessionContextPolicy",
     "compact_activity_sequence",
     "compact_json_like_text",
@@ -80,4 +86,5 @@ __all__ = [
     "make_context_block",
     "new_context_history_entry_id",
     "new_context_block_id",
+    "new_context_reference_id",
 ]

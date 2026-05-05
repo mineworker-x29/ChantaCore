@@ -58,7 +58,7 @@ def test_process_context_assembler_snips_old_history_without_llm() -> None:
     assert "recent user" in rendered
     assert "old assistant" not in rendered
     assert "old user" not in rendered
-    assert len(rendered) <= 900
+    assert len(rendered) <= 1400
     assert assembler.last_compaction_result is not None
     assert assembler.last_compaction_result.result_attrs["snipped_history_count"] == 2
 
