@@ -386,6 +386,9 @@ class TraceService:
         }
         return self._record(execution_context, event_activity, payload, record)
 
+    def record_session_ocel_record(self, record: OCELRecord) -> None:
+        self.ocel_store.append_record(record)
+
     def record_llm_call_started(
         self,
         context: ExecutionContext,

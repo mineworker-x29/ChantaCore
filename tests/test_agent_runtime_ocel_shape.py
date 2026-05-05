@@ -56,8 +56,8 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "outcome_recorded",
         "process_instance_completed",
     ]
-    assert store.fetch_event_count() == 13
-    assert store.fetch_object_count() >= 11
+    assert store.fetch_event_count() >= 21
+    assert store.fetch_object_count() >= 13
     assert store.fetch_event_object_relation_count() > 0
     assert store.fetch_object_object_relation_count() > 0
 
@@ -67,6 +67,8 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
             "session",
             "agent",
             "user_request",
+            "conversation_turn",
+            "message",
             "process_instance",
             "skill",
             "prompt",
@@ -79,8 +81,10 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
     assert object_types == {
         "session",
         "agent",
-        "user_request",
-        "process_instance",
+            "user_request",
+            "conversation_turn",
+            "message",
+            "process_instance",
         "skill",
         "prompt",
         "llm_call",
@@ -94,6 +98,11 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "test-session-ocel-shape"
     )]
     assert activities == [
+        "session_started",
+        "conversation_turn_started",
+        "process_instance_attached_to_turn",
+        "user_message_received",
+        "message_attached_to_turn",
         "receive_user_request",
         "start_process_instance",
         "start_process_run_loop",
@@ -107,6 +116,9 @@ def test_agent_runtime_writes_expected_ocel_shape(tmp_path) -> None:
         "observe_result",
         "record_outcome",
         "complete_process_instance",
+        "assistant_message_emitted",
+        "message_attached_to_turn",
+        "conversation_turn_completed",
     ]
 
     with sqlite3.connect(store.db_path) as connection:

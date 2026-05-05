@@ -123,6 +123,13 @@ from chanta_core.scheduler import (
     SchedulerRunner,
     SchedulerService,
 )
+from chanta_core.session import (
+    AgentSession,
+    ConversationTurn,
+    SessionMessage,
+    SessionService,
+    session_messages_to_history_entries,
+)
 from chanta_core.runtime.loop import (
     ProcessActivityDecider,
     ProcessContextAssembler,
@@ -317,6 +324,11 @@ def test_required_imports() -> None:
     assert ScheduleEvaluator is not None
     assert SchedulerService is not None
     assert SchedulerRunner is not None
+    assert AgentSession is not None
+    assert ConversationTurn is not None
+    assert SessionMessage is not None
+    assert SessionService is not None
+    assert session_messages_to_history_entries is not None
     assert ProcessJob is not None
     assert ProcessJobInvalidTransitionError is not None
     assert ProcessJobStore is not None

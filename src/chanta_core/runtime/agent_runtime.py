@@ -8,6 +8,7 @@ from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.loop.process_run_loop import ProcessRunLoop
 from chanta_core.runtime.run_result import AgentRunResult
+from chanta_core.session import SessionService
 from chanta_core.skills.registry import SkillRegistry
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
@@ -23,6 +24,7 @@ class AgentRuntime:
         agent_profile: AgentProfile | None = None,
         skill_registry: SkillRegistry | None = None,
         process_run_loop: ProcessRunLoop | None = None,
+        session_service: SessionService | None = None,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.prompt_assembly = prompt_assembly or PromptAssemblyService()
@@ -30,6 +32,9 @@ class AgentRuntime:
         self.agent_profile = agent_profile or load_default_agent_profile()
         self.skill_registry = skill_registry or SkillRegistry()
         self.process_run_loop = process_run_loop
+        self.session_service = session_service or SessionService(
+            trace_service=self.trace_service
+        )
 
     def run(
         self,
@@ -57,9 +62,28 @@ class AgentRuntime:
             )
             context.metadata["process_instance_id"] = process_instance_id
         events: list[AgentEvent] = []
+        turn_id: str | None = None
+        user_message_id: str | None = None
+        assistant_message_id: str | None = None
 
         loop: ProcessRunLoop | None = None
         try:
+            self.session_service.start_session(
+                session_id=context.session_id,
+                agent_id=context.agent_id,
+            )
+            turn = self.session_service.start_turn(
+                session_id=context.session_id,
+                process_instance_id=process_instance_id,
+            )
+            turn_id = turn.turn_id
+            user_message = self.session_service.record_user_message(
+                session_id=context.session_id,
+                turn_id=turn_id,
+                content=context.user_input,
+                message_attrs={"process_instance_id": process_instance_id},
+            )
+            user_message_id = user_message.message_id
             events.append(
                 self.trace_service.record_user_request_received(
                     context,
@@ -87,9 +111,30 @@ class AgentRuntime:
             )
             events.extend(loop.events)
             response_text = loop_result.response_text
+            assistant_message = self.session_service.record_assistant_message(
+                session_id=context.session_id,
+                turn_id=turn_id,
+                content=response_text,
+                message_attrs={"process_instance_id": process_instance_id},
+            )
+            assistant_message_id = assistant_message.message_id
+            self.session_service.complete_turn(
+                session_id=context.session_id,
+                turn_id=turn_id,
+                user_message_id=user_message_id,
+                assistant_message_id=assistant_message_id,
+                process_instance_id=process_instance_id,
+            )
         except Exception as error:
             if loop is not None:
                 events.extend(loop.events)
+            if turn_id is not None:
+                self.session_service.fail_turn(
+                    session_id=context.session_id,
+                    turn_id=turn_id,
+                    error=str(error),
+                    process_instance_id=process_instance_id,
+                )
             if not events or events[-1].event_type != "process_instance_failed":
                 events.append(
                     self.trace_service.record_process_instance_failed(
@@ -109,5 +154,8 @@ class AgentRuntime:
             metadata={
                 **context.metadata,
                 "process_instance_id": process_instance_id,
+                "turn_id": turn_id,
+                "user_message_id": user_message_id,
+                "assistant_message_id": assistant_message_id,
             },
         )

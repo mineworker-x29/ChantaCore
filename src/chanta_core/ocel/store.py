@@ -139,7 +139,9 @@ class OCELStore:
 
     def fetch_events_by_session(self, session_id: str) -> list[dict[str, Any]]:
         self.initialize()
-        session_object_id = f"session:{session_id}"
+        session_object_id = (
+            session_id if session_id.startswith("session:") else f"session:{session_id}"
+        )
         return self.fetch_events_by_object(session_object_id, qualifier="session_context")
 
     def fetch_events_by_object(

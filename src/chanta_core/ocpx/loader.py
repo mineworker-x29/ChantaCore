@@ -51,7 +51,9 @@ class OCPXLoader:
         session_id: str,
     ) -> list[dict[str, Any]]:
         self.store.initialize()
-        session_object_id = f"session:{session_id}"
+        session_object_id = (
+            session_id if session_id.startswith("session:") else f"session:{session_id}"
+        )
         with sqlite3.connect(self.store.db_path) as connection:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(
