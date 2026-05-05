@@ -12,6 +12,10 @@ from chanta_core.editing import (
     create_unified_diff,
 )
 from chanta_core.context import (
+    AutoCompactPolicy,
+    AutoCompactRequest,
+    AutoCompactResult,
+    AutoCompactSummarizer,
     CollapsedContextManifest,
     ContextCollapsePolicy,
     ContextBlock,
@@ -21,6 +25,8 @@ from chanta_core.context import (
     ContextHistoryEntry,
     ContextHistoryPolicy,
     ContextCompactionPipeline,
+    ContextCompactionReadinessChecker,
+    ContextCompactionReporter,
     ContextCompactionResult,
     ContextRenderer,
     MicrocompactPolicy,
@@ -200,6 +206,10 @@ def test_required_imports() -> None:
     assert PatchBackupService is not None
     assert create_unified_diff is not None
     assert ContextBlock is not None
+    assert AutoCompactPolicy is not None
+    assert AutoCompactRequest is not None
+    assert AutoCompactResult is not None
+    assert AutoCompactSummarizer is not None
     assert ContextBudget is not None
     assert CollapsedContextManifest is not None
     assert ContextCollapsePolicy is not None
@@ -208,6 +218,8 @@ def test_required_imports() -> None:
     assert ContextHistoryEntry is not None
     assert ContextHistoryPolicy is not None
     assert ContextCompactionPipeline is not None
+    assert ContextCompactionReadinessChecker is not None
+    assert ContextCompactionReporter is not None
     assert ContextCompactionResult is not None
     assert ContextRenderer is not None
     assert MicrocompactPolicy is not None

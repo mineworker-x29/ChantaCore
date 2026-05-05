@@ -7,6 +7,15 @@ from chanta_core.context.block import (
     make_context_block,
     new_context_block_id,
 )
+from chanta_core.context.auto_compact import (
+    AutoCompactPolicy,
+    AutoCompactRequest,
+    AutoCompactResult,
+    AutoCompactSummarizer,
+    NullAutoCompactSummarizer,
+    make_auto_compact_output_block,
+    new_auto_compact_request_id,
+)
 from chanta_core.context.budget import ContextBudget
 from chanta_core.context.collapse import CollapsedContextManifest
 from chanta_core.context.collapse_policy import ContextCollapsePolicy
@@ -42,6 +51,11 @@ from chanta_core.context.microcompact_policy import MicrocompactPolicy
 from chanta_core.context.policy import ContextHistoryPolicy, SessionContextPolicy
 from chanta_core.context.renderer import ContextRenderPolicy, ContextRenderer
 from chanta_core.context.references import ContextReference, new_context_reference_id
+from chanta_core.context.readiness import (
+    ContextCompactionReadiness,
+    ContextCompactionReadinessChecker,
+)
+from chanta_core.context.report import ContextCompactionReport, ContextCompactionReporter
 from chanta_core.context.result import (
     ContextCompactionLayerResult,
     ContextCompactionResult,
@@ -50,6 +64,10 @@ from chanta_core.context.result import (
 __all__ = [
     "ContextBlock",
     "ContextBlockValidationError",
+    "AutoCompactPolicy",
+    "AutoCompactRequest",
+    "AutoCompactResult",
+    "AutoCompactSummarizer",
     "ContextBudget",
     "ContextBudgetError",
     "ContextBudgetExceededWarning",
@@ -58,6 +76,10 @@ __all__ = [
     "ContextCompactionError",
     "ContextCompactionLayerResult",
     "ContextCompactionPipeline",
+    "ContextCompactionReadiness",
+    "ContextCompactionReadinessChecker",
+    "ContextCompactionReport",
+    "ContextCompactionReporter",
     "ContextCompactionResult",
     "ContextError",
     "ContextHistoryBuilder",
@@ -65,6 +87,7 @@ __all__ = [
     "ContextHistoryPolicy",
     "ContextRenderPolicy",
     "MicrocompactPolicy",
+    "NullAutoCompactSummarizer",
     "ContextRenderer",
     "ContextReference",
     "SessionContextPolicy",
@@ -84,6 +107,8 @@ __all__ = [
     "from_tool_result",
     "history_entry_to_context_block",
     "make_context_block",
+    "make_auto_compact_output_block",
+    "new_auto_compact_request_id",
     "new_context_history_entry_id",
     "new_context_block_id",
     "new_context_reference_id",

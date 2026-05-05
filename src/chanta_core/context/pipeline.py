@@ -12,8 +12,10 @@ from chanta_core.context.layers import (
 )
 from chanta_core.context.layers.base import total_chars, total_estimated_tokens
 from chanta_core.context.collapse_policy import ContextCollapsePolicy
+from chanta_core.context.auto_compact import AutoCompactPolicy
 from chanta_core.context.microcompact_policy import MicrocompactPolicy
 from chanta_core.context.policy import ContextHistoryPolicy, SessionContextPolicy
+from chanta_core.context.report import ContextCompactionReport, ContextCompactionReporter
 from chanta_core.context.result import (
     ContextCompactionLayerResult,
     ContextCompactionResult,
@@ -31,6 +33,7 @@ class ContextCompactionPipeline:
         session_context_policy: SessionContextPolicy | None = None,
         microcompact_policy: MicrocompactPolicy | None = None,
         collapse_policy: ContextCollapsePolicy | None = None,
+        auto_compact_policy: AutoCompactPolicy | None = None,
     ) -> "ContextCompactionPipeline":
         return cls(
             layers=[
@@ -41,7 +44,9 @@ class ContextCompactionPipeline:
                 ),
                 MicrocompactLayer(policy=microcompact_policy),
                 ContextCollapseLayer(policy=collapse_policy),
-                AutoCompactLayer(enabled=False),
+                AutoCompactLayer(
+                    policy=auto_compact_policy or AutoCompactPolicy(enabled=False)
+                ),
             ]
         )
 
@@ -132,6 +137,15 @@ class ContextCompactionPipeline:
                 "collapsed_block_count": collapsed_block_count,
             },
         )
+
+    def run_with_report(
+        self,
+        blocks: list[ContextBlock],
+        budget: ContextBudget,
+    ) -> tuple[ContextCompactionResult, ContextCompactionReport]:
+        result = self.run(blocks, budget)
+        report = ContextCompactionReporter().build_report(result, budget)
+        return result, report
 
 
 def _dedupe_ids(items: list[str]) -> list[str]:
