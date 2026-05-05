@@ -62,6 +62,17 @@ from chanta_core.context.layers import (
     SnipLayer,
 )
 from chanta_core.llm import LLMClient
+from chanta_core.materialized_views import (
+    MaterializedView,
+    MaterializedViewInputSnapshot,
+    MaterializedViewRenderResult,
+    MaterializedViewService,
+    render_context_rules_view,
+    render_memory_view,
+    render_pig_guidance_view,
+    render_project_view,
+    render_user_view,
+)
 from chanta_core.memory.memory_record import MemoryRecord
 from chanta_core.memory import (
     MemoryEntry,
@@ -294,6 +305,15 @@ def test_required_imports() -> None:
     assert AgentEvent is not None
     assert TraceService is not None
     assert MemoryRecord is not None
+    assert MaterializedView is not None
+    assert MaterializedViewInputSnapshot is not None
+    assert MaterializedViewRenderResult is not None
+    assert MaterializedViewService is not None
+    assert render_memory_view is not None
+    assert render_project_view is not None
+    assert render_user_view is not None
+    assert render_pig_guidance_view is not None
+    assert render_context_rules_view is not None
     assert MemoryEntry is not None
     assert MemoryRevision is not None
     assert MemoryService is not None
