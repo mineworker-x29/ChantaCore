@@ -50,6 +50,11 @@ def execute_llm_chat_skill(
         pig_context=context.pig_context or context.context_attrs.get("pig_context"),
         context_budget=context.context_attrs.get("context_budget"),
         compaction_pipeline=context.context_attrs.get("compaction_pipeline"),
+        context_snapshot_policy=context.context_attrs.get("context_snapshot_policy"),
+        context_snapshot_store=context.context_attrs.get("context_snapshot_store"),
+        context_audit_service=context.context_attrs.get("context_audit_service"),
+        session_id=context.session_id,
+        process_instance_id=context.process_instance_id,
     )
     iteration = int(context.context_attrs.get("iteration", 0))
     trace_service.record_context_assembled(

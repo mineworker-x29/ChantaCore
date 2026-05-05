@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from chanta_core.context import (
+    ContextAssemblySnapshot,
+    ContextAuditService,
     ContextBlock,
     ContextBudget,
     ContextCompactionPipeline,
@@ -10,6 +12,8 @@ from chanta_core.context import (
     ContextHistoryBuilder,
     ContextHistoryEntry,
     ContextRenderer,
+    ContextSnapshotPolicy,
+    ContextSnapshotStore,
     SessionContextPolicy,
     make_context_block,
 )
@@ -22,6 +26,7 @@ if TYPE_CHECKING:
 class ProcessContextAssembler:
     def __init__(self) -> None:
         self.last_compaction_result: ContextCompactionResult | None = None
+        self.last_snapshot: ContextAssemblySnapshot | None = None
 
     def assemble_for_llm_chat(
         self,
@@ -33,21 +38,50 @@ class ProcessContextAssembler:
         compaction_pipeline: ContextCompactionPipeline | None = None,
         history_entries: list[ContextHistoryEntry] | None = None,
         session_context_policy: SessionContextPolicy | None = None,
+        context_snapshot_policy: ContextSnapshotPolicy | None = None,
+        context_snapshot_store: ContextSnapshotStore | None = None,
+        context_audit_service: ContextAuditService | None = None,
+        session_id: str | None = None,
+        process_instance_id: str | None = None,
     ) -> list[ChatMessage]:
         self.last_compaction_result = None
+        self.last_snapshot = None
+        snapshot_enabled = self._snapshot_enabled(
+            context_snapshot_policy,
+            context_audit_service,
+        )
         if (
             context_budget is None
             and not extra_blocks
             and not history_entries
             and session_context_policy is None
         ):
-            return self._assemble_legacy(
+            messages = self._assemble_legacy(
                 user_input=user_input,
                 system_prompt=system_prompt,
                 pig_context=pig_context,
             )
+            if snapshot_enabled:
+                self.last_snapshot = self._maybe_snapshot(
+                    blocks=self._build_blocks(
+                        user_input=user_input,
+                        system_prompt=system_prompt,
+                        pig_context=pig_context,
+                        history_entries=None,
+                        session_context_policy=None,
+                        extra_blocks=None,
+                    ),
+                    messages=messages,
+                    context_budget=None,
+                    context_snapshot_policy=context_snapshot_policy,
+                    context_snapshot_store=context_snapshot_store,
+                    context_audit_service=context_audit_service,
+                    session_id=session_id,
+                    process_instance_id=process_instance_id,
+                )
+            return messages
 
-        blocks = self._build_blocks(
+        assembled_blocks = self._build_blocks(
             user_input=user_input,
             system_prompt=system_prompt,
             pig_context=pig_context,
@@ -55,6 +89,7 @@ class ProcessContextAssembler:
             session_context_policy=session_context_policy,
             extra_blocks=extra_blocks,
         )
+        blocks = list(assembled_blocks)
         if context_budget is not None:
             pipeline = compaction_pipeline or ContextCompactionPipeline.default(
                 session_context_policy=session_context_policy,
@@ -69,6 +104,16 @@ class ProcessContextAssembler:
                 messages.append({"role": "user", "content": block.content})
             else:
                 messages.append({"role": "system", "content": renderer.render_block(block)})
+        self.last_snapshot = self._maybe_snapshot(
+            blocks=assembled_blocks,
+            messages=messages,
+            context_budget=context_budget,
+            context_snapshot_policy=context_snapshot_policy,
+            context_snapshot_store=context_snapshot_store,
+            context_audit_service=context_audit_service,
+            session_id=session_id,
+            process_instance_id=process_instance_id,
+        )
         return messages
 
     def _assemble_legacy(
@@ -131,3 +176,41 @@ class ProcessContextAssembler:
             )
         )
         return blocks
+
+    @staticmethod
+    def _snapshot_enabled(
+        policy: ContextSnapshotPolicy | None,
+        audit_service: ContextAuditService | None,
+    ) -> bool:
+        if audit_service is not None:
+            return audit_service.snapshot_policy.enabled
+        return bool(policy and policy.enabled)
+
+    def _maybe_snapshot(
+        self,
+        *,
+        blocks: list[ContextBlock],
+        messages: list[ChatMessage],
+        context_budget: ContextBudget | None,
+        context_snapshot_policy: ContextSnapshotPolicy | None,
+        context_snapshot_store: ContextSnapshotStore | None,
+        context_audit_service: ContextAuditService | None,
+        session_id: str | None,
+        process_instance_id: str | None,
+    ) -> ContextAssemblySnapshot | None:
+        audit_service = context_audit_service
+        if audit_service is None:
+            if context_snapshot_policy is None:
+                return None
+            audit_service = ContextAuditService(
+                snapshot_policy=context_snapshot_policy,
+                snapshot_store=context_snapshot_store,
+            )
+        return audit_service.maybe_store_snapshot(
+            blocks=blocks,
+            messages=messages,
+            compaction_result=self.last_compaction_result,
+            budget=context_budget,
+            session_id=session_id,
+            process_instance_id=process_instance_id,
+        )

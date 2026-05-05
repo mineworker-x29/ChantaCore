@@ -60,10 +60,22 @@ from chanta_core.context.result import (
     ContextCompactionLayerResult,
     ContextCompactionResult,
 )
+from chanta_core.context.audit import ContextAuditService
+from chanta_core.context.redaction import make_preview, redact_sensitive_text
+from chanta_core.context.snapshot import (
+    ContextAssemblySnapshot,
+    ContextBlockSnapshot,
+    ContextMessageSnapshot,
+    new_context_snapshot_id,
+)
+from chanta_core.context.snapshot_policy import ContextSnapshotPolicy
+from chanta_core.context.snapshot_store import ContextSnapshotStore
 
 __all__ = [
     "ContextBlock",
     "ContextBlockValidationError",
+    "ContextAssemblySnapshot",
+    "ContextAuditService",
     "AutoCompactPolicy",
     "AutoCompactRequest",
     "AutoCompactResult",
@@ -82,10 +94,14 @@ __all__ = [
     "ContextCompactionReporter",
     "ContextCompactionResult",
     "ContextError",
+    "ContextBlockSnapshot",
     "ContextHistoryBuilder",
     "ContextHistoryEntry",
     "ContextHistoryPolicy",
+    "ContextMessageSnapshot",
     "ContextRenderPolicy",
+    "ContextSnapshotPolicy",
+    "ContextSnapshotStore",
     "MicrocompactPolicy",
     "NullAutoCompactSummarizer",
     "ContextRenderer",
@@ -106,10 +122,13 @@ __all__ = [
     "from_process_report",
     "from_tool_result",
     "history_entry_to_context_block",
+    "make_preview",
     "make_context_block",
     "make_auto_compact_output_block",
     "new_auto_compact_request_id",
     "new_context_history_entry_id",
     "new_context_block_id",
     "new_context_reference_id",
+    "new_context_snapshot_id",
+    "redact_sensitive_text",
 ]

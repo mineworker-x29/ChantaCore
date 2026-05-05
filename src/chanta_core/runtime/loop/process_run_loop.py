@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from chanta_core.agents.default_agent import load_default_agent_profile
 from chanta_core.agents.profile import AgentProfile
+from chanta_core.context import ContextSnapshotPolicy
 from chanta_core.llm.client import LLMClient
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.pig.context import PIGContext
@@ -179,6 +180,12 @@ class ProcessRunLoop:
                         "context_budget": (
                             self.policy.context_budget
                             if self.policy.use_context_budget
+                            else None
+                        ),
+                        "context_snapshot_policy": (
+                            self.policy.context_snapshot_policy
+                            or ContextSnapshotPolicy(enabled=True)
+                            if self.policy.enable_context_snapshot
                             else None
                         ),
                     },

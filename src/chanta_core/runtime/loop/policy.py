@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from chanta_core.context import ContextBudget
+from chanta_core.context import ContextBudget, ContextSnapshotPolicy
 from chanta_core.runtime.loop.observation import ProcessObservation
 from chanta_core.runtime.loop.state import ProcessRunState
 
@@ -17,6 +17,8 @@ class ProcessRunPolicy:
     pig_context_scope: Literal["recent", "process_instance", "session"] = "recent"
     use_context_budget: bool = True
     context_budget: ContextBudget | None = field(default_factory=ContextBudget)
+    enable_context_snapshot: bool = False
+    context_snapshot_policy: ContextSnapshotPolicy | None = None
     use_decision_service: bool = True
     use_pig_guidance: bool = False
     guidance_scope: Literal["recent", "process_instance", "session"] = "recent"

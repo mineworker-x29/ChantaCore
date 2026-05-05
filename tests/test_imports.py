@@ -17,18 +17,24 @@ from chanta_core.context import (
     AutoCompactResult,
     AutoCompactSummarizer,
     CollapsedContextManifest,
+    ContextAssemblySnapshot,
+    ContextAuditService,
     ContextCollapsePolicy,
     ContextBlock,
+    ContextBlockSnapshot,
     ContextBudget,
     ContextReference,
     ContextHistoryBuilder,
     ContextHistoryEntry,
     ContextHistoryPolicy,
+    ContextMessageSnapshot,
     ContextCompactionPipeline,
     ContextCompactionReadinessChecker,
     ContextCompactionReporter,
     ContextCompactionResult,
     ContextRenderer,
+    ContextSnapshotPolicy,
+    ContextSnapshotStore,
     MicrocompactPolicy,
     SessionContextPolicy,
     compact_activity_sequence,
@@ -36,6 +42,8 @@ from chanta_core.context import (
     compact_lines,
     compact_mapping,
     compact_report_text,
+    make_preview,
+    redact_sensitive_text,
 )
 from chanta_core.context.layers import (
     AutoCompactLayer,
@@ -206,6 +214,9 @@ def test_required_imports() -> None:
     assert PatchBackupService is not None
     assert create_unified_diff is not None
     assert ContextBlock is not None
+    assert ContextBlockSnapshot is not None
+    assert ContextAssemblySnapshot is not None
+    assert ContextAuditService is not None
     assert AutoCompactPolicy is not None
     assert AutoCompactRequest is not None
     assert AutoCompactResult is not None
@@ -217,11 +228,14 @@ def test_required_imports() -> None:
     assert ContextHistoryBuilder is not None
     assert ContextHistoryEntry is not None
     assert ContextHistoryPolicy is not None
+    assert ContextMessageSnapshot is not None
     assert ContextCompactionPipeline is not None
     assert ContextCompactionReadinessChecker is not None
     assert ContextCompactionReporter is not None
     assert ContextCompactionResult is not None
     assert ContextRenderer is not None
+    assert ContextSnapshotPolicy is not None
+    assert ContextSnapshotStore is not None
     assert MicrocompactPolicy is not None
     assert SessionContextPolicy is not None
     assert compact_lines is not None
@@ -229,6 +243,8 @@ def test_required_imports() -> None:
     assert compact_mapping is not None
     assert compact_json_like_text is not None
     assert compact_report_text is not None
+    assert make_preview is not None
+    assert redact_sensitive_text is not None
     assert BudgetReductionLayer is not None
     assert SnipLayer is not None
     assert MicrocompactLayer is not None
