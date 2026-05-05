@@ -63,6 +63,11 @@ class ProcessRunReport:
             "report_attrs": self.report_attrs,
         }
 
+    def to_context_block(self, priority: int = 50):
+        from chanta_core.context.block import from_process_report
+
+        return from_process_report(self, priority=priority)
+
 
 class PIGReportService:
     def __init__(

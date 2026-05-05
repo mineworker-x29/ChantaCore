@@ -11,6 +11,20 @@ from chanta_core.editing import (
     PatchBackupService,
     create_unified_diff,
 )
+from chanta_core.context import (
+    ContextBlock,
+    ContextBudget,
+    ContextCompactionPipeline,
+    ContextCompactionResult,
+    ContextRenderer,
+)
+from chanta_core.context.layers import (
+    AutoCompactLayer,
+    BudgetReductionLayer,
+    ContextCollapseLayer,
+    MicrocompactLayer,
+    SnipLayer,
+)
 from chanta_core.llm import LLMClient
 from chanta_core.memory.memory_record import MemoryRecord
 from chanta_core.missions.mission import Mission
@@ -172,6 +186,16 @@ def test_required_imports() -> None:
     assert PatchApplicationService is not None
     assert PatchBackupService is not None
     assert create_unified_diff is not None
+    assert ContextBlock is not None
+    assert ContextBudget is not None
+    assert ContextCompactionPipeline is not None
+    assert ContextCompactionResult is not None
+    assert ContextRenderer is not None
+    assert BudgetReductionLayer is not None
+    assert SnipLayer is not None
+    assert MicrocompactLayer is not None
+    assert ContextCollapseLayer is not None
+    assert AutoCompactLayer is not None
     assert AgentRuntime is not None
     assert ChatService is not None
     assert ProcessActivityDecider is not None

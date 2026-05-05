@@ -176,11 +176,17 @@ class ProcessRunLoop:
                         "max_tokens": self.agent_profile.max_tokens,
                         "agent_profile": self.agent_profile,
                         "pig_context_included": pig_context is not None,
+                        "context_budget": (
+                            self.policy.context_budget
+                            if self.policy.use_context_budget
+                            else None
+                        ),
                     },
                     pig_context=pig_context,
                 )
                 skill_result = self.skill_executor.execute(skill, skill_context)
                 self.events.extend(self.skill_executor.events)
+                self._record_context_compaction_attrs(state)
 
                 observation = ProcessObservation(
                     activity=next_activity,
@@ -345,6 +351,19 @@ class ProcessRunLoop:
     def _append_event(self, event: AgentEvent) -> None:
         self.events.append(event)
 
+    def _record_context_compaction_attrs(self, state: ProcessRunState) -> None:
+        result = getattr(self.context_assembler, "last_compaction_result", None)
+        if result is None:
+            return
+        state.state_attrs["context_compaction"] = {
+            "total_chars_after": result.total_chars,
+            "total_estimated_tokens_after": result.total_estimated_tokens,
+            "truncated_block_count": len(result.truncated_block_ids),
+            "dropped_block_count": len(result.dropped_block_ids),
+            "warnings": result.warnings,
+            "layer_count": len(result.layer_results),
+        }
+
     def _decide_skill(
         self,
         *,
@@ -489,4 +508,6 @@ class ProcessRunLoop:
             result["pig_guidance_count"] = state.state_attrs["pig_guidance_count"]
         if state.state_attrs.get("pig_guidance_warning"):
             result["pig_guidance_warning"] = state.state_attrs["pig_guidance_warning"]
+        if state.state_attrs.get("context_compaction"):
+            result["context_compaction"] = state.state_attrs["context_compaction"]
         return result

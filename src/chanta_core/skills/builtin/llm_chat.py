@@ -48,6 +48,8 @@ def execute_llm_chat_skill(
         user_input=context.user_input,
         system_prompt=context.system_prompt,
         pig_context=context.pig_context or context.context_attrs.get("pig_context"),
+        context_budget=context.context_attrs.get("context_budget"),
+        compaction_pipeline=context.context_attrs.get("compaction_pipeline"),
     )
     iteration = int(context.context_attrs.get("iteration", 0))
     trace_service.record_context_assembled(

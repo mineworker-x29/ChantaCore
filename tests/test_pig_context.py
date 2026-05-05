@@ -45,3 +45,7 @@ def test_pig_context_to_dict_preserves_fields() -> None:
     assert data["diagnostics"] == []
     assert data["recommendations"] == []
     assert data["performance_summary"]["failure_count"] == 0
+
+    block = context.to_context_block()
+    assert block.block_type == "pig_context"
+    assert block.content == context.context_text

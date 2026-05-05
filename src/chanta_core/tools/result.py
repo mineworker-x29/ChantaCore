@@ -54,3 +54,8 @@ class ToolResult:
             "output_attrs": self.output_attrs,
             "error": self.error,
         }
+
+    def to_context_block(self, priority: int = 40):
+        from chanta_core.context.block import from_tool_result
+
+        return from_tool_result(self, priority=priority)

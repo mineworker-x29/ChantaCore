@@ -44,3 +44,8 @@ class PIGContext:
             "conformance_report": self.conformance_report,
             "context_attrs": self.context_attrs,
         }
+
+    def to_context_block(self, priority: int = 70):
+        from chanta_core.context.block import from_pig_context
+
+        return from_pig_context(self, priority=priority)
