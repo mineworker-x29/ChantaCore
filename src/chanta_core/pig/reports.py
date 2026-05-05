@@ -161,6 +161,11 @@ class PIGReportService:
             object_type_counts,
             event_activity_counts,
         )
+        hook_lifecycle_summary = self._hook_lifecycle_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -185,6 +190,7 @@ class PIGReportService:
             scheduler_summary=scheduler_summary,
             pi_artifact_summary=pi_artifact_summary,
             memory_instruction_summary=memory_instruction_summary,
+            hook_lifecycle_summary=hook_lifecycle_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -218,6 +224,7 @@ class PIGReportService:
                 "scheduler_summary": scheduler_summary,
                 "pi_artifact_summary": pi_artifact_summary,
                 "memory_instruction_summary": memory_instruction_summary,
+                "hook_lifecycle_summary": hook_lifecycle_summary,
             },
         )
 
@@ -368,6 +375,7 @@ class PIGReportService:
         scheduler_summary: dict[str, Any] | None,
         pi_artifact_summary: dict[str, Any] | None,
         memory_instruction_summary: dict[str, Any] | None,
+        hook_lifecycle_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -474,6 +482,17 @@ class PIGReportService:
                 f"- User preferences: {(memory_instruction_summary or {}).get('user_preference_count', 0)}",
                 f"- Memory events: {(memory_instruction_summary or {}).get('memory_event_count', 0)}",
                 f"- Instruction events: {(memory_instruction_summary or {}).get('instruction_event_count', 0)}",
+                "",
+                "Hook Lifecycle Observability:",
+                f"- Hook definitions: {(hook_lifecycle_summary or {}).get('hook_definition_count', 0)}",
+                f"- Hook invocations: {(hook_lifecycle_summary or {}).get('hook_invocation_count', 0)}",
+                f"- Hook results: {(hook_lifecycle_summary or {}).get('hook_result_count', 0)}",
+                f"- Hook policies: {(hook_lifecycle_summary or {}).get('hook_policy_count', 0)}",
+                f"- Hook invoked events: {(hook_lifecycle_summary or {}).get('hook_invoked_count', 0)}",
+                f"- Hook completed events: {(hook_lifecycle_summary or {}).get('hook_completed_count', 0)}",
+                f"- Hook failed events: {(hook_lifecycle_summary or {}).get('hook_failed_count', 0)}",
+                f"- Hook skipped events: {(hook_lifecycle_summary or {}).get('hook_skipped_count', 0)}",
+                f"- Hook invocations by stage: {PIGReportService._inline_counts((hook_lifecycle_summary or {}).get('hook_invocation_by_stage') or {})}",
             ]
         )
 
@@ -599,6 +618,31 @@ class PIGReportService:
                 event_activity_counts.get(activity, 0)
                 for activity in instruction_events
             ),
+        }
+
+    @staticmethod
+    def _hook_lifecycle_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_stage: dict[str, int] = {}
+        for event in view.events:
+            if event.event_activity != "hook_invoked":
+                continue
+            stage = str(event.event_attrs.get("lifecycle_stage") or "other")
+            by_stage[stage] = by_stage.get(stage, 0) + 1
+        return {
+            "hook_definition_count": object_type_counts.get("hook_definition", 0),
+            "hook_invocation_count": object_type_counts.get("hook_invocation", 0),
+            "hook_result_count": object_type_counts.get("hook_result", 0),
+            "hook_policy_count": object_type_counts.get("hook_policy", 0),
+            "hook_invoked_count": event_activity_counts.get("hook_invoked", 0),
+            "hook_completed_count": event_activity_counts.get("hook_completed", 0),
+            "hook_failed_count": event_activity_counts.get("hook_failed", 0),
+            "hook_skipped_count": event_activity_counts.get("hook_skipped", 0),
+            "hook_result_recorded_count": event_activity_counts.get("hook_result_recorded", 0),
+            "hook_invocation_by_stage": by_stage,
         }
 
     @staticmethod

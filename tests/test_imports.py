@@ -20,6 +20,16 @@ from chanta_core.instructions import (
     project_rules_to_history_entries,
     user_preferences_to_history_entries,
 )
+from chanta_core.hooks import (
+    HookDefinition,
+    HookInvocation,
+    HookLifecycleService,
+    HookPolicy,
+    HookRegistry,
+    HookResult,
+    is_known_lifecycle_stage,
+    normalize_lifecycle_stage,
+)
 from chanta_core.context import (
     AutoCompactPolicy,
     AutoCompactRequest,
@@ -253,6 +263,14 @@ def test_required_imports() -> None:
     assert instruction_artifacts_to_history_entries is not None
     assert project_rules_to_history_entries is not None
     assert user_preferences_to_history_entries is not None
+    assert HookDefinition is not None
+    assert HookInvocation is not None
+    assert HookResult is not None
+    assert HookPolicy is not None
+    assert HookRegistry is not None
+    assert HookLifecycleService is not None
+    assert normalize_lifecycle_stage is not None
+    assert is_known_lifecycle_stage is not None
     assert ContextBlock is not None
     assert ContextBlockSnapshot is not None
     assert ContextAssemblySnapshot is not None

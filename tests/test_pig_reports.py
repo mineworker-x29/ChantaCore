@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from chanta_core.llm.types import ChatMessage
 from chanta_core.instructions import InstructionService
+from chanta_core.hooks import HookLifecycleService
 from chanta_core.memory import MemoryService
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.loader import OCPXLoader
@@ -126,3 +127,31 @@ def test_report_includes_memory_instruction_counts(tmp_path) -> None:
     assert summary["memory_event_count"] >= 2
     assert summary["instruction_event_count"] >= 3
     assert "Memory / Instruction Substrate" in report.report_text
+
+
+def test_report_includes_hook_lifecycle_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_hooks.sqlite")
+    hook_service = HookLifecycleService(trace_service=TraceService(ocel_store=store))
+    hook = hook_service.register_hook_definition(
+        hook_name="Report hook",
+        hook_type="observer",
+        lifecycle_stage="pre_process_run",
+    )
+    hook_service.register_hook_policy(hook_id=hook.hook_id)
+    hook_service.observe_lifecycle_point(
+        lifecycle_stage="pre_process_run",
+        process_instance_id="process_instance:hook-report",
+    )
+    service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = service.build_recent_report(limit=50)
+    summary = report.report_attrs["hook_lifecycle_summary"]
+
+    assert summary["hook_definition_count"] >= 1
+    assert summary["hook_invocation_count"] >= 1
+    assert summary["hook_result_count"] >= 1
+    assert summary["hook_policy_count"] >= 1
+    assert summary["hook_invoked_count"] >= 1
+    assert summary["hook_completed_count"] >= 1
+    assert summary["hook_invocation_by_stage"]["pre_process_run"] >= 1
+    assert "Hook Lifecycle Observability" in report.report_text
