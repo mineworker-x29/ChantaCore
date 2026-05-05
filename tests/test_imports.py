@@ -11,6 +11,15 @@ from chanta_core.editing import (
     PatchBackupService,
     create_unified_diff,
 )
+from chanta_core.instructions import (
+    InstructionArtifact,
+    InstructionService,
+    ProjectRule,
+    UserPreference,
+    instruction_artifacts_to_history_entries,
+    project_rules_to_history_entries,
+    user_preferences_to_history_entries,
+)
 from chanta_core.context import (
     AutoCompactPolicy,
     AutoCompactRequest,
@@ -54,6 +63,12 @@ from chanta_core.context.layers import (
 )
 from chanta_core.llm import LLMClient
 from chanta_core.memory.memory_record import MemoryRecord
+from chanta_core.memory import (
+    MemoryEntry,
+    MemoryRevision,
+    MemoryService,
+    memory_entries_to_history_entries,
+)
 from chanta_core.missions.mission import Mission
 from chanta_core.ocel.external_import import (
     ExternalOCELIngestionService,
@@ -220,6 +235,13 @@ def test_required_imports() -> None:
     assert PatchApplicationService is not None
     assert PatchBackupService is not None
     assert create_unified_diff is not None
+    assert InstructionArtifact is not None
+    assert InstructionService is not None
+    assert ProjectRule is not None
+    assert UserPreference is not None
+    assert instruction_artifacts_to_history_entries is not None
+    assert project_rules_to_history_entries is not None
+    assert user_preferences_to_history_entries is not None
     assert ContextBlock is not None
     assert ContextBlockSnapshot is not None
     assert ContextAssemblySnapshot is not None
@@ -272,6 +294,10 @@ def test_required_imports() -> None:
     assert AgentEvent is not None
     assert TraceService is not None
     assert MemoryRecord is not None
+    assert MemoryEntry is not None
+    assert MemoryRevision is not None
+    assert MemoryService is not None
+    assert memory_entries_to_history_entries is not None
     assert Skill is not None
     assert SkillExecutionContext is not None
     assert SkillExecutionResult is not None

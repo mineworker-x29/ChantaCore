@@ -157,6 +157,10 @@ class PIGReportService:
         worker_summary = self._worker_summary()
         scheduler_summary = self._scheduler_summary()
         pi_artifact_summary = self._pi_artifact_summary()
+        memory_instruction_summary = self._memory_instruction_summary(
+            object_type_counts,
+            event_activity_counts,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -180,6 +184,7 @@ class PIGReportService:
             worker_summary=worker_summary,
             scheduler_summary=scheduler_summary,
             pi_artifact_summary=pi_artifact_summary,
+            memory_instruction_summary=memory_instruction_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -212,6 +217,7 @@ class PIGReportService:
                 "worker_summary": worker_summary,
                 "scheduler_summary": scheduler_summary,
                 "pi_artifact_summary": pi_artifact_summary,
+                "memory_instruction_summary": memory_instruction_summary,
             },
         )
 
@@ -361,6 +367,7 @@ class PIGReportService:
         worker_summary: dict[str, Any] | None,
         scheduler_summary: dict[str, Any] | None,
         pi_artifact_summary: dict[str, Any] | None,
+        memory_instruction_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -458,6 +465,15 @@ class PIGReportService:
                 f"- Artifact count: {(pi_artifact_summary or {}).get('artifact_count', 0)}",
                 f"- Recent artifacts: {PIGReportService._recent_artifacts_text((pi_artifact_summary or {}).get('recent_artifacts') or [])}",
                 "- Reminder: PI artifacts are advisory.",
+                "",
+                "Memory / Instruction Substrate:",
+                f"- Memory entries: {(memory_instruction_summary or {}).get('memory_entry_count', 0)}",
+                f"- Memory revisions: {(memory_instruction_summary or {}).get('memory_revision_count', 0)}",
+                f"- Instruction artifacts: {(memory_instruction_summary or {}).get('instruction_artifact_count', 0)}",
+                f"- Project rules: {(memory_instruction_summary or {}).get('project_rule_count', 0)}",
+                f"- User preferences: {(memory_instruction_summary or {}).get('user_preference_count', 0)}",
+                f"- Memory events: {(memory_instruction_summary or {}).get('memory_event_count', 0)}",
+                f"- Instruction events: {(memory_instruction_summary or {}).get('instruction_event_count', 0)}",
             ]
         )
 
@@ -543,6 +559,46 @@ class PIGReportService:
                 }
                 for item in artifacts[:5]
             ],
+        }
+
+    @staticmethod
+    def _memory_instruction_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+    ) -> dict[str, Any]:
+        memory_events = {
+            "memory_entry_created",
+            "memory_entry_revised",
+            "memory_entry_superseded",
+            "memory_entry_archived",
+            "memory_entry_withdrawn",
+            "memory_revision_recorded",
+            "memory_derived_from_message",
+            "memory_attached_to_session",
+            "memory_attached_to_turn",
+        }
+        instruction_events = {
+            "instruction_artifact_registered",
+            "instruction_artifact_revised",
+            "instruction_artifact_deprecated",
+            "project_rule_registered",
+            "project_rule_revised",
+            "user_preference_registered",
+            "user_preference_revised",
+        }
+        return {
+            "memory_entry_count": object_type_counts.get("memory_entry", 0),
+            "memory_revision_count": object_type_counts.get("memory_revision", 0),
+            "instruction_artifact_count": object_type_counts.get("instruction_artifact", 0),
+            "project_rule_count": object_type_counts.get("project_rule", 0),
+            "user_preference_count": object_type_counts.get("user_preference", 0),
+            "memory_event_count": sum(
+                event_activity_counts.get(activity, 0) for activity in memory_events
+            ),
+            "instruction_event_count": sum(
+                event_activity_counts.get(activity, 0)
+                for activity in instruction_events
+            ),
         }
 
     @staticmethod
