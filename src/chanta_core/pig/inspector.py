@@ -122,6 +122,8 @@ class PISubstrateInspector:
             "recommendations_count": 0,
             "verification_summary": report.report_attrs.get("verification_summary", {}),
             "process_outcome_summary": report.report_attrs.get("process_outcome_summary", {}),
+            "permission_summary": report.report_attrs.get("permission_summary", {}),
+            "workspace_write_sandbox_summary": report.report_attrs.get("workspace_write_sandbox_summary", {}),
         }
         conformance_summary = {
             "status": conformance.status,
@@ -183,6 +185,8 @@ class PISubstrateInspector:
                 "patch_summary": patch_summary,
                 "verification_summary": pig_summary.get("verification_summary", {}),
                 "process_outcome_summary": pig_summary.get("process_outcome_summary", {}),
+                "permission_summary": pig_summary.get("permission_summary", {}),
+                "workspace_write_sandbox_summary": pig_summary.get("workspace_write_sandbox_summary", {}),
             },
         )
 
@@ -277,6 +281,9 @@ class PISubstrateInspector:
                 f"- Verification contracts: {(pig_summary.get('verification_summary') or {}).get('verification_contract_count', 0)}",
                 f"- Verification results: {(pig_summary.get('verification_summary') or {}).get('verification_result_count', 0)}",
                 f"- Outcome evaluations: {(pig_summary.get('process_outcome_summary') or {}).get('process_outcome_evaluation_count', 0)}",
+                f"- Permission requests: {(pig_summary.get('permission_summary') or {}).get('permission_request_count', 0)}",
+                f"- Session permission resolutions: {(pig_summary.get('permission_summary') or {}).get('session_permission_resolution_count', 0)}",
+                f"- Workspace write sandbox decisions: {(pig_summary.get('workspace_write_sandbox_summary') or {}).get('workspace_write_sandbox_decision_count', 0)}",
                 "",
                 "Conformance:",
                 f"- Process status: {conformance_summary.get('status')}",

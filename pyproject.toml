@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.11.2"
-description = "OCEL-native process outcome evaluation from verification evidence."
+version = "0.12.2"
+description = "OCEL-native workspace write sandbox foundation."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]

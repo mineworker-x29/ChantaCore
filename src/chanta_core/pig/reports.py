@@ -185,6 +185,16 @@ class PIGReportService:
             event_activity_counts,
             view,
         )
+        permission_summary = self._permission_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        workspace_write_sandbox_summary = self._workspace_write_sandbox_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -214,6 +224,8 @@ class PIGReportService:
             tool_registry_summary=tool_registry_summary,
             verification_summary=verification_summary,
             outcome_summary=outcome_summary,
+            permission_summary=permission_summary,
+            workspace_write_sandbox_summary=workspace_write_sandbox_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -252,6 +264,8 @@ class PIGReportService:
                 "tool_registry_summary": tool_registry_summary,
                 "verification_summary": verification_summary,
                 "process_outcome_summary": outcome_summary,
+                "permission_summary": permission_summary,
+                "workspace_write_sandbox_summary": workspace_write_sandbox_summary,
             },
         )
 
@@ -407,6 +421,8 @@ class PIGReportService:
         tool_registry_summary: dict[str, Any] | None,
         verification_summary: dict[str, Any] | None,
         outcome_summary: dict[str, Any] | None,
+        permission_summary: dict[str, Any] | None,
+        workspace_write_sandbox_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -572,6 +588,36 @@ class PIGReportService:
                 f"- Average score: {(outcome_summary or {}).get('average_outcome_score')}",
                 f"- Outcome by contract type: {PIGReportService._inline_counts((outcome_summary or {}).get('process_outcome_by_contract_type') or {})}",
                 f"- Outcome by target type: {PIGReportService._inline_counts((outcome_summary or {}).get('process_outcome_by_target_type') or {})}",
+                "",
+                "Permission Model:",
+                f"- Scopes: {(permission_summary or {}).get('permission_scope_count', 0)}",
+                f"- Requests: {(permission_summary or {}).get('permission_request_count', 0)}",
+                f"- Decisions: {(permission_summary or {}).get('permission_decision_count', 0)}",
+                f"- Grants: {(permission_summary or {}).get('permission_grant_count', 0)}",
+                f"- Denials: {(permission_summary or {}).get('permission_denial_count', 0)}",
+                f"- Policy notes: {(permission_summary or {}).get('permission_policy_note_count', 0)}",
+                f"- Request types: {PIGReportService._inline_counts((permission_summary or {}).get('permission_request_by_type') or {})}",
+                f"- Operations: {PIGReportService._inline_counts((permission_summary or {}).get('permission_request_by_operation') or {})}",
+                f"- Decision allow/deny/ask/defer: {(permission_summary or {}).get('permission_decision_allow_count', 0)}/{(permission_summary or {}).get('permission_decision_deny_count', 0)}/{(permission_summary or {}).get('permission_decision_ask_count', 0)}/{(permission_summary or {}).get('permission_decision_defer_count', 0)}",
+                f"- Active grants: {(permission_summary or {}).get('permission_grant_active_count', 0)}",
+                "",
+                "Session Permission Read-model:",
+                f"- Contexts: {(permission_summary or {}).get('session_permission_context_count', 0)}",
+                f"- Snapshots: {(permission_summary or {}).get('session_permission_snapshot_count', 0)}",
+                f"- Resolutions: {(permission_summary or {}).get('session_permission_resolution_count', 0)}",
+                f"- Resolution allow/deny/ask/inconclusive: {(permission_summary or {}).get('session_permission_resolution_allow_count', 0)}/{(permission_summary or {}).get('session_permission_resolution_deny_count', 0)}/{(permission_summary or {}).get('session_permission_resolution_ask_count', 0)}/{(permission_summary or {}).get('session_permission_resolution_inconclusive_count', 0)}",
+                f"- Session active/expired/revoked grants: {(permission_summary or {}).get('session_active_grant_count', 0)}/{(permission_summary or {}).get('session_expired_grant_count', 0)}/{(permission_summary or {}).get('session_revoked_grant_count', 0)}",
+                f"- Session denials: {(permission_summary or {}).get('session_denial_count', 0)}",
+                f"- Pending session permission requests: {(permission_summary or {}).get('session_pending_permission_request_count', 0)}",
+                "",
+                "Workspace Write Sandbox:",
+                f"- Workspace roots: {(workspace_write_sandbox_summary or {}).get('workspace_root_count', 0)}",
+                f"- Boundaries: {(workspace_write_sandbox_summary or {}).get('workspace_write_boundary_count', 0)}",
+                f"- Intents: {(workspace_write_sandbox_summary or {}).get('workspace_write_intent_count', 0)}",
+                f"- Decisions: {(workspace_write_sandbox_summary or {}).get('workspace_write_sandbox_decision_count', 0)}",
+                f"- Violations: {(workspace_write_sandbox_summary or {}).get('workspace_write_sandbox_violation_count', 0)}",
+                f"- Allowed/denied/review/inconclusive/error: {(workspace_write_sandbox_summary or {}).get('workspace_write_allowed_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_denied_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_needs_review_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_inconclusive_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_error_count', 0)}",
+                f"- Outside/protected/denied violations: {(workspace_write_sandbox_summary or {}).get('workspace_write_outside_workspace_violation_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_protected_path_violation_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_denied_path_violation_count', 0)}",
             ]
         )
 
@@ -925,6 +971,131 @@ class PIGReportService:
             "process_outcome_by_target_type": by_target_type,
             "average_evidence_coverage": round(sum(coverages) / len(coverages), 6) if coverages else None,
             "average_outcome_score": round(sum(scores) / len(scores), 6) if scores else None,
+        }
+
+    @staticmethod
+    def _permission_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        request_by_type: dict[str, int] = {}
+        request_by_operation: dict[str, int] = {}
+        decision_counts = {"allow": 0, "deny": 0, "ask": 0, "defer": 0, "inconclusive": 0}
+        resolution_counts = {"allow": 0, "deny": 0, "ask": 0, "defer": 0, "inconclusive": 0}
+        active_grants = 0
+        session_active_grants = 0
+        session_expired_grants = 0
+        session_revoked_grants = 0
+        session_denials = 0
+        session_pending_requests = 0
+        for item in view.objects:
+            if item.object_type == "permission_request":
+                request_type = str(item.object_attrs.get("request_type") or "unknown")
+                operation = str(item.object_attrs.get("operation") or "unknown")
+                request_by_type[request_type] = request_by_type.get(request_type, 0) + 1
+                request_by_operation[operation] = request_by_operation.get(operation, 0) + 1
+                if item.object_attrs.get("session_id") and item.object_attrs.get("status") == "pending":
+                    session_pending_requests += 1
+            if item.object_type == "permission_decision":
+                decision = str(item.object_attrs.get("decision") or "unknown")
+                if decision in decision_counts:
+                    decision_counts[decision] += 1
+            if item.object_type == "permission_grant":
+                if item.object_attrs.get("status") == "active":
+                    active_grants += 1
+                if item.object_attrs.get("session_id"):
+                    if item.object_attrs.get("status") == "active":
+                        session_active_grants += 1
+                    if item.object_attrs.get("status") == "expired":
+                        session_expired_grants += 1
+                    if item.object_attrs.get("status") == "revoked":
+                        session_revoked_grants += 1
+            if item.object_type == "permission_denial" and item.object_attrs.get("session_id"):
+                session_denials += 1
+            if item.object_type == "session_permission_resolution":
+                resolved = str(item.object_attrs.get("resolved_decision") or "unknown")
+                if resolved in resolution_counts:
+                    resolution_counts[resolved] += 1
+        return {
+            "permission_scope_count": object_type_counts.get("permission_scope", 0),
+            "permission_request_count": object_type_counts.get("permission_request", 0),
+            "permission_decision_count": object_type_counts.get("permission_decision", 0),
+            "permission_grant_count": object_type_counts.get("permission_grant", 0),
+            "permission_denial_count": object_type_counts.get("permission_denial", 0),
+            "permission_policy_note_count": object_type_counts.get("permission_policy_note", 0),
+            "permission_request_by_type": request_by_type,
+            "permission_request_by_operation": request_by_operation,
+            "permission_decision_allow_count": decision_counts["allow"],
+            "permission_decision_deny_count": decision_counts["deny"],
+            "permission_decision_ask_count": decision_counts["ask"],
+            "permission_decision_defer_count": decision_counts["defer"],
+            "permission_decision_inconclusive_count": decision_counts["inconclusive"],
+            "permission_grant_active_count": active_grants,
+            "session_permission_context_count": object_type_counts.get("session_permission_context", 0),
+            "session_permission_snapshot_count": object_type_counts.get("session_permission_snapshot", 0),
+            "session_permission_resolution_count": object_type_counts.get("session_permission_resolution", 0),
+            "session_permission_resolution_allow_count": resolution_counts["allow"],
+            "session_permission_resolution_deny_count": resolution_counts["deny"],
+            "session_permission_resolution_ask_count": resolution_counts["ask"],
+            "session_permission_resolution_defer_count": resolution_counts["defer"],
+            "session_permission_resolution_inconclusive_count": resolution_counts["inconclusive"],
+            "session_active_grant_count": session_active_grants,
+            "session_expired_grant_count": session_expired_grants,
+            "session_revoked_grant_count": session_revoked_grants,
+            "session_denial_count": session_denials,
+            "session_pending_permission_request_count": session_pending_requests,
+            "permission_scope_registered_count": event_activity_counts.get("permission_scope_registered", 0),
+            "permission_request_created_count": event_activity_counts.get("permission_request_created", 0),
+            "permission_decision_recorded_count": event_activity_counts.get("permission_decision_recorded", 0),
+            "permission_grant_recorded_count": event_activity_counts.get("permission_grant_recorded", 0),
+            "permission_denial_recorded_count": event_activity_counts.get("permission_denial_recorded", 0),
+            "permission_policy_note_registered_count": event_activity_counts.get("permission_policy_note_registered", 0),
+            "session_permission_context_created_count": event_activity_counts.get("session_permission_context_created", 0),
+            "session_permission_request_created_count": event_activity_counts.get("session_permission_request_created", 0),
+            "session_permission_grant_attached_count": event_activity_counts.get("session_permission_grant_attached", 0),
+            "session_permission_denial_attached_count": event_activity_counts.get("session_permission_denial_attached", 0),
+            "session_permission_snapshot_created_count": event_activity_counts.get("session_permission_snapshot_created", 0),
+            "session_permission_resolution_recorded_count": event_activity_counts.get("session_permission_resolution_recorded", 0),
+        }
+
+    @staticmethod
+    def _workspace_write_sandbox_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        decision_counts = {"allowed": 0, "denied": 0, "needs_review": 0, "inconclusive": 0, "error": 0}
+        violation_counts = {"outside_workspace": 0, "protected_path": 0, "denied_path": 0}
+        for item in view.objects:
+            if item.object_type == "workspace_write_sandbox_decision":
+                decision = str(item.object_attrs.get("decision") or "unknown")
+                if decision in decision_counts:
+                    decision_counts[decision] += 1
+            if item.object_type == "workspace_write_sandbox_violation":
+                violation_type = str(item.object_attrs.get("violation_type") or "unknown")
+                if violation_type in violation_counts:
+                    violation_counts[violation_type] += 1
+        return {
+            "workspace_root_count": object_type_counts.get("workspace_root", 0),
+            "workspace_write_boundary_count": object_type_counts.get("workspace_write_boundary", 0),
+            "workspace_write_intent_count": object_type_counts.get("workspace_write_intent", 0),
+            "workspace_write_sandbox_decision_count": object_type_counts.get("workspace_write_sandbox_decision", 0),
+            "workspace_write_sandbox_violation_count": object_type_counts.get("workspace_write_sandbox_violation", 0),
+            "workspace_write_allowed_count": decision_counts["allowed"],
+            "workspace_write_denied_count": decision_counts["denied"],
+            "workspace_write_needs_review_count": decision_counts["needs_review"],
+            "workspace_write_inconclusive_count": decision_counts["inconclusive"],
+            "workspace_write_error_count": decision_counts["error"],
+            "workspace_write_outside_workspace_violation_count": violation_counts["outside_workspace"],
+            "workspace_write_protected_path_violation_count": violation_counts["protected_path"],
+            "workspace_write_denied_path_violation_count": violation_counts["denied_path"],
+            "workspace_root_registered_count": event_activity_counts.get("workspace_root_registered", 0),
+            "workspace_write_boundary_registered_count": event_activity_counts.get("workspace_write_boundary_registered", 0),
+            "workspace_write_intent_created_count": event_activity_counts.get("workspace_write_intent_created", 0),
+            "workspace_write_sandbox_evaluated_count": event_activity_counts.get("workspace_write_sandbox_evaluated", 0),
+            "workspace_write_sandbox_decision_recorded_count": event_activity_counts.get("workspace_write_sandbox_decision_recorded", 0),
+            "workspace_write_sandbox_violation_recorded_count": event_activity_counts.get("workspace_write_sandbox_violation_recorded", 0),
         }
 
     @staticmethod

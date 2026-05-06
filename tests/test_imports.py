@@ -117,6 +117,26 @@ from chanta_core.outcomes import (
     ProcessOutcomeTarget,
     process_outcome_evaluations_to_history_entries,
 )
+from chanta_core.permissions import (
+    PermissionDecision,
+    PermissionDenial,
+    PermissionGrant,
+    PermissionModelService,
+    PermissionPolicyNote,
+    PermissionRequest,
+    PermissionScope,
+    SessionPermissionContext,
+    SessionPermissionResolution,
+    SessionPermissionService,
+    SessionPermissionSnapshot,
+    permission_decisions_to_history_entries,
+    permission_denials_to_history_entries,
+    permission_grants_to_history_entries,
+    permission_requests_to_history_entries,
+    session_permission_contexts_to_history_entries,
+    session_permission_resolutions_to_history_entries,
+    session_permission_snapshots_to_history_entries,
+)
 from chanta_core.pig.artifact_store import PIArtifactStore
 from chanta_core.pig.artifacts import PIArtifact
 from chanta_core.pig.assimilation import HumanPIAssimilator
@@ -167,6 +187,17 @@ from chanta_core.scheduler import (
     ScheduleEvaluator,
     SchedulerRunner,
     SchedulerService,
+)
+from chanta_core.sandbox import (
+    WorkspaceRoot,
+    WorkspaceWriteBoundary,
+    WorkspaceWriteIntent,
+    WorkspaceWriteSandboxDecision,
+    WorkspaceWriteSandboxService,
+    WorkspaceWriteSandboxViolation,
+    workspace_write_intents_to_history_entries,
+    workspace_write_sandbox_decisions_to_history_entries,
+    workspace_write_sandbox_violations_to_history_entries,
 )
 from chanta_core.session import (
     AgentSession,
@@ -424,6 +455,24 @@ def test_required_imports() -> None:
     assert ProcessOutcomeEvaluation is not None
     assert ProcessOutcomeEvaluationService is not None
     assert process_outcome_evaluations_to_history_entries is not None
+    assert PermissionScope is not None
+    assert PermissionRequest is not None
+    assert PermissionDecision is not None
+    assert PermissionGrant is not None
+    assert PermissionDenial is not None
+    assert PermissionPolicyNote is not None
+    assert PermissionModelService is not None
+    assert SessionPermissionContext is not None
+    assert SessionPermissionSnapshot is not None
+    assert SessionPermissionResolution is not None
+    assert SessionPermissionService is not None
+    assert permission_requests_to_history_entries is not None
+    assert permission_decisions_to_history_entries is not None
+    assert permission_grants_to_history_entries is not None
+    assert permission_denials_to_history_entries is not None
+    assert session_permission_contexts_to_history_entries is not None
+    assert session_permission_snapshots_to_history_entries is not None
+    assert session_permission_resolutions_to_history_entries is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None
@@ -451,6 +500,15 @@ def test_required_imports() -> None:
     assert ScheduleEvaluator is not None
     assert SchedulerService is not None
     assert SchedulerRunner is not None
+    assert WorkspaceRoot is not None
+    assert WorkspaceWriteBoundary is not None
+    assert WorkspaceWriteIntent is not None
+    assert WorkspaceWriteSandboxDecision is not None
+    assert WorkspaceWriteSandboxViolation is not None
+    assert WorkspaceWriteSandboxService is not None
+    assert workspace_write_intents_to_history_entries is not None
+    assert workspace_write_sandbox_decisions_to_history_entries is not None
+    assert workspace_write_sandbox_violations_to_history_entries is not None
     assert AgentSession is not None
     assert ConversationTurn is not None
     assert SessionContextSnapshot is not None

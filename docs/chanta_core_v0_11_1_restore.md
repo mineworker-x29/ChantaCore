@@ -26,6 +26,41 @@ It exports:
 - `ReadOnlyVerificationSkillOutcome`
 - `ReadOnlyVerificationSkillService`
 
+The existing verification contract package remains the canonical persistence
+surface. The read-only skill layer does not introduce a separate persistence
+store.
+
+## Models
+
+`ReadOnlyVerificationSkillSpec` describes local skill metadata:
+
+- skill name
+- description
+- contract type
+- target type
+- evidence kind on pass
+- evidence kind on fail
+- read-only marker
+- attrs
+
+`read_only` is always true.
+
+`ReadOnlyVerificationSkillOutcome` describes the local observation outcome
+before it is recorded as verification evidence and result:
+
+- skill name
+- passed flag
+- status
+- evidence kind
+- evidence content
+- reason
+- confidence
+- attrs
+
+The outcome model is not canonical persistence. Canonical persistence is still
+the `VerificationRun`, `VerificationEvidence`, and `VerificationResult` records
+written through OCEL.
+
 ## Skills
 
 The service registers local read-only skills:
@@ -49,6 +84,42 @@ Each skill records:
 Runs are completed, failed, or skipped through the existing verification
 lifecycle. Passed and failed results still require evidence IDs.
 
+## Skill Behavior
+
+`verify_file_exists(...)` observes whether a path exists. It records
+`file_exists` evidence when present and `file_missing` evidence when absent.
+
+`verify_path_type(...)` observes whether a path is a file, directory, or any
+existing path. It uses only local path metadata.
+
+`verify_tool_available(...)` resolves a tool name with `shutil.which(...)`.
+It records tool availability but never executes the resolved tool.
+
+`verify_runtime_python_info(...)` records Python runtime metadata from
+`sys` and `platform`.
+
+`verify_ocel_object_type_exists(...)` and
+`verify_ocel_event_activity_exists(...)` inspect available OCEL facts through
+read-only store access when available, or through caller-provided fallback
+lists. They do not mutate the OCEL store.
+
+`verify_materialized_view_warning(...)` and
+`verify_tool_registry_view_warning(...)` read generated Markdown view text and
+check whether the required non-canonical warnings are present.
+
+`run_skill(...)` dispatches only to known local read-only methods. It does not
+dynamically import external skills, plugins, MCP connectors, or marketplace
+content.
+
+## Default Contracts
+
+When a caller does not provide a `contract_id`, the service registers a default
+verification contract for the skill. This preserves the v0.11.0 contract/run
+shape even for simple observations.
+
+Default contracts are append-only in this release. No contract lookup or
+deduplication layer is introduced.
+
 ## Allowed Observation Operations
 
 v0.11.1 permits only read-only observations:
@@ -64,6 +135,28 @@ v0.11.1 permits only read-only observations:
 - read-only text inspection of generated Markdown views
 
 `verify_tool_available` resolves a command path but does not execute the tool.
+
+## OCEL Flow
+
+Every skill execution records the existing v0.11.0 verification flow:
+
+- `verification_contract_registered` when a default contract is created
+- `verification_target_registered`
+- `verification_run_started`
+- `verification_evidence_recorded`
+- `verification_result_recorded`
+- `verification_run_completed`, `verification_run_failed`, or
+  `verification_run_skipped`
+
+The object types remain:
+
+- `verification_contract`
+- `verification_target`
+- `verification_run`
+- `verification_evidence`
+- `verification_result`
+
+No skill-specific canonical store is added.
 
 ## Forbidden Boundary
 
@@ -109,6 +202,8 @@ These are reporting counts only. They are not process outcome evaluation.
 - No permission/grant/sandbox behavior is introduced.
 - No process outcome evaluation is introduced.
 - PIG report exposes read-only verification skill counts.
+- Markdown views remain inspection targets only and are not canonical.
+- JSONL is not introduced as canonical verification persistence.
 
 ## Restore / Verification Commands
 
@@ -134,6 +229,9 @@ Smoke script:
 ```powershell
 .\.venv\Scripts\python.exe scripts\test_read_only_verification_skills.py
 ```
+
+Full compatibility should also include the v0.11.0 verification tests and the
+v0.10.x substrate tests.
 
 ## Remaining Limitations
 

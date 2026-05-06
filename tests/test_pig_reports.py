@@ -9,8 +9,10 @@ from chanta_core.memory import MemoryService
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.outcomes import ProcessOutcomeEvaluationService
+from chanta_core.permissions import PermissionModelService, SessionPermissionService
 from chanta_core.pig.reports import PIGReportService, ProcessRunReport
 from chanta_core.runtime.loop import ProcessRunLoop
+from chanta_core.sandbox import WorkspaceWriteSandboxService
 from chanta_core.session import SessionContinuityService, SessionService
 from chanta_core.tool_registry import ToolRegistryViewService
 from chanta_core.traces.trace_service import TraceService
@@ -385,3 +387,175 @@ def test_report_includes_process_outcome_counts(tmp_path) -> None:
     assert summary["process_outcome_by_contract_type"]["process_completion"] >= 1
     assert summary["process_outcome_by_target_type"]["process_instance"] >= 1
     assert "Process Outcome Evaluation" in report.report_text
+
+
+def test_report_includes_permission_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_permission.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    permission_service = PermissionModelService(trace_service=trace_service)
+    scope = permission_service.register_scope(
+        scope_name="Tool read",
+        scope_type="tool",
+        target_type="tool_descriptor",
+        target_ref="tool_descriptor:workspace",
+    )
+    request = permission_service.create_request(
+        request_type="tool_use",
+        target_type="tool_descriptor",
+        target_ref="tool_descriptor:workspace",
+        operation="read",
+        scope_id=scope.scope_id,
+    )
+    permission_service.record_decision(
+        request_id=request.request_id,
+        decision="ask",
+        decision_mode="manual",
+    )
+    permission_service.record_grant(
+        request_id=request.request_id,
+        scope_id=scope.scope_id,
+        target_type="tool_descriptor",
+        target_ref="tool_descriptor:workspace",
+        operation="read",
+    )
+    permission_service.record_denial(
+        request_id=request.request_id,
+        scope_id=scope.scope_id,
+        target_type="tool_descriptor",
+        target_ref="tool_descriptor:workspace",
+        operation="write",
+    )
+    permission_service.register_policy_note(
+        scope_id=scope.scope_id,
+        note_type="review_needed",
+        text="Review.",
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["permission_summary"]
+
+    assert summary["permission_scope_count"] >= 1
+    assert summary["permission_request_count"] >= 1
+    assert summary["permission_decision_count"] >= 1
+    assert summary["permission_grant_count"] >= 1
+    assert summary["permission_denial_count"] >= 1
+    assert summary["permission_policy_note_count"] >= 1
+    assert summary["permission_request_by_type"]["tool_use"] >= 1
+    assert summary["permission_request_by_operation"]["read"] >= 1
+    assert summary["permission_decision_ask_count"] >= 1
+    assert summary["permission_grant_active_count"] >= 1
+    assert "Permission Model" in report.report_text
+
+
+def test_report_includes_session_permission_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_session_permission.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    permission_service = PermissionModelService(trace_service=trace_service)
+    session_service = SessionPermissionService(permission_model_service=permission_service)
+    context = session_service.create_context(session_id="session:permission-report")
+    request = session_service.create_session_permission_request(
+        session_id="session:permission-report",
+        request_type="tool_use",
+        target_type="tool_descriptor",
+        target_ref="tool_descriptor:workspace",
+        operation="read",
+    )
+    grant = session_service.attach_grant_to_session(
+        session_id="session:permission-report",
+        target_type=request.target_type,
+        target_ref=request.target_ref,
+        operation=request.operation,
+    )
+    denial = session_service.attach_denial_to_session(
+        session_id="session:permission-report",
+        target_type=request.target_type,
+        target_ref=request.target_ref,
+        operation="write",
+    )
+    expired_grant = session_service.attach_grant_to_session(
+        session_id="session:permission-report",
+        target_type=request.target_type,
+        target_ref=request.target_ref,
+        operation="list",
+        expires_at="2020-01-01T00:00:00Z",
+    )
+    expired_grant = session_service.expire_session_grants(
+        session_id="session:permission-report",
+        grants=[expired_grant],
+        now_iso="2026-01-01T00:00:00Z",
+    )[0]
+    session_service.resolve_request(
+        session_id="session:permission-report",
+        request=request,
+        grants=[grant],
+        denials=[],
+    )
+    revoked_grant = session_service.revoke_session_grant(grant=grant)
+    session_service.build_snapshot(
+        session_id="session:permission-report",
+        context_id=context.context_id,
+        grants=[expired_grant, revoked_grant],
+        denials=[denial],
+        requests=[request],
+        now_iso="2026-01-01T00:00:00Z",
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["permission_summary"]
+
+    assert summary["session_permission_context_count"] >= 1
+    assert summary["session_permission_snapshot_count"] >= 1
+    assert summary["session_permission_resolution_count"] >= 1
+    assert summary["session_permission_resolution_allow_count"] >= 1
+    assert summary["session_expired_grant_count"] >= 1
+    assert summary["session_revoked_grant_count"] >= 1
+    assert summary["session_denial_count"] >= 1
+    assert summary["session_pending_permission_request_count"] >= 1
+    assert "Session Permission Read-model" in report.report_text
+
+
+def test_report_includes_workspace_write_sandbox_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_workspace_write_sandbox.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    sandbox_service = WorkspaceWriteSandboxService(trace_service=trace_service)
+    root = sandbox_service.register_workspace_root(root_path=str(tmp_path / "workspace"))
+    protected = sandbox_service.register_write_boundary(
+        workspace_root_id=root.workspace_root_id,
+        boundary_type="protected_path",
+        path_ref="protected",
+    )
+    inside = sandbox_service.create_write_intent(
+        workspace_root_id=root.workspace_root_id,
+        target_path=str(tmp_path / "workspace" / "ok.txt"),
+        operation="write_file",
+    )
+    outside = sandbox_service.create_write_intent(
+        workspace_root_id=root.workspace_root_id,
+        target_path=str(tmp_path / "outside.txt"),
+        operation="write_file",
+    )
+    protected_intent = sandbox_service.create_write_intent(
+        workspace_root_id=root.workspace_root_id,
+        target_path=str(tmp_path / "workspace" / "protected" / "secret.txt"),
+        operation="write_file",
+    )
+    sandbox_service.evaluate_write_intent(intent=inside, workspace_root=root)
+    sandbox_service.evaluate_write_intent(intent=outside, workspace_root=root)
+    sandbox_service.evaluate_write_intent(intent=protected_intent, workspace_root=root, boundaries=[protected])
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["workspace_write_sandbox_summary"]
+
+    assert summary["workspace_root_count"] >= 1
+    assert summary["workspace_write_boundary_count"] >= 1
+    assert summary["workspace_write_intent_count"] >= 3
+    assert summary["workspace_write_sandbox_decision_count"] >= 3
+    assert summary["workspace_write_sandbox_violation_count"] >= 2
+    assert summary["workspace_write_allowed_count"] >= 1
+    assert summary["workspace_write_denied_count"] >= 2
+    assert summary["workspace_write_outside_workspace_violation_count"] >= 1
+    assert summary["workspace_write_protected_path_violation_count"] >= 1
+    assert "Workspace Write Sandbox" in report.report_text
