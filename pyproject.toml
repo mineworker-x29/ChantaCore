@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.10.5"
-description = "File-based tool registry and tool policy materialized views."
+version = "0.11.2"
+description = "OCEL-native process outcome evaluation from verification evidence."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "ChantaCore" }]
@@ -25,4 +25,12 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "--basetemp=.pytest-tmp"
+addopts = "--basetemp=.pytest-tmp --ignore=references"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+norecursedirs = [
+  "references",
+  "data",
+  ".pytest-tmp",
+  ".venv",
+]

@@ -8,11 +8,14 @@ from chanta_core.hooks import HookLifecycleService
 from chanta_core.memory import MemoryService
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.loader import OCPXLoader
+from chanta_core.outcomes import ProcessOutcomeEvaluationService
 from chanta_core.pig.reports import PIGReportService, ProcessRunReport
 from chanta_core.runtime.loop import ProcessRunLoop
 from chanta_core.session import SessionContinuityService, SessionService
 from chanta_core.tool_registry import ToolRegistryViewService
 from chanta_core.traces.trace_service import TraceService
+from chanta_core.verification import VerificationService
+from chanta_core.verification.read_only_skills import ReadOnlyVerificationSkillService
 
 
 @dataclass(frozen=True)
@@ -230,3 +233,155 @@ def test_report_includes_tool_registry_counts(tmp_path) -> None:
     assert summary["tool_type_distribution"]["builtin"] >= 2
     assert summary["tool_risk_level_distribution"]["high"] >= 1
     assert "Tool Registry / Policy View" in report.report_text
+
+
+def test_report_includes_verification_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_verification.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = VerificationService(trace_service=trace_service)
+    contract = service.register_contract(
+        contract_name="README contract",
+        contract_type="file_existence",
+    )
+    target = service.register_target(target_type="file", target_ref="README.md")
+    service.register_requirement(
+        contract_id=contract.contract_id,
+        requirement_type="must_exist",
+        description="README must be represented by supplied evidence.",
+    )
+    run = service.start_run(contract_id=contract.contract_id, target_ids=[target.target_id])
+    evidence = service.record_evidence(
+        run_id=run.run_id,
+        target_id=target.target_id,
+        evidence_kind="manual_note",
+        source_kind="manual",
+        content="Manual observation.",
+    )
+    service.record_result(
+        contract_id=contract.contract_id,
+        run_id=run.run_id,
+        target_id=target.target_id,
+        status="passed",
+        evidence_ids=[evidence.evidence_id],
+    )
+    service.complete_run(run=run)
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["verification_summary"]
+
+    assert summary["verification_contract_count"] >= 1
+    assert summary["verification_target_count"] >= 1
+    assert summary["verification_requirement_count"] >= 1
+    assert summary["verification_run_count"] >= 1
+    assert summary["verification_evidence_count"] >= 1
+    assert summary["verification_result_count"] >= 1
+    assert summary["verification_passed_count"] >= 1
+    assert summary["verification_result_by_contract_type"]["file_existence"] >= 1
+    assert summary["verification_result_by_target_type"]["file"] >= 1
+    assert "Verification Contract Foundation" in report.report_text
+
+
+def test_report_includes_read_only_verification_skill_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_read_only_verification.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    skill_service = ReadOnlyVerificationSkillService(
+        verification_service=VerificationService(trace_service=trace_service),
+        root=tmp_path,
+        ocel_store=store,
+    )
+    target_file = tmp_path / "exists.txt"
+    target_file.write_text("present", encoding="utf-8")
+    view = tmp_path / "MEMORY.md"
+    view.write_text(
+        "Generated materialized view\nCanonical source: OCEL\nThis file is not canonical.\nEdits do not update canonical source.",
+        encoding="utf-8",
+    )
+
+    skill_service.verify_file_exists(path="exists.txt")
+    skill_service.verify_tool_available(tool_name="definitely_missing_tool")
+    skill_service.verify_ocel_object_type_exists(
+        object_type="verification_result",
+        known_object_types=["verification_result"],
+    )
+    skill_service.verify_materialized_view_warning(path="MEMORY.md")
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["verification_summary"]
+
+    assert summary["read_only_verification_skill_run_count"] >= 4
+    assert summary["file_existence_verification_count"] >= 1
+    assert summary["tool_availability_verification_count"] >= 1
+    assert summary["ocel_shape_verification_count"] >= 1
+    assert summary["materialized_view_warning_verification_count"] >= 1
+    assert summary["verification_skill_passed_count"] >= 3
+    assert summary["verification_skill_failed_count"] >= 1
+
+
+def test_report_includes_process_outcome_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_process_outcome.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    verification_service = VerificationService(trace_service=trace_service)
+    outcome_service = ProcessOutcomeEvaluationService(trace_service=trace_service)
+    verification_contract = verification_service.register_contract(
+        contract_name="Manual verification",
+        contract_type="manual",
+    )
+    verification_target = verification_service.register_target(
+        target_type="process_instance",
+        target_ref="process_instance:outcome-report",
+    )
+    run = verification_service.start_run(
+        contract_id=verification_contract.contract_id,
+        target_ids=[verification_target.target_id],
+    )
+    evidence = verification_service.record_evidence(
+        run_id=run.run_id,
+        target_id=verification_target.target_id,
+        evidence_kind="manual_note",
+        source_kind="manual",
+        content="Report evidence.",
+    )
+    verification_result = verification_service.record_result(
+        contract_id=verification_contract.contract_id,
+        run_id=run.run_id,
+        target_id=verification_target.target_id,
+        status="passed",
+        evidence_ids=[evidence.evidence_id],
+    )
+    outcome_contract = outcome_service.register_contract(
+        contract_name="Outcome report",
+        contract_type="process_completion",
+        target_type="process_instance",
+    )
+    outcome_service.register_criterion(
+        contract_id=outcome_contract.contract_id,
+        criterion_type="verification_passed",
+        description="Verification must pass.",
+    )
+    outcome_target = outcome_service.register_target(
+        target_type="process_instance",
+        target_ref="process_instance:outcome-report",
+    )
+    outcome_service.evaluate_from_verification_results(
+        contract=outcome_contract,
+        target=outcome_target,
+        verification_results=[verification_result],
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["process_outcome_summary"]
+
+    assert summary["process_outcome_contract_count"] >= 1
+    assert summary["process_outcome_criterion_count"] >= 1
+    assert summary["process_outcome_target_count"] >= 1
+    assert summary["process_outcome_signal_count"] >= 1
+    assert summary["process_outcome_evaluation_count"] >= 1
+    assert summary["process_outcome_success_count"] >= 1
+    assert summary["average_evidence_coverage"] == 1.0
+    assert summary["average_outcome_score"] == 1.0
+    assert summary["process_outcome_by_contract_type"]["process_completion"] >= 1
+    assert summary["process_outcome_by_target_type"]["process_instance"] >= 1
+    assert "Process Outcome Evaluation" in report.report_text

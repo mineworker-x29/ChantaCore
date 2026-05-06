@@ -175,6 +175,16 @@ class PIGReportService:
             event_activity_counts,
             view,
         )
+        verification_summary = self._verification_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        outcome_summary = self._process_outcome_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -202,6 +212,8 @@ class PIGReportService:
             hook_lifecycle_summary=hook_lifecycle_summary,
             session_continuity_summary=session_continuity_summary,
             tool_registry_summary=tool_registry_summary,
+            verification_summary=verification_summary,
+            outcome_summary=outcome_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -238,6 +250,8 @@ class PIGReportService:
                 "hook_lifecycle_summary": hook_lifecycle_summary,
                 "session_continuity_summary": session_continuity_summary,
                 "tool_registry_summary": tool_registry_summary,
+                "verification_summary": verification_summary,
+                "process_outcome_summary": outcome_summary,
             },
         )
 
@@ -391,6 +405,8 @@ class PIGReportService:
         hook_lifecycle_summary: dict[str, Any] | None,
         session_continuity_summary: dict[str, Any] | None,
         tool_registry_summary: dict[str, Any] | None,
+        verification_summary: dict[str, Any] | None,
+        outcome_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -523,6 +539,39 @@ class PIGReportService:
                 f"- Risk annotations: {(tool_registry_summary or {}).get('tool_risk_annotation_count', 0)}",
                 f"- Tool types: {PIGReportService._inline_counts((tool_registry_summary or {}).get('tool_type_distribution') or {})}",
                 f"- Risk levels: {PIGReportService._inline_counts((tool_registry_summary or {}).get('tool_risk_level_distribution') or {})}",
+                "",
+                "Verification Contract Foundation:",
+                f"- Contracts: {(verification_summary or {}).get('verification_contract_count', 0)}",
+                f"- Targets: {(verification_summary or {}).get('verification_target_count', 0)}",
+                f"- Requirements: {(verification_summary or {}).get('verification_requirement_count', 0)}",
+                f"- Runs: {(verification_summary or {}).get('verification_run_count', 0)}",
+                f"- Evidence: {(verification_summary or {}).get('verification_evidence_count', 0)}",
+                f"- Results: {(verification_summary or {}).get('verification_result_count', 0)}",
+                f"- Passed: {(verification_summary or {}).get('verification_passed_count', 0)}",
+                f"- Failed: {(verification_summary or {}).get('verification_failed_count', 0)}",
+                f"- Inconclusive: {(verification_summary or {}).get('verification_inconclusive_count', 0)}",
+                f"- Result by contract type: {PIGReportService._inline_counts((verification_summary or {}).get('verification_result_by_contract_type') or {})}",
+                f"- Result by target type: {PIGReportService._inline_counts((verification_summary or {}).get('verification_result_by_target_type') or {})}",
+                f"- Read-only skill runs: {(verification_summary or {}).get('read_only_verification_skill_run_count', 0)}",
+                f"- Read-only passed: {(verification_summary or {}).get('verification_skill_passed_count', 0)}",
+                f"- Read-only failed: {(verification_summary or {}).get('verification_skill_failed_count', 0)}",
+                "",
+                "Process Outcome Evaluation:",
+                f"- Contracts: {(outcome_summary or {}).get('process_outcome_contract_count', 0)}",
+                f"- Criteria: {(outcome_summary or {}).get('process_outcome_criterion_count', 0)}",
+                f"- Targets: {(outcome_summary or {}).get('process_outcome_target_count', 0)}",
+                f"- Signals: {(outcome_summary or {}).get('process_outcome_signal_count', 0)}",
+                f"- Evaluations: {(outcome_summary or {}).get('process_outcome_evaluation_count', 0)}",
+                f"- Success: {(outcome_summary or {}).get('process_outcome_success_count', 0)}",
+                f"- Partial success: {(outcome_summary or {}).get('process_outcome_partial_success_count', 0)}",
+                f"- Failed: {(outcome_summary or {}).get('process_outcome_failed_count', 0)}",
+                f"- Inconclusive: {(outcome_summary or {}).get('process_outcome_inconclusive_count', 0)}",
+                f"- Needs review: {(outcome_summary or {}).get('process_outcome_needs_review_count', 0)}",
+                f"- Error: {(outcome_summary or {}).get('process_outcome_error_count', 0)}",
+                f"- Average evidence coverage: {(outcome_summary or {}).get('average_evidence_coverage')}",
+                f"- Average score: {(outcome_summary or {}).get('average_outcome_score')}",
+                f"- Outcome by contract type: {PIGReportService._inline_counts((outcome_summary or {}).get('process_outcome_by_contract_type') or {})}",
+                f"- Outcome by target type: {PIGReportService._inline_counts((outcome_summary or {}).get('process_outcome_by_target_type') or {})}",
             ]
         )
 
@@ -718,6 +767,164 @@ class PIGReportService:
             "tool_policy_view_written_count": event_activity_counts.get("tool_policy_view_written", 0),
             "tool_type_distribution": tool_type_distribution,
             "tool_risk_level_distribution": risk_level_distribution,
+        }
+
+    @staticmethod
+    def _verification_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        contracts_by_id: dict[str, str] = {}
+        targets_by_id: dict[str, str] = {}
+        for item in view.objects:
+            if item.object_type == "verification_contract":
+                contract_type = str(item.object_attrs.get("contract_type") or "unknown")
+                contracts_by_id[item.object_id] = contract_type
+            if item.object_type == "verification_target":
+                target_type = str(item.object_attrs.get("target_type") or "unknown")
+                targets_by_id[item.object_id] = target_type
+
+        status_counts = {
+            "passed": 0,
+            "failed": 0,
+            "inconclusive": 0,
+            "skipped": 0,
+            "error": 0,
+        }
+        by_contract_type: dict[str, int] = {}
+        by_target_type: dict[str, int] = {}
+        read_only_skill_run_count = 0
+        skill_passed_count = 0
+        skill_failed_count = 0
+        contract_type_by_read_only_run: dict[str, int] = {}
+        skill_run_by_name: dict[str, int] = {}
+        for item in view.objects:
+            if item.object_type != "verification_run":
+                continue
+            if not item.object_attrs.get("run_attrs", {}).get("read_only_verification_skill"):
+                continue
+            read_only_skill_run_count += 1
+            contract_type = contracts_by_id.get(str(item.object_attrs.get("contract_id") or ""), "unknown")
+            contract_type_by_read_only_run[contract_type] = contract_type_by_read_only_run.get(contract_type, 0) + 1
+            skill_name = str(item.object_attrs.get("run_attrs", {}).get("skill_name") or "unknown")
+            skill_run_by_name[skill_name] = skill_run_by_name.get(skill_name, 0) + 1
+        for item in view.objects:
+            if item.object_type != "verification_result":
+                continue
+            status = str(item.object_attrs.get("status") or "unknown")
+            if status in status_counts:
+                status_counts[status] += 1
+            contract_id = str(item.object_attrs.get("contract_id") or "")
+            target_id = str(item.object_attrs.get("target_id") or "")
+            contract_type = contracts_by_id.get(contract_id, "unknown")
+            target_type = targets_by_id.get(target_id, "unknown")
+            by_contract_type[contract_type] = by_contract_type.get(contract_type, 0) + 1
+            by_target_type[target_type] = by_target_type.get(target_type, 0) + 1
+            if item.object_attrs.get("result_attrs", {}).get("read_only_verification_skill"):
+                if status == "passed":
+                    skill_passed_count += 1
+                if status == "failed":
+                    skill_failed_count += 1
+
+        return {
+            "verification_contract_count": object_type_counts.get("verification_contract", 0),
+            "verification_target_count": object_type_counts.get("verification_target", 0),
+            "verification_requirement_count": object_type_counts.get("verification_requirement", 0),
+            "verification_run_count": object_type_counts.get("verification_run", 0),
+            "verification_evidence_count": object_type_counts.get("verification_evidence", 0),
+            "verification_result_count": object_type_counts.get("verification_result", 0),
+            "verification_passed_count": status_counts["passed"],
+            "verification_failed_count": status_counts["failed"],
+            "verification_inconclusive_count": status_counts["inconclusive"],
+            "verification_skipped_count": status_counts["skipped"],
+            "verification_error_count": status_counts["error"],
+            "verification_contract_registered_count": event_activity_counts.get("verification_contract_registered", 0),
+            "verification_target_registered_count": event_activity_counts.get("verification_target_registered", 0),
+            "verification_requirement_registered_count": event_activity_counts.get("verification_requirement_registered", 0),
+            "verification_run_started_count": event_activity_counts.get("verification_run_started", 0),
+            "verification_run_completed_count": event_activity_counts.get("verification_run_completed", 0),
+            "verification_evidence_recorded_count": event_activity_counts.get("verification_evidence_recorded", 0),
+            "verification_result_recorded_count": event_activity_counts.get("verification_result_recorded", 0),
+            "verification_result_by_contract_type": by_contract_type,
+            "verification_result_by_target_type": by_target_type,
+            "read_only_verification_skill_run_count": read_only_skill_run_count,
+            "file_existence_verification_count": contract_type_by_read_only_run.get("file_existence", 0),
+            "tool_availability_verification_count": contract_type_by_read_only_run.get("tool_availability", 0),
+            "ocel_shape_verification_count": contract_type_by_read_only_run.get("ocel_shape", 0),
+            "materialized_view_warning_verification_count": skill_run_by_name.get("verify_materialized_view_warning", 0),
+            "tool_registry_view_warning_verification_count": skill_run_by_name.get("verify_tool_registry_view_warning", 0),
+            "verification_skill_passed_count": skill_passed_count,
+            "verification_skill_failed_count": skill_failed_count,
+            "read_only_verification_skill_runs_by_name": skill_run_by_name,
+        }
+
+    @staticmethod
+    def _process_outcome_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        contracts_by_id: dict[str, str] = {}
+        targets_by_id: dict[str, str] = {}
+        for item in view.objects:
+            if item.object_type == "process_outcome_contract":
+                contracts_by_id[item.object_id] = str(item.object_attrs.get("contract_type") or "unknown")
+            if item.object_type == "process_outcome_target":
+                targets_by_id[item.object_id] = str(item.object_attrs.get("target_type") or "unknown")
+
+        status_counts = {
+            "success": 0,
+            "partial_success": 0,
+            "failed": 0,
+            "inconclusive": 0,
+            "needs_review": 0,
+            "skipped": 0,
+            "error": 0,
+        }
+        by_contract_type: dict[str, int] = {}
+        by_target_type: dict[str, int] = {}
+        coverages: list[float] = []
+        scores: list[float] = []
+        for item in view.objects:
+            if item.object_type != "process_outcome_evaluation":
+                continue
+            status = str(item.object_attrs.get("outcome_status") or "unknown")
+            if status in status_counts:
+                status_counts[status] += 1
+            contract_type = contracts_by_id.get(str(item.object_attrs.get("contract_id") or ""), "unknown")
+            target_type = targets_by_id.get(str(item.object_attrs.get("target_id") or ""), "unknown")
+            by_contract_type[contract_type] = by_contract_type.get(contract_type, 0) + 1
+            by_target_type[target_type] = by_target_type.get(target_type, 0) + 1
+            evidence_coverage = item.object_attrs.get("evidence_coverage")
+            score = item.object_attrs.get("score")
+            if evidence_coverage is not None:
+                coverages.append(float(evidence_coverage))
+            if score is not None:
+                scores.append(float(score))
+
+        return {
+            "process_outcome_contract_count": object_type_counts.get("process_outcome_contract", 0),
+            "process_outcome_criterion_count": object_type_counts.get("process_outcome_criterion", 0),
+            "process_outcome_target_count": object_type_counts.get("process_outcome_target", 0),
+            "process_outcome_signal_count": object_type_counts.get("process_outcome_signal", 0),
+            "process_outcome_evaluation_count": object_type_counts.get("process_outcome_evaluation", 0),
+            "process_outcome_success_count": status_counts["success"],
+            "process_outcome_partial_success_count": status_counts["partial_success"],
+            "process_outcome_failed_count": status_counts["failed"],
+            "process_outcome_inconclusive_count": status_counts["inconclusive"],
+            "process_outcome_needs_review_count": status_counts["needs_review"],
+            "process_outcome_skipped_count": status_counts["skipped"],
+            "process_outcome_error_count": status_counts["error"],
+            "process_outcome_contract_registered_count": event_activity_counts.get("process_outcome_contract_registered", 0),
+            "process_outcome_criterion_registered_count": event_activity_counts.get("process_outcome_criterion_registered", 0),
+            "process_outcome_target_registered_count": event_activity_counts.get("process_outcome_target_registered", 0),
+            "process_outcome_signal_recorded_count": event_activity_counts.get("process_outcome_signal_recorded", 0),
+            "process_outcome_evaluation_recorded_count": event_activity_counts.get("process_outcome_evaluation_recorded", 0),
+            "process_outcome_by_contract_type": by_contract_type,
+            "process_outcome_by_target_type": by_target_type,
+            "average_evidence_coverage": round(sum(coverages) / len(coverages), 6) if coverages else None,
+            "average_outcome_score": round(sum(scores) / len(scores), 6) if scores else None,
         }
 
     @staticmethod

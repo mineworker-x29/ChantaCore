@@ -108,6 +108,15 @@ from chanta_core.ocpx.engine import OCPXEngine
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.ocpx.models import OCPXProcessView
 from chanta_core.ocpx.variant import OCPXVariantSummary
+from chanta_core.outcomes import (
+    ProcessOutcomeContract,
+    ProcessOutcomeCriterion,
+    ProcessOutcomeEvaluation,
+    ProcessOutcomeEvaluationService,
+    ProcessOutcomeSignal,
+    ProcessOutcomeTarget,
+    process_outcome_evaluations_to_history_entries,
+)
 from chanta_core.pig.artifact_store import PIArtifactStore
 from chanta_core.pig.artifacts import PIArtifact
 from chanta_core.pig.assimilation import HumanPIAssimilator
@@ -226,6 +235,19 @@ from chanta_core.tool_registry import (
     ToolRiskAnnotation,
     render_tool_policy_view,
     render_tools_view,
+)
+from chanta_core.verification import (
+    ReadOnlyVerificationSkillOutcome,
+    ReadOnlyVerificationSkillService,
+    ReadOnlyVerificationSkillSpec,
+    VerificationContract,
+    VerificationEvidence,
+    VerificationRequirement,
+    VerificationResult,
+    VerificationRun,
+    VerificationService,
+    VerificationTarget,
+    verification_results_to_history_entries,
 )
 from chanta_core.tools.permission_rules import ToolPermissionRule, ToolPermissionRuleSet
 from chanta_core.tools.permissions import ToolPermissionDecision
@@ -384,6 +406,24 @@ def test_required_imports() -> None:
     assert ToolRegistryViewService is not None
     assert render_tools_view is not None
     assert render_tool_policy_view is not None
+    assert ReadOnlyVerificationSkillSpec is not None
+    assert ReadOnlyVerificationSkillOutcome is not None
+    assert ReadOnlyVerificationSkillService is not None
+    assert VerificationContract is not None
+    assert VerificationTarget is not None
+    assert VerificationRequirement is not None
+    assert VerificationRun is not None
+    assert VerificationEvidence is not None
+    assert VerificationResult is not None
+    assert VerificationService is not None
+    assert verification_results_to_history_entries is not None
+    assert ProcessOutcomeContract is not None
+    assert ProcessOutcomeCriterion is not None
+    assert ProcessOutcomeTarget is not None
+    assert ProcessOutcomeSignal is not None
+    assert ProcessOutcomeEvaluation is not None
+    assert ProcessOutcomeEvaluationService is not None
+    assert process_outcome_evaluations_to_history_entries is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None

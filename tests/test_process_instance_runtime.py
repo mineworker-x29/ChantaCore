@@ -49,7 +49,7 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
         event["event_activity"]
         for event in store.fetch_events_by_session("test-session-process-instance")
     ]
-    assert activities == [
+    expected_process_activities = [
         "receive_user_request",
         "start_process_instance",
         "start_process_run_loop",
@@ -64,6 +64,12 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
         "record_outcome",
         "complete_process_instance",
     ]
+    assert "session_started" in activities
+    assert "conversation_turn_started" in activities
+    assert "user_message_received" in activities
+    assert "assistant_message_emitted" in activities
+    assert "conversation_turn_completed" in activities
+    assert _is_contiguous_subsequence(expected_process_activities, activities)
 
     assert store.fetch_objects_by_type("process_instance")
     assert not store.fetch_objects_by_type("goal")
@@ -106,9 +112,15 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
     loader = OCPXLoader(store)
     view = loader.load_process_instance_view(process_id)
     engine = OCPXEngine()
-    assert engine.activity_sequence(view) == activities[1:]
+    view_activities = engine.activity_sequence(view)
+    assert _is_contiguous_subsequence(expected_process_activities[1:], view_activities)
     assert engine.summarize_process_instance_view(view)["process_instance_count"] == 1
 
     pig_result = PIGService(loader=loader).analyze_process_instance(process_id)
     assert pig_result["graph"]["nodes"]
     assert pig_result["guide"]["process_instance_count"] == 1
+
+
+def _is_contiguous_subsequence(expected: list[str], actual: list[str]) -> bool:
+    width = len(expected)
+    return any(actual[index : index + width] == expected for index in range(len(actual) - width + 1))

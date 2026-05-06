@@ -120,6 +120,8 @@ class PISubstrateInspector:
             "guidance_count": (report.guidance_summary or {}).get("guidance_count", 0),
             "diagnostics_count": 0,
             "recommendations_count": 0,
+            "verification_summary": report.report_attrs.get("verification_summary", {}),
+            "process_outcome_summary": report.report_attrs.get("process_outcome_summary", {}),
         }
         conformance_summary = {
             "status": conformance.status,
@@ -179,6 +181,8 @@ class PISubstrateInspector:
                 "worker_summary": worker_summary,
                 "scheduler_summary": scheduler_summary,
                 "patch_summary": patch_summary,
+                "verification_summary": pig_summary.get("verification_summary", {}),
+                "process_outcome_summary": pig_summary.get("process_outcome_summary", {}),
             },
         )
 
@@ -270,6 +274,9 @@ class PISubstrateInspector:
                 "PIG Health:",
                 f"- Recent report status: {pig_summary.get('recent_report_status')}",
                 f"- Guidance count: {pig_summary.get('guidance_count', 0)}",
+                f"- Verification contracts: {(pig_summary.get('verification_summary') or {}).get('verification_contract_count', 0)}",
+                f"- Verification results: {(pig_summary.get('verification_summary') or {}).get('verification_result_count', 0)}",
+                f"- Outcome evaluations: {(pig_summary.get('process_outcome_summary') or {}).get('process_outcome_evaluation_count', 0)}",
                 "",
                 "Conformance:",
                 f"- Process status: {conformance_summary.get('status')}",
