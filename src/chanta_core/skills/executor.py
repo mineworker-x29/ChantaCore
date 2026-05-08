@@ -9,13 +9,16 @@ from chanta_core.skills.builtin import (
     execute_echo_skill,
     execute_ingest_human_pi_skill,
     execute_inspect_ocel_recent_skill,
+    execute_list_workspace_files_skill,
     execute_llm_chat_skill,
     execute_propose_file_edit_skill,
+    execute_read_workspace_text_file_skill,
     execute_run_worker_once_skill,
     execute_run_scheduler_once_skill,
     execute_summarize_pi_artifacts_skill,
     execute_summarize_process_trace_skill,
     execute_summarize_text_skill,
+    execute_summarize_workspace_markdown_skill,
 )
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.result import SkillExecutionResult
@@ -58,8 +61,11 @@ class SkillExecutor:
             "skill:run_scheduler_once": execute_run_scheduler_once_skill,
             "skill:summarize_text": execute_summarize_text_skill,
             "skill:inspect_ocel_recent": execute_inspect_ocel_recent_skill,
+            "skill:list_workspace_files": execute_list_workspace_files_skill,
+            "skill:read_workspace_text_file": execute_read_workspace_text_file_skill,
             "skill:summarize_pi_artifacts": execute_summarize_pi_artifacts_skill,
             "skill:summarize_process_trace": execute_summarize_process_trace_skill,
+            "skill:summarize_workspace_markdown": execute_summarize_workspace_markdown_skill,
         }
 
     def execute(

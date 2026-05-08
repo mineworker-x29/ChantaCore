@@ -3,21 +3,33 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from chanta_core.llm.types import ChatMessage
+from chanta_core.capabilities import CapabilityDecisionSurfaceService
 from chanta_core.instructions import InstructionService
 from chanta_core.hooks import HookLifecycleService
+from chanta_core.delegation import DelegatedProcessRunService, SidechainContextService
+from chanta_core.delegation import DelegationConformanceService
+from chanta_core.external import (
+    ExternalAdapterReviewService,
+    ExternalCapabilityImportService,
+    ExternalCapabilityRegistryViewService,
+    ExternalOCELImportCandidateService,
+    MCPPluginDescriptorSkeletonService,
+)
 from chanta_core.memory import MemoryService
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.outcomes import ProcessOutcomeEvaluationService
 from chanta_core.permissions import PermissionModelService, SessionPermissionService
+from chanta_core.persona import PersonaLoadingService
 from chanta_core.pig.reports import PIGReportService, ProcessRunReport
 from chanta_core.runtime.loop import ProcessRunLoop
 from chanta_core.sandbox import WorkspaceWriteSandboxService
-from chanta_core.session import SessionContinuityService, SessionService
+from chanta_core.session import SessionContextAssembler, SessionContinuityService, SessionService
 from chanta_core.tool_registry import ToolRegistryViewService
 from chanta_core.traces.trace_service import TraceService
 from chanta_core.verification import VerificationService
 from chanta_core.verification.read_only_skills import ReadOnlyVerificationSkillService
+from chanta_core.workspace import WorkspaceReadService
 
 
 @dataclass(frozen=True)
@@ -69,6 +81,106 @@ def test_build_recent_report_returns_process_run_report(tmp_path) -> None:
     assert report.skill_usage_summary is not None
     assert report.tool_usage_summary is not None
     assert data["report_text"] == report.report_text
+
+
+def test_report_includes_session_context_projection_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_session_context_projection.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    session_service = SessionService(trace_service=trace_service)
+    assembler = SessionContextAssembler(trace_service=trace_service)
+    session_service.start_session(session_id="session:pig-context")
+    first = session_service.record_user_message(
+        session_id="session:pig-context",
+        turn_id=None,
+        content="first",
+    )
+    second = session_service.record_assistant_message(
+        session_id="session:pig-context",
+        turn_id=None,
+        content="second",
+    )
+    projection = assembler.assemble_projection_from_messages(
+        session_id="session:pig-context",
+        messages=[first, second],
+    )
+    assembler.render_projection_to_llm_messages(
+        projection=projection,
+        system_prompt="system",
+        current_user_message="current",
+    )
+    service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = service.build_recent_report(limit=50)
+    summary = report.report_attrs["session_context_projection_summary"]
+
+    assert summary["session_context_policy_count"] >= 1
+    assert summary["session_context_projection_count"] >= 1
+    assert summary["session_prompt_render_count"] >= 1
+    assert summary["average_session_context_projection_messages"] >= 2
+    assert "Context projections" in report.report_text
+
+
+def test_report_includes_capability_decision_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_capability_decision.sqlite")
+    CapabilityDecisionSurfaceService(
+        trace_service=TraceService(ocel_store=store)
+    ).build_decision_surface("powershell 실행", session_id="session:capability")
+    service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = service.build_recent_report(limit=50)
+    summary = report.report_attrs["capability_decision_summary"]
+
+    assert summary["capability_request_intent_count"] >= 1
+    assert summary["capability_requirement_count"] >= 1
+    assert summary["capability_decision_count"] >= 1
+    assert summary["capability_decision_surface_count"] >= 1
+    assert summary["capability_requires_permission_count"] >= 1
+    assert summary["capability_unfulfillable_request_count"] >= 1
+    assert "Runtime Capability Decision Surface" in report.report_text
+
+
+def test_report_includes_workspace_read_counts(tmp_path) -> None:
+    (tmp_path / "doc.md").write_text("# Main\nBody", encoding="utf-8")
+    store = OCELStore(tmp_path / "pig_report_workspace_read.sqlite")
+    workspace_read = WorkspaceReadService(trace_service=TraceService(ocel_store=store))
+    root = workspace_read.register_read_root(tmp_path)
+    workspace_read.list_workspace_files(root=root)
+    workspace_read.read_workspace_text_file(root=root, relative_path="doc.md")
+    workspace_read.summarize_workspace_markdown(root=root, relative_path="doc.md")
+    workspace_read.read_workspace_text_file(root=root, relative_path="../outside.md")
+    service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = service.build_recent_report(limit=100)
+    summary = report.report_attrs["workspace_read_summary"]
+
+    assert summary["workspace_read_root_count"] >= 1
+    assert summary["workspace_file_list_result_count"] >= 1
+    assert summary["workspace_text_file_read_result_count"] >= 2
+    assert summary["workspace_markdown_summary_result_count"] >= 1
+    assert summary["workspace_read_violation_count"] >= 1
+    assert summary["workspace_read_path_traversal_violation_count"] >= 1
+    assert "Workspace Read Skills" in report.report_text
+
+
+def test_report_includes_persona_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_persona.sqlite")
+    persona = PersonaLoadingService(trace_service=TraceService(ocel_store=store))
+    bundle = persona.create_default_agent_persona()
+    persona.render_projection_block(bundle.projection)
+    service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = service.build_recent_report(limit=100)
+    summary = report.report_attrs["persona_summary"]
+
+    assert summary["soul_identity_count"] >= 1
+    assert summary["persona_profile_count"] >= 1
+    assert summary["persona_instruction_artifact_count"] >= 1
+    assert summary["agent_role_binding_count"] >= 1
+    assert summary["persona_loadout_count"] >= 1
+    assert summary["persona_projection_count"] >= 1
+    assert summary["persona_capability_boundary_count"] >= 1
+    assert summary["persona_projection_attached_to_prompt_count"] >= 1
+    assert "Persona Projection" in report.report_text
 
 
 def test_build_process_instance_and_session_reports(tmp_path) -> None:
@@ -559,3 +671,407 @@ def test_report_includes_workspace_write_sandbox_counts(tmp_path) -> None:
     assert summary["workspace_write_outside_workspace_violation_count"] >= 1
     assert summary["workspace_write_protected_path_violation_count"] >= 1
     assert "Workspace Write Sandbox" in report.report_text
+
+
+def test_report_includes_delegation_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_delegation.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = DelegatedProcessRunService(trace_service=trace_service)
+    packet = service.create_delegation_packet(
+        goal="Report delegation counts.",
+        permission_request_ids=["permission_request:report"],
+        session_permission_resolution_ids=["session_permission_resolution:report"],
+        workspace_write_sandbox_decision_ids=["workspace_write_sandbox_decision:report"],
+        shell_network_pre_sandbox_decision_ids=["shell_network_pre_sandbox_decision:report"],
+        process_outcome_evaluation_ids=["process_outcome_evaluation:report"],
+    )
+    run = service.create_delegated_process_run(
+        packet_id=packet.packet_id,
+        delegation_type="analysis",
+        isolation_mode="packet_only",
+    )
+    run = service.request_delegated_process_run(run=run)
+    run = service.start_delegated_process_run(run=run)
+    run = service.complete_delegated_process_run(run=run)
+    service.record_delegation_result(
+        delegated_run_id=run.delegated_run_id,
+        packet_id=packet.packet_id,
+        status="completed",
+    )
+    service.record_delegation_link(delegated_run_id=run.delegated_run_id)
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["delegation_summary"]
+
+    assert summary["delegation_packet_count"] >= 1
+    assert summary["delegated_process_run_count"] >= 1
+    assert summary["delegation_result_count"] >= 1
+    assert summary["delegation_link_count"] >= 1
+    assert summary["delegated_process_created_count"] >= 1
+    assert summary["delegated_process_requested_count"] >= 1
+    assert summary["delegated_process_started_count"] >= 1
+    assert summary["delegated_process_completed_count"] >= 1
+    assert summary["delegation_by_type"]["analysis"] >= 1
+    assert summary["delegation_by_isolation_mode"]["packet_only"] >= 1
+    assert summary["delegation_permission_reference_count"] >= 2
+    assert summary["delegation_safety_reference_count"] >= 3
+    assert "Delegated Process Runs" in report.report_text
+
+
+def test_report_includes_sidechain_context_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_sidechain.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    delegation_service = DelegatedProcessRunService(trace_service=trace_service)
+    sidechain_service = SidechainContextService(trace_service=trace_service)
+    packet = delegation_service.create_delegation_packet(
+        goal="Report sidechain counts.",
+        context_summary="Summary.",
+        permission_request_ids=["permission_request:sidechain"],
+        session_permission_resolution_ids=["session_permission_resolution:sidechain"],
+        workspace_write_sandbox_decision_ids=["workspace_write_sandbox_decision:sidechain"],
+        shell_network_pre_sandbox_decision_ids=["shell_network_pre_sandbox_decision:sidechain"],
+        process_outcome_evaluation_ids=["process_outcome_evaluation:sidechain"],
+    )
+    run = delegation_service.create_delegated_process_run(
+        packet_id=packet.packet_id,
+        delegation_type="analysis",
+        isolation_mode="packet_only",
+    )
+    context = sidechain_service.create_sidechain_context_from_packet(
+        packet=packet,
+        delegated_run=run,
+        context_type="analysis",
+        isolation_mode="packet_only",
+    )
+    entries = sidechain_service.build_entries_from_packet(context=context, packet=packet)
+    context = sidechain_service.mark_context_ready(context=context, entry_ids=[entry.entry_id for entry in entries])
+    context = sidechain_service.seal_context(context=context)
+    sidechain_service.build_snapshot(context=context, entries=entries, summary="Snapshot.")
+    sidechain_service.record_return_envelope(
+        sidechain_context_id=context.sidechain_context_id,
+        packet_id=packet.packet_id,
+        delegated_run_id=run.delegated_run_id,
+        status="completed",
+        summary="Summary only.",
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["sidechain_summary"]
+
+    assert summary["sidechain_context_count"] >= 1
+    assert summary["sidechain_context_entry_count"] >= 1
+    assert summary["sidechain_context_snapshot_count"] >= 1
+    assert summary["sidechain_return_envelope_count"] >= 1
+    assert summary["sidechain_ready_count"] >= 1
+    assert summary["sidechain_sealed_count"] >= 1
+    assert summary["sidechain_parent_transcript_excluded_count"] >= 1
+    assert summary["sidechain_permission_inheritance_prevented_count"] >= 1
+    assert summary["sidechain_safety_ref_count"] >= 5
+    assert summary["sidechain_context_by_type"]["analysis"] >= 1
+    assert summary["sidechain_context_by_isolation_mode"]["packet_only"] >= 1
+    assert "Sidechain Context" in report.report_text
+
+
+def test_report_includes_delegation_conformance_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_delegation_conformance.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    delegation_service = DelegatedProcessRunService(trace_service=trace_service)
+    sidechain_service = SidechainContextService(trace_service=trace_service)
+    conformance_service = DelegationConformanceService(trace_service=trace_service)
+    packet = delegation_service.create_delegation_packet(goal="Report conformance.")
+    delegated_run = delegation_service.create_delegated_process_run(packet_id=packet.packet_id)
+    sidechain_context = sidechain_service.create_sidechain_context_from_packet(
+        packet=packet,
+        delegated_run=delegated_run,
+    )
+    return_envelope = sidechain_service.record_return_envelope(
+        sidechain_context_id=sidechain_context.sidechain_context_id,
+        packet_id=packet.packet_id,
+        delegated_run_id=delegated_run.delegated_run_id,
+        status="completed",
+    )
+    contract = conformance_service.register_contract(
+        contract_name="Report conformance",
+        contract_type="delegation_structure",
+    )
+    rules = conformance_service.register_default_rules(contract_id=contract.contract_id)
+    conformance_service.evaluate_delegation_conformance(
+        contract=contract,
+        rules=rules,
+        packet=packet,
+        delegated_run=delegated_run,
+        sidechain_context=sidechain_context,
+        return_envelope=return_envelope,
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["delegation_conformance_summary"]
+
+    assert summary["delegation_conformance_contract_count"] >= 1
+    assert summary["delegation_conformance_rule_count"] >= 9
+    assert summary["delegation_conformance_run_count"] >= 1
+    assert summary["delegation_conformance_finding_count"] >= 9
+    assert summary["delegation_conformance_result_count"] >= 1
+    assert summary["delegation_conformance_passed_count"] >= 1
+    assert summary["delegation_conformance_by_rule_type"]["packet_exists"] >= 1
+    assert summary["average_delegation_conformance_score"] == 1.0
+    assert "Delegation Conformance" in report.report_text
+
+
+def test_report_includes_external_capability_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_external_capability.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = ExternalCapabilityImportService(trace_service=trace_service)
+    source = service.register_source(
+        source_name="provided dict",
+        source_type="provided_dict",
+        trust_level="untrusted",
+    )
+    descriptor, normalization, candidate = service.import_as_disabled_candidate(
+        raw_descriptor={
+            "name": "external_file_writer",
+            "type": "tool",
+            "permissions": ["write_file", "shell"],
+            "risks": ["filesystem_write", "shell_execution"],
+            "entrypoint": "external.module:run",
+        },
+        source=source,
+    )
+    service.import_descriptors(
+        raw_descriptors=[{"name": "external_skill", "type": "skill"}],
+        source_id=source.source_id,
+        batch_name="report",
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["external_capability_summary"]
+
+    assert descriptor.descriptor_id
+    assert normalization.normalized_capability_type == "tool"
+    assert candidate.execution_enabled is False
+    assert summary["external_capability_source_count"] >= 1
+    assert summary["external_capability_descriptor_count"] >= 2
+    assert summary["external_capability_import_batch_count"] >= 1
+    assert summary["external_capability_normalization_result_count"] >= 1
+    assert summary["external_assimilation_candidate_count"] >= 1
+    assert summary["external_capability_risk_note_count"] >= 1
+    assert summary["external_candidate_disabled_count"] >= 1
+    assert summary["external_candidate_pending_review_count"] >= 1
+    assert summary["external_candidate_execution_enabled_count"] == 0
+    assert summary["external_capability_by_type"]["tool"] >= 1
+    assert summary["external_capability_by_risk_level"]["high"] >= 1
+    assert summary["external_capability_review_required_count"] >= 1
+    assert "External Capability Import" in report.report_text
+
+
+def test_report_includes_external_capability_view_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_external_capability_views.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    import_service = ExternalCapabilityImportService(trace_service=trace_service)
+    view_service = ExternalCapabilityRegistryViewService(trace_service=trace_service, root=tmp_path)
+    source = import_service.register_source(
+        source_name="provided dict",
+        source_type="provided_dict",
+        trust_level="untrusted",
+    )
+    descriptor, normalization, candidate = import_service.import_as_disabled_candidate(
+        raw_descriptor={
+            "name": "external_file_writer",
+            "type": "tool",
+            "permissions": ["write_file", "shell"],
+            "risks": ["filesystem_write", "shell_execution"],
+        },
+        source=source,
+    )
+    risk_note = import_service.record_risk_note(
+        descriptor_id=descriptor.descriptor_id,
+        candidate_id=candidate.candidate_id,
+        risk_level="high",
+        risk_categories=["shell_execution"],
+        message="Review.",
+    )
+    view_service.refresh_default_external_views(
+        root=tmp_path,
+        sources=[source],
+        descriptors=[descriptor],
+        normalizations=[normalization],
+        candidates=[candidate],
+        risk_notes=[risk_note],
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["external_capability_summary"]
+
+    assert summary["external_capability_registry_snapshot_count"] >= 1
+    assert summary["external_capability_registry_view_written_count"] >= 1
+    assert summary["external_capability_review_view_written_count"] >= 1
+    assert summary["external_capability_risk_view_written_count"] >= 1
+    assert summary["external_view_disabled_candidate_count"] >= 1
+    assert summary["external_view_pending_review_count"] >= 1
+    assert summary["external_view_execution_enabled_candidate_count"] == 0
+    assert summary["external_view_high_risk_count"] >= 1
+    assert "Registry snapshots" in report.report_text
+
+
+def test_report_includes_external_adapter_review_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_external_adapter_review.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    import_service = ExternalCapabilityImportService(trace_service=trace_service)
+    review_service = ExternalAdapterReviewService(trace_service=trace_service)
+    descriptor, normalization, candidate = import_service.import_as_disabled_candidate(
+        raw_descriptor={
+            "name": "external_file_writer",
+            "type": "tool",
+            "permissions": ["write_file"],
+            "risks": ["filesystem_write"],
+        },
+    )
+    risk_note = import_service.record_risk_note(
+        descriptor_id=descriptor.descriptor_id,
+        candidate_id=candidate.candidate_id,
+        risk_level="high",
+        risk_categories=normalization.normalized_risk_categories,
+        message="Review.",
+    )
+    queue = review_service.create_review_queue(queue_name="external review")
+    item = review_service.create_review_item(
+        queue_id=queue.queue_id,
+        candidate=candidate,
+        risk_note_ids=[risk_note.risk_note_id],
+    )
+    checklist = review_service.build_default_checklist_for_candidate(
+        item=item,
+        candidate=candidate,
+        descriptor=descriptor,
+        risk_notes=[risk_note],
+    )
+    finding = review_service.record_finding(
+        item_id=item.item_id,
+        finding_type="risk",
+        message="High risk.",
+        severity="high",
+    )
+    review_service.record_decision(
+        item=item,
+        decision="approved_for_design",
+        finding_ids=[finding.finding_id],
+        checklist_id=checklist.checklist_id,
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["external_capability_summary"]
+
+    assert summary["external_adapter_review_queue_count"] >= 1
+    assert summary["external_adapter_review_item_count"] >= 1
+    assert summary["external_adapter_review_checklist_count"] >= 1
+    assert summary["external_adapter_review_finding_count"] >= 1
+    assert summary["external_adapter_review_decision_count"] >= 1
+    assert summary["external_review_pending_count"] >= 1
+    assert summary["external_review_open_finding_count"] >= 1
+    assert summary["external_review_high_risk_finding_count"] >= 1
+    assert summary["external_review_non_activating_decision_count"] >= 1
+    assert summary["external_review_runtime_activation_count"] == 0
+    assert "Review queues/items/checklists/findings/decisions" in report.report_text
+
+
+def test_report_includes_mcp_plugin_descriptor_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_mcp_plugin_descriptors.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = MCPPluginDescriptorSkeletonService(trace_service=trace_service)
+    server = service.import_mcp_server_descriptor(
+        raw_descriptor={
+            "name": "sample_mcp_server",
+            "transport": "stdio",
+            "tools": [{"name": "read_resource"}],
+            "permissions": ["read_file"],
+            "risks": ["filesystem_read"],
+        },
+    )
+    service.import_mcp_tool_descriptor(
+        raw_tool_descriptor={"name": "read_resource", "risks": ["filesystem_read"]},
+        mcp_server_id=server.mcp_server_id,
+    )
+    plugin = service.import_plugin_descriptor(
+        raw_descriptor={
+            "name": "sample_plugin",
+            "type": "python",
+            "entrypoints": [{"name": "register", "ref": "sample_plugin:register"}],
+            "permissions": ["network"],
+            "risks": ["network_access"],
+        },
+    )
+    service.import_plugin_entrypoint_descriptor(
+        raw_entrypoint={"name": "register", "ref": "sample_plugin:register", "type": "python_module"},
+        plugin_id=plugin.plugin_id,
+    )
+    skeleton = service.create_skeleton_from_plugin(plugin=plugin)
+    validation = service.validate_skeleton(skeleton=skeleton)
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["external_capability_summary"]
+
+    assert validation.status == "passed"
+    assert summary["mcp_server_descriptor_count"] >= 1
+    assert summary["mcp_tool_descriptor_count"] >= 1
+    assert summary["plugin_descriptor_count"] >= 1
+    assert summary["plugin_entrypoint_descriptor_count"] >= 1
+    assert summary["external_descriptor_skeleton_count"] >= 1
+    assert summary["external_descriptor_skeleton_validation_count"] >= 1
+    assert summary["skeleton_validation_passed_count"] >= 1
+    assert summary["mcp_plugin_execution_enabled_count"] == 0
+    assert summary["mcp_plugin_activation_enabled_count"] == 0
+    assert summary["mcp_plugin_descriptor_by_type"]["plugin:python"] >= 1
+    assert summary["mcp_plugin_risk_category_count"]["network_access"] >= 1
+    assert "MCP/plugin descriptors" in report.report_text
+
+
+def test_report_includes_external_ocel_import_candidate_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_external_ocel.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = ExternalOCELImportCandidateService(trace_service=trace_service)
+    source = service.register_source(source_name="provided dict", trust_level="untrusted")
+    descriptor, validation, preview, candidate = service.register_as_candidate(
+        payload={
+            "events": [
+                {"id": "e1", "activity": "start", "timestamp": "2026-01-01T00:00:00Z"},
+                {"id": "e2", "activity": "finish", "timestamp": "2026-01-01T00:01:00Z"},
+            ],
+            "objects": [{"id": "o1", "type": "case"}],
+            "relations": [{"type": "event_object", "event_id": "e1", "object_id": "o1"}],
+        },
+        source=source,
+        payload_name="external ocel report",
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["external_capability_summary"]
+
+    assert descriptor.descriptor_id
+    assert validation.status == "valid"
+    assert preview.event_count == 2
+    assert candidate.canonical_import_enabled is False
+    assert summary["external_ocel_source_count"] >= 1
+    assert summary["external_ocel_payload_descriptor_count"] >= 1
+    assert summary["external_ocel_import_candidate_count"] >= 1
+    assert summary["external_ocel_validation_result_count"] >= 1
+    assert summary["external_ocel_preview_snapshot_count"] >= 1
+    assert summary["external_ocel_risk_note_count"] >= 1
+    assert summary["external_ocel_valid_count"] >= 1
+    assert summary["external_ocel_invalid_count"] == 0
+    assert summary["external_ocel_candidate_pending_review_count"] >= 1
+    assert summary["external_ocel_candidate_canonical_import_enabled_count"] == 0
+    assert summary["external_ocel_candidate_not_merged_count"] >= 1
+    assert summary["external_ocel_total_preview_event_count"] >= 2
+    assert summary["external_ocel_total_preview_object_count"] >= 1
+    assert summary["external_ocel_total_preview_relation_count"] >= 1
+    assert summary["external_ocel_by_schema_status"]["ocel_like"] >= 1
+    assert summary["external_ocel_by_risk_level"]["medium"] >= 1
+    assert "External OCEL sources/descriptors/candidates" in report.report_text

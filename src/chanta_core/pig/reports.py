@@ -170,6 +170,21 @@ class PIGReportService:
             object_type_counts,
             event_activity_counts,
         )
+        session_context_projection_summary = self._session_context_projection_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        capability_decision_summary = self._capability_decision_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        persona_summary = self._persona_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         tool_registry_summary = self._tool_registry_summary(
             object_type_counts,
             event_activity_counts,
@@ -191,6 +206,36 @@ class PIGReportService:
             view,
         )
         workspace_write_sandbox_summary = self._workspace_write_sandbox_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        workspace_read_summary = self._workspace_read_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        shell_network_pre_sandbox_summary = self._shell_network_pre_sandbox_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        delegation_summary = self._delegation_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        sidechain_summary = self._sidechain_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        delegation_conformance_summary = self._delegation_conformance_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        external_capability_summary = self._external_capability_summary(
             object_type_counts,
             event_activity_counts,
             view,
@@ -221,11 +266,20 @@ class PIGReportService:
             memory_instruction_summary=memory_instruction_summary,
             hook_lifecycle_summary=hook_lifecycle_summary,
             session_continuity_summary=session_continuity_summary,
+            session_context_projection_summary=session_context_projection_summary,
+            capability_decision_summary=capability_decision_summary,
+            persona_summary=persona_summary,
             tool_registry_summary=tool_registry_summary,
             verification_summary=verification_summary,
             outcome_summary=outcome_summary,
             permission_summary=permission_summary,
             workspace_write_sandbox_summary=workspace_write_sandbox_summary,
+            workspace_read_summary=workspace_read_summary,
+            shell_network_pre_sandbox_summary=shell_network_pre_sandbox_summary,
+            delegation_summary=delegation_summary,
+            sidechain_summary=sidechain_summary,
+            delegation_conformance_summary=delegation_conformance_summary,
+            external_capability_summary=external_capability_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -261,11 +315,20 @@ class PIGReportService:
                 "memory_instruction_summary": memory_instruction_summary,
                 "hook_lifecycle_summary": hook_lifecycle_summary,
                 "session_continuity_summary": session_continuity_summary,
+                "session_context_projection_summary": session_context_projection_summary,
+                "capability_decision_summary": capability_decision_summary,
+                "persona_summary": persona_summary,
                 "tool_registry_summary": tool_registry_summary,
                 "verification_summary": verification_summary,
                 "process_outcome_summary": outcome_summary,
                 "permission_summary": permission_summary,
                 "workspace_write_sandbox_summary": workspace_write_sandbox_summary,
+                "workspace_read_summary": workspace_read_summary,
+                "shell_network_pre_sandbox_summary": shell_network_pre_sandbox_summary,
+                "delegation_summary": delegation_summary,
+                "sidechain_summary": sidechain_summary,
+                "delegation_conformance_summary": delegation_conformance_summary,
+                "external_capability_summary": external_capability_summary,
             },
         )
 
@@ -418,11 +481,20 @@ class PIGReportService:
         memory_instruction_summary: dict[str, Any] | None,
         hook_lifecycle_summary: dict[str, Any] | None,
         session_continuity_summary: dict[str, Any] | None,
+        session_context_projection_summary: dict[str, Any] | None,
+        capability_decision_summary: dict[str, Any] | None,
+        persona_summary: dict[str, Any] | None,
         tool_registry_summary: dict[str, Any] | None,
         verification_summary: dict[str, Any] | None,
         outcome_summary: dict[str, Any] | None,
         permission_summary: dict[str, Any] | None,
         workspace_write_sandbox_summary: dict[str, Any] | None,
+        workspace_read_summary: dict[str, Any] | None,
+        shell_network_pre_sandbox_summary: dict[str, Any] | None,
+        delegation_summary: dict[str, Any] | None,
+        sidechain_summary: dict[str, Any] | None,
+        delegation_conformance_summary: dict[str, Any] | None,
+        external_capability_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -547,6 +619,27 @@ class PIGReportService:
                 f"- Context snapshots: {(session_continuity_summary or {}).get('session_context_snapshot_count', 0)}",
                 f"- Permission resets: {(session_continuity_summary or {}).get('session_permission_reset_count', 0)}",
                 f"- Fork lineage relations: {(session_continuity_summary or {}).get('fork_lineage_count', 0)}",
+                f"- Context policies: {(session_context_projection_summary or {}).get('session_context_policy_count', 0)}",
+                f"- Context projections: {(session_context_projection_summary or {}).get('session_context_projection_count', 0)}",
+                f"- Truncated projections: {(session_context_projection_summary or {}).get('session_context_projection_truncated_count', 0)}",
+                f"- Prompt renders: {(session_context_projection_summary or {}).get('session_prompt_render_count', 0)}",
+                f"- Avg projection messages/chars: {(session_context_projection_summary or {}).get('average_session_context_projection_messages', 0)}/{(session_context_projection_summary or {}).get('average_session_context_projection_chars', 0)}",
+                "",
+                "Runtime Capability Decision Surface:",
+                f"- Request intents: {(capability_decision_summary or {}).get('capability_request_intent_count', 0)}",
+                f"- Requirements: {(capability_decision_summary or {}).get('capability_requirement_count', 0)}",
+                f"- Decisions: {(capability_decision_summary or {}).get('capability_decision_count', 0)}",
+                f"- Surfaces: {(capability_decision_summary or {}).get('capability_decision_surface_count', 0)}",
+                f"- Available/metadata/disabled/review/permission/not-implemented/unknown: {(capability_decision_summary or {}).get('capability_available_now_count', 0)}/{(capability_decision_summary or {}).get('capability_metadata_only_count', 0)}/{(capability_decision_summary or {}).get('capability_disabled_candidate_count', 0)}/{(capability_decision_summary or {}).get('capability_requires_review_count', 0)}/{(capability_decision_summary or {}).get('capability_requires_permission_count', 0)}/{(capability_decision_summary or {}).get('capability_not_implemented_count', 0)}/{(capability_decision_summary or {}).get('capability_unknown_count', 0)}",
+                f"- Unfulfillable/limitations: {(capability_decision_summary or {}).get('capability_unfulfillable_request_count', 0)}/{(capability_decision_summary or {}).get('capability_limitation_detected_count', 0)}",
+                "",
+                "Persona Projection:",
+                f"- Soul identities: {(persona_summary or {}).get('soul_identity_count', 0)}",
+                f"- Persona profiles: {(persona_summary or {}).get('persona_profile_count', 0)}",
+                f"- Instruction artifacts: {(persona_summary or {}).get('persona_instruction_artifact_count', 0)}",
+                f"- Agent role bindings: {(persona_summary or {}).get('agent_role_binding_count', 0)}",
+                f"- Loadouts/projections: {(persona_summary or {}).get('persona_loadout_count', 0)}/{(persona_summary or {}).get('persona_projection_count', 0)}",
+                f"- Capability boundaries/prompt attachments: {(persona_summary or {}).get('persona_capability_boundary_count', 0)}/{(persona_summary or {}).get('persona_projection_attached_to_prompt_count', 0)}",
                 "",
                 "Tool Registry / Policy View:",
                 f"- Tool descriptors: {(tool_registry_summary or {}).get('tool_descriptor_count', 0)}",
@@ -618,6 +711,93 @@ class PIGReportService:
                 f"- Violations: {(workspace_write_sandbox_summary or {}).get('workspace_write_sandbox_violation_count', 0)}",
                 f"- Allowed/denied/review/inconclusive/error: {(workspace_write_sandbox_summary or {}).get('workspace_write_allowed_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_denied_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_needs_review_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_inconclusive_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_error_count', 0)}",
                 f"- Outside/protected/denied violations: {(workspace_write_sandbox_summary or {}).get('workspace_write_outside_workspace_violation_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_protected_path_violation_count', 0)}/{(workspace_write_sandbox_summary or {}).get('workspace_write_denied_path_violation_count', 0)}",
+                "",
+                "Workspace Read Skills:",
+                f"- Roots: {(workspace_read_summary or {}).get('workspace_read_root_count', 0)}",
+                f"- File list requests/results: {(workspace_read_summary or {}).get('workspace_file_list_request_count', 0)}/{(workspace_read_summary or {}).get('workspace_file_list_result_count', 0)}",
+                f"- Text read requests/results: {(workspace_read_summary or {}).get('workspace_text_file_read_request_count', 0)}/{(workspace_read_summary or {}).get('workspace_text_file_read_result_count', 0)}",
+                f"- Markdown summary requests/results: {(workspace_read_summary or {}).get('workspace_markdown_summary_request_count', 0)}/{(workspace_read_summary or {}).get('workspace_markdown_summary_result_count', 0)}",
+                f"- Violations/denied/binary/oversize: {(workspace_read_summary or {}).get('workspace_read_violation_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_denied_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_binary_rejected_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_oversize_rejected_count', 0)}",
+                f"- Outside/path traversal violations: {(workspace_read_summary or {}).get('workspace_read_outside_workspace_violation_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_path_traversal_violation_count', 0)}",
+                "",
+                "Shell / Network Risk Pre-Sandbox:",
+                f"- Shell intents: {(shell_network_pre_sandbox_summary or {}).get('shell_command_intent_count', 0)}",
+                f"- Network intents: {(shell_network_pre_sandbox_summary or {}).get('network_access_intent_count', 0)}",
+                f"- Assessments: {(shell_network_pre_sandbox_summary or {}).get('shell_network_risk_assessment_count', 0)}",
+                f"- Decisions: {(shell_network_pre_sandbox_summary or {}).get('shell_network_pre_sandbox_decision_count', 0)}",
+                f"- Violations: {(shell_network_pre_sandbox_summary or {}).get('shell_network_risk_violation_count', 0)}",
+                f"- Shell low/medium/high/critical: {(shell_network_pre_sandbox_summary or {}).get('shell_risk_low_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('shell_risk_medium_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('shell_risk_high_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('shell_risk_critical_count', 0)}",
+                f"- Network low/medium/high/critical: {(shell_network_pre_sandbox_summary or {}).get('network_risk_low_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('network_risk_medium_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('network_risk_high_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('network_risk_critical_count', 0)}",
+                f"- Recommended allow/deny/review/inconclusive/error: {(shell_network_pre_sandbox_summary or {}).get('pre_sandbox_allow_recommended_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('pre_sandbox_deny_recommended_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('pre_sandbox_needs_review_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('pre_sandbox_inconclusive_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('pre_sandbox_error_count', 0)}",
+                f"- Destructive/network/credential/exfiltration violations: {(shell_network_pre_sandbox_summary or {}).get('destructive_command_violation_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('network_access_violation_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('credential_exposure_violation_count', 0)}/{(shell_network_pre_sandbox_summary or {}).get('exfiltration_risk_violation_count', 0)}",
+                "",
+                "Delegated Process Runs:",
+                f"- Packets: {(delegation_summary or {}).get('delegation_packet_count', 0)}",
+                f"- Runs: {(delegation_summary or {}).get('delegated_process_run_count', 0)}",
+                f"- Results: {(delegation_summary or {}).get('delegation_result_count', 0)}",
+                f"- Links: {(delegation_summary or {}).get('delegation_link_count', 0)}",
+                f"- Created/requested/started/completed: {(delegation_summary or {}).get('delegated_process_created_count', 0)}/{(delegation_summary or {}).get('delegated_process_requested_count', 0)}/{(delegation_summary or {}).get('delegated_process_started_count', 0)}/{(delegation_summary or {}).get('delegated_process_completed_count', 0)}",
+                f"- Failed/cancelled/skipped: {(delegation_summary or {}).get('delegated_process_failed_count', 0)}/{(delegation_summary or {}).get('delegated_process_cancelled_count', 0)}/{(delegation_summary or {}).get('delegated_process_skipped_count', 0)}",
+                f"- By type: {PIGReportService._inline_counts((delegation_summary or {}).get('delegation_by_type') or {})}",
+                f"- By isolation: {PIGReportService._inline_counts((delegation_summary or {}).get('delegation_by_isolation_mode') or {})}",
+                f"- Permission/safety refs: {(delegation_summary or {}).get('delegation_permission_reference_count', 0)}/{(delegation_summary or {}).get('delegation_safety_reference_count', 0)}",
+                "",
+                "Sidechain Context:",
+                f"- Contexts: {(sidechain_summary or {}).get('sidechain_context_count', 0)}",
+                f"- Entries: {(sidechain_summary or {}).get('sidechain_context_entry_count', 0)}",
+                f"- Snapshots: {(sidechain_summary or {}).get('sidechain_context_snapshot_count', 0)}",
+                f"- Return envelopes: {(sidechain_summary or {}).get('sidechain_return_envelope_count', 0)}",
+                f"- Ready/sealed/error: {(sidechain_summary or {}).get('sidechain_ready_count', 0)}/{(sidechain_summary or {}).get('sidechain_sealed_count', 0)}/{(sidechain_summary or {}).get('sidechain_error_count', 0)}",
+                f"- Parent transcript excluded: {(sidechain_summary or {}).get('sidechain_parent_transcript_excluded_count', 0)}",
+                f"- Permission inheritance prevented: {(sidechain_summary or {}).get('sidechain_permission_inheritance_prevented_count', 0)}",
+                f"- Safety refs: {(sidechain_summary or {}).get('sidechain_safety_ref_count', 0)}",
+                f"- By type: {PIGReportService._inline_counts((sidechain_summary or {}).get('sidechain_context_by_type') or {})}",
+                f"- By isolation: {PIGReportService._inline_counts((sidechain_summary or {}).get('sidechain_context_by_isolation_mode') or {})}",
+                "",
+                "Delegation Conformance:",
+                f"- Contracts: {(delegation_conformance_summary or {}).get('delegation_conformance_contract_count', 0)}",
+                f"- Rules: {(delegation_conformance_summary or {}).get('delegation_conformance_rule_count', 0)}",
+                f"- Runs: {(delegation_conformance_summary or {}).get('delegation_conformance_run_count', 0)}",
+                f"- Findings: {(delegation_conformance_summary or {}).get('delegation_conformance_finding_count', 0)}",
+                f"- Results: {(delegation_conformance_summary or {}).get('delegation_conformance_result_count', 0)}",
+                f"- Passed/failed/review/inconclusive: {(delegation_conformance_summary or {}).get('delegation_conformance_passed_count', 0)}/{(delegation_conformance_summary or {}).get('delegation_conformance_failed_count', 0)}/{(delegation_conformance_summary or {}).get('delegation_conformance_needs_review_count', 0)}/{(delegation_conformance_summary or {}).get('delegation_conformance_inconclusive_count', 0)}",
+                f"- Failed/warning findings: {(delegation_conformance_summary or {}).get('delegation_conformance_failed_finding_count', 0)}/{(delegation_conformance_summary or {}).get('delegation_conformance_warning_finding_count', 0)}",
+                f"- By rule: {PIGReportService._inline_counts((delegation_conformance_summary or {}).get('delegation_conformance_by_rule_type') or {})}",
+                f"- Average score: {(delegation_conformance_summary or {}).get('average_delegation_conformance_score')}",
+                "",
+                "External Capability Import:",
+                f"- Sources: {(external_capability_summary or {}).get('external_capability_source_count', 0)}",
+                f"- Descriptors: {(external_capability_summary or {}).get('external_capability_descriptor_count', 0)}",
+                f"- Batches: {(external_capability_summary or {}).get('external_capability_import_batch_count', 0)}",
+                f"- Normalizations: {(external_capability_summary or {}).get('external_capability_normalization_result_count', 0)}",
+                f"- Candidates: {(external_capability_summary or {}).get('external_assimilation_candidate_count', 0)}",
+                f"- Risk notes: {(external_capability_summary or {}).get('external_capability_risk_note_count', 0)}",
+                f"- Disabled/pending/execution-enabled candidates: {(external_capability_summary or {}).get('external_candidate_disabled_count', 0)}/{(external_capability_summary or {}).get('external_candidate_pending_review_count', 0)}/{(external_capability_summary or {}).get('external_candidate_execution_enabled_count', 0)}",
+                f"- Capability types: {PIGReportService._inline_counts((external_capability_summary or {}).get('external_capability_by_type') or {})}",
+                f"- Risk levels: {PIGReportService._inline_counts((external_capability_summary or {}).get('external_capability_by_risk_level') or {})}",
+                f"- Review required: {(external_capability_summary or {}).get('external_capability_review_required_count', 0)}",
+                f"- Registry snapshots: {(external_capability_summary or {}).get('external_capability_registry_snapshot_count', 0)}",
+                f"- View writes registry/review/risks: {(external_capability_summary or {}).get('external_capability_registry_view_written_count', 0)}/{(external_capability_summary or {}).get('external_capability_review_view_written_count', 0)}/{(external_capability_summary or {}).get('external_capability_risk_view_written_count', 0)}",
+                f"- View disabled/pending/execution-enabled: {(external_capability_summary or {}).get('external_view_disabled_candidate_count', 0)}/{(external_capability_summary or {}).get('external_view_pending_review_count', 0)}/{(external_capability_summary or {}).get('external_view_execution_enabled_candidate_count', 0)}",
+                f"- View high/critical risks: {(external_capability_summary or {}).get('external_view_high_risk_count', 0)}/{(external_capability_summary or {}).get('external_view_critical_risk_count', 0)}",
+                f"- Review queues/items/checklists/findings/decisions: {(external_capability_summary or {}).get('external_adapter_review_queue_count', 0)}/{(external_capability_summary or {}).get('external_adapter_review_item_count', 0)}/{(external_capability_summary or {}).get('external_adapter_review_checklist_count', 0)}/{(external_capability_summary or {}).get('external_adapter_review_finding_count', 0)}/{(external_capability_summary or {}).get('external_adapter_review_decision_count', 0)}",
+                f"- Review pending/in-review/more-info/design/rejected: {(external_capability_summary or {}).get('external_review_pending_count', 0)}/{(external_capability_summary or {}).get('external_review_in_review_count', 0)}/{(external_capability_summary or {}).get('external_review_needs_more_info_count', 0)}/{(external_capability_summary or {}).get('external_review_approved_for_design_count', 0)}/{(external_capability_summary or {}).get('external_review_rejected_count', 0)}",
+                f"- Review open/high/critical findings: {(external_capability_summary or {}).get('external_review_open_finding_count', 0)}/{(external_capability_summary or {}).get('external_review_high_risk_finding_count', 0)}/{(external_capability_summary or {}).get('external_review_critical_risk_finding_count', 0)}",
+                f"- Review non-activating/runtime activation: {(external_capability_summary or {}).get('external_review_non_activating_decision_count', 0)}/{(external_capability_summary or {}).get('external_review_runtime_activation_count', 0)}",
+                f"- MCP/plugin descriptors server/tool/plugin/entrypoint: {(external_capability_summary or {}).get('mcp_server_descriptor_count', 0)}/{(external_capability_summary or {}).get('mcp_tool_descriptor_count', 0)}/{(external_capability_summary or {}).get('plugin_descriptor_count', 0)}/{(external_capability_summary or {}).get('plugin_entrypoint_descriptor_count', 0)}",
+                f"- MCP/plugin skeletons/validations: {(external_capability_summary or {}).get('external_descriptor_skeleton_count', 0)}/{(external_capability_summary or {}).get('external_descriptor_skeleton_validation_count', 0)}",
+                f"- MCP/plugin needs-review server/plugin: {(external_capability_summary or {}).get('mcp_descriptor_needs_review_count', 0)}/{(external_capability_summary or {}).get('plugin_descriptor_needs_review_count', 0)}",
+                f"- Skeleton validation passed/failed/review: {(external_capability_summary or {}).get('skeleton_validation_passed_count', 0)}/{(external_capability_summary or {}).get('skeleton_validation_failed_count', 0)}/{(external_capability_summary or {}).get('skeleton_validation_needs_review_count', 0)}",
+                f"- MCP/plugin execution-enabled/activation-enabled: {(external_capability_summary or {}).get('mcp_plugin_execution_enabled_count', 0)}/{(external_capability_summary or {}).get('mcp_plugin_activation_enabled_count', 0)}",
+                f"- MCP/plugin descriptor types: {PIGReportService._inline_counts((external_capability_summary or {}).get('mcp_plugin_descriptor_by_type') or {})}",
+                f"- MCP/plugin risk categories: {PIGReportService._inline_counts((external_capability_summary or {}).get('mcp_plugin_risk_category_count') or {})}",
+                f"- External OCEL sources/descriptors/candidates: {(external_capability_summary or {}).get('external_ocel_source_count', 0)}/{(external_capability_summary or {}).get('external_ocel_payload_descriptor_count', 0)}/{(external_capability_summary or {}).get('external_ocel_import_candidate_count', 0)}",
+                f"- External OCEL validations/previews/risks: {(external_capability_summary or {}).get('external_ocel_validation_result_count', 0)}/{(external_capability_summary or {}).get('external_ocel_preview_snapshot_count', 0)}/{(external_capability_summary or {}).get('external_ocel_risk_note_count', 0)}",
+                f"- External OCEL valid/invalid/review: {(external_capability_summary or {}).get('external_ocel_valid_count', 0)}/{(external_capability_summary or {}).get('external_ocel_invalid_count', 0)}/{(external_capability_summary or {}).get('external_ocel_needs_review_count', 0)}",
+                f"- External OCEL pending/canonical-enabled/not-merged: {(external_capability_summary or {}).get('external_ocel_candidate_pending_review_count', 0)}/{(external_capability_summary or {}).get('external_ocel_candidate_canonical_import_enabled_count', 0)}/{(external_capability_summary or {}).get('external_ocel_candidate_not_merged_count', 0)}",
+                f"- External OCEL preview events/objects/relations: {(external_capability_summary or {}).get('external_ocel_total_preview_event_count', 0)}/{(external_capability_summary or {}).get('external_ocel_total_preview_object_count', 0)}/{(external_capability_summary or {}).get('external_ocel_total_preview_relation_count', 0)}",
+                f"- External OCEL schema status: {PIGReportService._inline_counts((external_capability_summary or {}).get('external_ocel_by_schema_status') or {})}",
+                f"- External OCEL risk levels: {PIGReportService._inline_counts((external_capability_summary or {}).get('external_ocel_by_risk_level') or {})}",
             ]
         )
 
@@ -783,6 +963,155 @@ class PIGReportService:
             "session_resumed_count": event_activity_counts.get("session_resumed", 0),
             "session_forked_count": event_activity_counts.get("session_forked", 0),
             "fork_lineage_count": event_activity_counts.get("session_forked", 0),
+        }
+
+    @staticmethod
+    def _session_context_projection_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        projection_objects = [
+            item for item in view.objects if item.object_type == "session_context_projection"
+        ]
+        total_messages = sum(
+            int(item.object_attrs.get("total_messages") or 0)
+            for item in projection_objects
+        )
+        total_chars = sum(
+            int(item.object_attrs.get("total_chars") or 0)
+            for item in projection_objects
+        )
+        projection_count = object_type_counts.get("session_context_projection", 0)
+        return {
+            "session_context_policy_count": object_type_counts.get(
+                "session_context_policy", 0
+            ),
+            "session_context_projection_count": projection_count,
+            "session_context_projection_truncated_count": event_activity_counts.get(
+                "session_context_projection_truncated", 0
+            ),
+            "session_prompt_render_count": object_type_counts.get(
+                "session_prompt_render", 0
+            ),
+            "session_prompt_rendered_count": event_activity_counts.get(
+                "session_prompt_rendered", 0
+            ),
+            "average_session_context_projection_messages": (
+                round(total_messages / projection_count, 2) if projection_count else 0
+            ),
+            "average_session_context_projection_chars": (
+                round(total_chars / projection_count, 2) if projection_count else 0
+            ),
+        }
+
+    @staticmethod
+    def _capability_decision_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        availability_counts: dict[str, int] = {
+            "available_now": 0,
+            "metadata_only": 0,
+            "disabled_candidate": 0,
+            "requires_review": 0,
+            "requires_permission": 0,
+            "requires_explicit_skill": 0,
+            "not_implemented": 0,
+            "unknown": 0,
+        }
+        for item in view.objects:
+            if item.object_type != "capability_decision":
+                continue
+            availability = str(item.object_attrs.get("availability") or "unknown")
+            if availability not in availability_counts:
+                availability = "unknown"
+            availability_counts[availability] += 1
+        return {
+            "capability_request_intent_count": object_type_counts.get(
+                "capability_request_intent", 0
+            ),
+            "capability_requirement_count": object_type_counts.get(
+                "capability_requirement", 0
+            ),
+            "capability_decision_count": object_type_counts.get(
+                "capability_decision", 0
+            ),
+            "capability_decision_surface_count": object_type_counts.get(
+                "capability_decision_surface", 0
+            ),
+            "capability_available_now_count": availability_counts["available_now"],
+            "capability_metadata_only_count": availability_counts["metadata_only"],
+            "capability_disabled_candidate_count": availability_counts[
+                "disabled_candidate"
+            ],
+            "capability_requires_review_count": availability_counts["requires_review"],
+            "capability_requires_permission_count": availability_counts[
+                "requires_permission"
+            ],
+            "capability_requires_explicit_skill_count": availability_counts[
+                "requires_explicit_skill"
+            ],
+            "capability_not_implemented_count": availability_counts["not_implemented"],
+            "capability_unknown_count": availability_counts["unknown"],
+            "capability_unfulfillable_request_count": event_activity_counts.get(
+                "capability_request_unfulfillable", 0
+            ),
+            "capability_limitation_detected_count": event_activity_counts.get(
+                "capability_limitation_detected", 0
+            ),
+        }
+
+    @staticmethod
+    def _persona_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        capability_boundary_count = 0
+        for item in view.objects:
+            if item.object_type == "persona_profile":
+                capability_boundary_count += len(
+                    item.object_attrs.get("capability_boundaries") or []
+                )
+            if item.object_type == "persona_instruction_artifact":
+                if item.object_attrs.get("artifact_type") == "capability_boundary":
+                    capability_boundary_count += 1
+        return {
+            "soul_identity_count": object_type_counts.get("soul_identity", 0),
+            "persona_profile_count": object_type_counts.get("persona_profile", 0),
+            "persona_instruction_artifact_count": object_type_counts.get(
+                "persona_instruction_artifact", 0
+            ),
+            "agent_role_binding_count": object_type_counts.get("agent_role_binding", 0),
+            "persona_loadout_count": object_type_counts.get("persona_loadout", 0),
+            "persona_projection_count": object_type_counts.get("persona_projection", 0),
+            "persona_capability_boundary_count": capability_boundary_count,
+            "persona_projection_attached_to_prompt_count": event_activity_counts.get(
+                "persona_projection_attached_to_prompt", 0
+            ),
+            "soul_identity_registered_count": event_activity_counts.get(
+                "soul_identity_registered", 0
+            ),
+            "persona_profile_registered_count": event_activity_counts.get(
+                "persona_profile_registered", 0
+            ),
+            "persona_instruction_artifact_registered_count": event_activity_counts.get(
+                "persona_instruction_artifact_registered", 0
+            ),
+            "agent_role_binding_registered_count": event_activity_counts.get(
+                "agent_role_binding_registered", 0
+            ),
+            "persona_loadout_created_count": event_activity_counts.get(
+                "persona_loadout_created", 0
+            ),
+            "persona_projection_created_count": event_activity_counts.get(
+                "persona_projection_created", 0
+            ),
+            "persona_capability_boundary_attached_count": event_activity_counts.get(
+                "persona_capability_boundary_attached", 0
+            ),
         }
 
     @staticmethod
@@ -1096,6 +1425,659 @@ class PIGReportService:
             "workspace_write_sandbox_evaluated_count": event_activity_counts.get("workspace_write_sandbox_evaluated", 0),
             "workspace_write_sandbox_decision_recorded_count": event_activity_counts.get("workspace_write_sandbox_decision_recorded", 0),
             "workspace_write_sandbox_violation_recorded_count": event_activity_counts.get("workspace_write_sandbox_violation_recorded", 0),
+        }
+
+    @staticmethod
+    def _workspace_read_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        violation_counts = {
+            "outside_workspace": 0,
+            "path_traversal": 0,
+            "binary_rejected": 0,
+            "file_too_large": 0,
+        }
+        for item in view.objects:
+            if item.object_type != "workspace_read_violation":
+                continue
+            violation_type = str(item.object_attrs.get("violation_type") or "unknown")
+            if violation_type in violation_counts:
+                violation_counts[violation_type] += 1
+        denied_count = (
+            event_activity_counts.get("workspace_file_list_denied", 0)
+            + event_activity_counts.get("workspace_text_file_read_denied", 0)
+            + event_activity_counts.get("workspace_markdown_summary_denied", 0)
+        )
+        return {
+            "workspace_read_root_count": object_type_counts.get("workspace_read_root", 0),
+            "workspace_read_boundary_count": object_type_counts.get("workspace_read_boundary", 0),
+            "workspace_file_list_request_count": object_type_counts.get("workspace_file_list_request", 0),
+            "workspace_file_list_result_count": object_type_counts.get("workspace_file_list_result", 0),
+            "workspace_text_file_read_request_count": object_type_counts.get("workspace_text_file_read_request", 0),
+            "workspace_text_file_read_result_count": object_type_counts.get("workspace_text_file_read_result", 0),
+            "workspace_markdown_summary_request_count": object_type_counts.get("workspace_markdown_summary_request", 0),
+            "workspace_markdown_summary_result_count": object_type_counts.get("workspace_markdown_summary_result", 0),
+            "workspace_read_violation_count": object_type_counts.get("workspace_read_violation", 0),
+            "workspace_read_denied_count": denied_count,
+            "workspace_read_binary_rejected_count": violation_counts["binary_rejected"],
+            "workspace_read_oversize_rejected_count": violation_counts["file_too_large"],
+            "workspace_read_outside_workspace_violation_count": violation_counts["outside_workspace"],
+            "workspace_read_path_traversal_violation_count": violation_counts["path_traversal"],
+            "workspace_read_root_registered_count": event_activity_counts.get("workspace_read_root_registered", 0),
+            "workspace_read_boundary_registered_count": event_activity_counts.get("workspace_read_boundary_registered", 0),
+            "workspace_file_list_requested_count": event_activity_counts.get("workspace_file_list_requested", 0),
+            "workspace_file_list_completed_count": event_activity_counts.get("workspace_file_list_completed", 0),
+            "workspace_file_list_denied_count": event_activity_counts.get("workspace_file_list_denied", 0),
+            "workspace_text_file_read_requested_count": event_activity_counts.get("workspace_text_file_read_requested", 0),
+            "workspace_text_file_read_completed_count": event_activity_counts.get("workspace_text_file_read_completed", 0),
+            "workspace_text_file_read_denied_count": event_activity_counts.get("workspace_text_file_read_denied", 0),
+            "workspace_markdown_summary_requested_count": event_activity_counts.get("workspace_markdown_summary_requested", 0),
+            "workspace_markdown_summary_completed_count": event_activity_counts.get("workspace_markdown_summary_completed", 0),
+            "workspace_markdown_summary_denied_count": event_activity_counts.get("workspace_markdown_summary_denied", 0),
+            "workspace_read_violation_recorded_count": event_activity_counts.get("workspace_read_violation_recorded", 0),
+        }
+
+    @staticmethod
+    def _shell_network_pre_sandbox_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        shell_risk_counts = {"low": 0, "medium": 0, "high": 0, "critical": 0}
+        network_risk_counts = {"low": 0, "medium": 0, "high": 0, "critical": 0}
+        decision_counts = {
+            "allow_recommended": 0,
+            "deny_recommended": 0,
+            "needs_review": 0,
+            "inconclusive": 0,
+            "error": 0,
+        }
+        violation_counts = {
+            "destructive_command": 0,
+            "network_access_risk": 0,
+            "credential_exposure_risk": 0,
+            "exfiltration_risk": 0,
+        }
+        for item in view.objects:
+            if item.object_type == "shell_network_risk_assessment":
+                risk_level = str(item.object_attrs.get("risk_level") or "unknown")
+                intent_kind = str(item.object_attrs.get("intent_kind") or "unknown")
+                if intent_kind == "shell_command" and risk_level in shell_risk_counts:
+                    shell_risk_counts[risk_level] += 1
+                if intent_kind == "network_access" and risk_level in network_risk_counts:
+                    network_risk_counts[risk_level] += 1
+            if item.object_type == "shell_network_pre_sandbox_decision":
+                decision = str(item.object_attrs.get("decision") or "unknown")
+                if decision in decision_counts:
+                    decision_counts[decision] += 1
+            if item.object_type == "shell_network_risk_violation":
+                violation_type = str(item.object_attrs.get("violation_type") or "unknown")
+                if violation_type in violation_counts:
+                    violation_counts[violation_type] += 1
+        return {
+            "shell_command_intent_count": object_type_counts.get("shell_command_intent", 0),
+            "network_access_intent_count": object_type_counts.get("network_access_intent", 0),
+            "shell_network_risk_assessment_count": object_type_counts.get("shell_network_risk_assessment", 0),
+            "shell_network_pre_sandbox_decision_count": object_type_counts.get("shell_network_pre_sandbox_decision", 0),
+            "shell_network_risk_violation_count": object_type_counts.get("shell_network_risk_violation", 0),
+            "shell_risk_low_count": shell_risk_counts["low"],
+            "shell_risk_medium_count": shell_risk_counts["medium"],
+            "shell_risk_high_count": shell_risk_counts["high"],
+            "shell_risk_critical_count": shell_risk_counts["critical"],
+            "network_risk_low_count": network_risk_counts["low"],
+            "network_risk_medium_count": network_risk_counts["medium"],
+            "network_risk_high_count": network_risk_counts["high"],
+            "network_risk_critical_count": network_risk_counts["critical"],
+            "pre_sandbox_allow_recommended_count": decision_counts["allow_recommended"],
+            "pre_sandbox_deny_recommended_count": decision_counts["deny_recommended"],
+            "pre_sandbox_needs_review_count": decision_counts["needs_review"],
+            "pre_sandbox_inconclusive_count": decision_counts["inconclusive"],
+            "pre_sandbox_error_count": decision_counts["error"],
+            "destructive_command_violation_count": violation_counts["destructive_command"],
+            "network_access_violation_count": violation_counts["network_access_risk"],
+            "credential_exposure_violation_count": violation_counts["credential_exposure_risk"],
+            "exfiltration_risk_violation_count": violation_counts["exfiltration_risk"],
+            "shell_command_intent_created_count": event_activity_counts.get("shell_command_intent_created", 0),
+            "network_access_intent_created_count": event_activity_counts.get("network_access_intent_created", 0),
+            "shell_network_risk_assessment_recorded_count": event_activity_counts.get("shell_network_risk_assessment_recorded", 0),
+            "shell_network_pre_sandbox_evaluated_count": event_activity_counts.get("shell_network_pre_sandbox_evaluated", 0),
+            "shell_network_pre_sandbox_decision_recorded_count": event_activity_counts.get("shell_network_pre_sandbox_decision_recorded", 0),
+            "shell_network_risk_violation_recorded_count": event_activity_counts.get("shell_network_risk_violation_recorded", 0),
+        }
+
+    @staticmethod
+    def _delegation_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_type: dict[str, int] = {}
+        by_isolation_mode: dict[str, int] = {}
+        permission_reference_count = 0
+        safety_reference_count = 0
+        for item in view.objects:
+            if item.object_type == "delegated_process_run":
+                delegation_type = str(item.object_attrs.get("delegation_type") or "unknown")
+                isolation_mode = str(item.object_attrs.get("isolation_mode") or "unknown")
+                by_type[delegation_type] = by_type.get(delegation_type, 0) + 1
+                by_isolation_mode[isolation_mode] = by_isolation_mode.get(isolation_mode, 0) + 1
+            if item.object_type == "delegation_packet":
+                permission_reference_count += len(item.object_attrs.get("permission_request_ids") or [])
+                permission_reference_count += len(item.object_attrs.get("session_permission_resolution_ids") or [])
+                safety_reference_count += len(item.object_attrs.get("workspace_write_sandbox_decision_ids") or [])
+                safety_reference_count += len(item.object_attrs.get("shell_network_pre_sandbox_decision_ids") or [])
+                safety_reference_count += len(item.object_attrs.get("process_outcome_evaluation_ids") or [])
+        return {
+            "delegation_packet_count": object_type_counts.get("delegation_packet", 0),
+            "delegated_process_run_count": object_type_counts.get("delegated_process_run", 0),
+            "delegation_result_count": object_type_counts.get("delegation_result", 0),
+            "delegation_link_count": object_type_counts.get("delegation_link", 0),
+            "delegated_process_created_count": event_activity_counts.get("delegated_process_run_created", 0),
+            "delegated_process_requested_count": event_activity_counts.get("delegated_process_requested", 0),
+            "delegated_process_started_count": event_activity_counts.get("delegated_process_started", 0),
+            "delegated_process_completed_count": event_activity_counts.get("delegated_process_completed", 0),
+            "delegated_process_failed_count": event_activity_counts.get("delegated_process_failed", 0),
+            "delegated_process_cancelled_count": event_activity_counts.get("delegated_process_cancelled", 0),
+            "delegated_process_skipped_count": event_activity_counts.get("delegated_process_skipped", 0),
+            "delegation_packet_created_count": event_activity_counts.get("delegation_packet_created", 0),
+            "delegation_result_recorded_count": event_activity_counts.get("delegation_result_recorded", 0),
+            "delegation_link_recorded_count": event_activity_counts.get("delegation_link_recorded", 0),
+            "delegation_by_type": by_type,
+            "delegation_by_isolation_mode": by_isolation_mode,
+            "delegation_permission_reference_count": permission_reference_count,
+            "delegation_safety_reference_count": safety_reference_count,
+        }
+
+    @staticmethod
+    def _sidechain_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_type: dict[str, int] = {}
+        by_isolation_mode: dict[str, int] = {}
+        safety_ref_count = 0
+        safety_entry_count = 0
+        for item in view.objects:
+            if item.object_type == "sidechain_context":
+                context_type = str(item.object_attrs.get("context_type") or "unknown")
+                isolation_mode = str(item.object_attrs.get("isolation_mode") or "unknown")
+                by_type[context_type] = by_type.get(context_type, 0) + 1
+                by_isolation_mode[isolation_mode] = by_isolation_mode.get(isolation_mode, 0) + 1
+                safety_ref_count += len(item.object_attrs.get("safety_ref_ids") or [])
+            if item.object_type == "sidechain_context_entry" and item.object_attrs.get("entry_type") in {
+                "permission_ref",
+                "sandbox_ref",
+                "risk_ref",
+                "outcome_ref",
+            }:
+                safety_entry_count += 1
+        if safety_ref_count == 0:
+            safety_ref_count = safety_entry_count
+        return {
+            "sidechain_context_count": object_type_counts.get("sidechain_context", 0),
+            "sidechain_context_entry_count": object_type_counts.get("sidechain_context_entry", 0),
+            "sidechain_context_snapshot_count": object_type_counts.get("sidechain_context_snapshot", 0),
+            "sidechain_return_envelope_count": object_type_counts.get("sidechain_return_envelope", 0),
+            "sidechain_ready_count": event_activity_counts.get("sidechain_context_ready", 0),
+            "sidechain_sealed_count": event_activity_counts.get("sidechain_context_sealed", 0),
+            "sidechain_error_count": event_activity_counts.get("sidechain_context_error", 0),
+            "sidechain_parent_transcript_excluded_count": event_activity_counts.get(
+                "sidechain_parent_transcript_excluded",
+                0,
+            ),
+            "sidechain_permission_inheritance_prevented_count": event_activity_counts.get(
+                "sidechain_permission_inheritance_prevented",
+                0,
+            ),
+            "sidechain_safety_ref_count": safety_ref_count,
+            "sidechain_context_by_type": by_type,
+            "sidechain_context_by_isolation_mode": by_isolation_mode,
+        }
+
+    @staticmethod
+    def _delegation_conformance_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        result_counts = {"passed": 0, "failed": 0, "needs_review": 0, "inconclusive": 0}
+        failed_finding_count = 0
+        warning_finding_count = 0
+        by_rule_type: dict[str, int] = {}
+        scores: list[float] = []
+        for item in view.objects:
+            if item.object_type == "delegation_conformance_finding":
+                rule_type = str(item.object_attrs.get("rule_type") or "unknown")
+                by_rule_type[rule_type] = by_rule_type.get(rule_type, 0) + 1
+                status = str(item.object_attrs.get("status") or "unknown")
+                if status == "failed":
+                    failed_finding_count += 1
+                if status == "warning":
+                    warning_finding_count += 1
+            if item.object_type == "delegation_conformance_result":
+                status = str(item.object_attrs.get("status") or "unknown")
+                if status in result_counts:
+                    result_counts[status] += 1
+                score = item.object_attrs.get("score")
+                if score is not None:
+                    scores.append(float(score))
+        return {
+            "delegation_conformance_contract_count": object_type_counts.get("delegation_conformance_contract", 0),
+            "delegation_conformance_rule_count": object_type_counts.get("delegation_conformance_rule", 0),
+            "delegation_conformance_run_count": object_type_counts.get("delegation_conformance_run", 0),
+            "delegation_conformance_finding_count": object_type_counts.get("delegation_conformance_finding", 0),
+            "delegation_conformance_result_count": object_type_counts.get("delegation_conformance_result", 0),
+            "delegation_conformance_passed_count": result_counts["passed"],
+            "delegation_conformance_failed_count": result_counts["failed"],
+            "delegation_conformance_needs_review_count": result_counts["needs_review"],
+            "delegation_conformance_inconclusive_count": result_counts["inconclusive"],
+            "delegation_conformance_failed_finding_count": failed_finding_count,
+            "delegation_conformance_warning_finding_count": warning_finding_count,
+            "delegation_conformance_by_rule_type": by_rule_type,
+            "average_delegation_conformance_score": round(sum(scores) / len(scores), 6) if scores else None,
+            "delegation_conformance_contract_registered_count": event_activity_counts.get(
+                "delegation_conformance_contract_registered",
+                0,
+            ),
+            "delegation_conformance_rule_registered_count": event_activity_counts.get(
+                "delegation_conformance_rule_registered",
+                0,
+            ),
+            "delegation_conformance_run_started_count": event_activity_counts.get(
+                "delegation_conformance_run_started",
+                0,
+            ),
+            "delegation_conformance_finding_recorded_count": event_activity_counts.get(
+                "delegation_conformance_finding_recorded",
+                0,
+            ),
+            "delegation_conformance_result_recorded_count": event_activity_counts.get(
+                "delegation_conformance_result_recorded",
+                0,
+            ),
+            "delegation_conformance_run_completed_count": event_activity_counts.get(
+                "delegation_conformance_run_completed",
+                0,
+            ),
+            "delegation_conformance_run_failed_count": event_activity_counts.get(
+                "delegation_conformance_run_failed",
+                0,
+            ),
+            "delegation_conformance_run_skipped_count": event_activity_counts.get(
+                "delegation_conformance_run_skipped",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _external_capability_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_type: dict[str, int] = {}
+        by_risk_level: dict[str, int] = {}
+        disabled_count = 0
+        pending_review_count = 0
+        execution_enabled_count = 0
+        review_required_count = 0
+        view_disabled_candidate_count = 0
+        view_execution_enabled_candidate_count = 0
+        view_pending_review_count = 0
+        view_high_risk_count = 0
+        view_critical_risk_count = 0
+        review_pending_count = 0
+        review_in_review_count = 0
+        review_needs_more_info_count = 0
+        review_approved_for_design_count = 0
+        review_rejected_count = 0
+        review_open_finding_count = 0
+        review_high_risk_finding_count = 0
+        review_critical_risk_finding_count = 0
+        review_non_activating_decision_count = 0
+        review_runtime_activation_count = 0
+        mcp_descriptor_needs_review_count = 0
+        plugin_descriptor_needs_review_count = 0
+        skeleton_validation_passed_count = 0
+        skeleton_validation_failed_count = 0
+        skeleton_validation_needs_review_count = 0
+        mcp_plugin_execution_enabled_count = 0
+        mcp_plugin_activation_enabled_count = 0
+        mcp_plugin_descriptor_by_type: dict[str, int] = {}
+        mcp_plugin_risk_category_count: dict[str, int] = {}
+        external_ocel_valid_count = 0
+        external_ocel_invalid_count = 0
+        external_ocel_needs_review_count = 0
+        external_ocel_candidate_pending_review_count = 0
+        external_ocel_candidate_canonical_import_enabled_count = 0
+        external_ocel_candidate_not_merged_count = 0
+        external_ocel_total_preview_event_count = 0
+        external_ocel_total_preview_object_count = 0
+        external_ocel_total_preview_relation_count = 0
+        external_ocel_by_schema_status: dict[str, int] = {}
+        external_ocel_by_risk_level: dict[str, int] = {}
+        for item in view.objects:
+            if item.object_type == "external_capability_descriptor":
+                capability_type = str(item.object_attrs.get("capability_type") or "other")
+                by_type[capability_type] = by_type.get(capability_type, 0) + 1
+            if item.object_type == "external_assimilation_candidate":
+                if item.object_attrs.get("activation_status") == "disabled":
+                    disabled_count += 1
+                if item.object_attrs.get("review_status") == "pending_review":
+                    pending_review_count += 1
+                if item.object_attrs.get("execution_enabled") is True:
+                    execution_enabled_count += 1
+            if item.object_type == "external_capability_risk_note":
+                risk_level = str(item.object_attrs.get("risk_level") or "unknown")
+                by_risk_level[risk_level] = by_risk_level.get(risk_level, 0) + 1
+                if item.object_attrs.get("review_required") is True:
+                    review_required_count += 1
+            if item.object_type == "external_capability_registry_snapshot":
+                view_disabled_candidate_count += int(item.object_attrs.get("disabled_candidate_count") or 0)
+                view_execution_enabled_candidate_count += int(
+                    item.object_attrs.get("execution_enabled_candidate_count") or 0
+                )
+                view_pending_review_count += int(item.object_attrs.get("pending_review_count") or 0)
+                view_high_risk_count += int(item.object_attrs.get("high_risk_count") or 0)
+                view_critical_risk_count += int(item.object_attrs.get("critical_risk_count") or 0)
+            if item.object_type == "external_adapter_review_item":
+                review_status = str(item.object_attrs.get("review_status") or "")
+                if review_status == "pending_review":
+                    review_pending_count += 1
+                if review_status == "in_review":
+                    review_in_review_count += 1
+                if review_status == "needs_more_info":
+                    review_needs_more_info_count += 1
+                if review_status == "approved_for_design":
+                    review_approved_for_design_count += 1
+                if review_status == "rejected":
+                    review_rejected_count += 1
+            if item.object_type == "external_adapter_review_finding":
+                status = str(item.object_attrs.get("status") or "")
+                severity = str(item.object_attrs.get("severity") or "")
+                if status == "open":
+                    review_open_finding_count += 1
+                if severity == "high":
+                    review_high_risk_finding_count += 1
+                if severity == "critical":
+                    review_critical_risk_finding_count += 1
+            if item.object_type == "external_adapter_review_decision":
+                activation_allowed = item.object_attrs.get("activation_allowed") is True
+                registration_allowed = item.object_attrs.get("runtime_registration_allowed") is True
+                after_decision = item.object_attrs.get("execution_enabled_after_decision") is True
+                if not activation_allowed and not registration_allowed and not after_decision:
+                    review_non_activating_decision_count += 1
+                if activation_allowed or registration_allowed or after_decision:
+                    review_runtime_activation_count += 1
+            if item.object_type == "mcp_server_descriptor":
+                transport = str(item.object_attrs.get("transport") or "unknown")
+                mcp_plugin_descriptor_by_type[f"mcp_server:{transport}"] = (
+                    mcp_plugin_descriptor_by_type.get(f"mcp_server:{transport}", 0) + 1
+                )
+                if item.object_attrs.get("status") == "needs_review":
+                    mcp_descriptor_needs_review_count += 1
+                if item.object_attrs.get("execution_enabled") is True:
+                    mcp_plugin_execution_enabled_count += 1
+                for category in item.object_attrs.get("declared_risks") or []:
+                    mcp_plugin_risk_category_count[str(category)] = mcp_plugin_risk_category_count.get(str(category), 0) + 1
+            if item.object_type == "mcp_tool_descriptor":
+                mcp_plugin_descriptor_by_type["mcp_tool"] = mcp_plugin_descriptor_by_type.get("mcp_tool", 0) + 1
+                if item.object_attrs.get("execution_enabled") is True:
+                    mcp_plugin_execution_enabled_count += 1
+                for category in item.object_attrs.get("declared_risks") or []:
+                    mcp_plugin_risk_category_count[str(category)] = mcp_plugin_risk_category_count.get(str(category), 0) + 1
+            if item.object_type == "plugin_descriptor":
+                plugin_type = str(item.object_attrs.get("plugin_type") or "unknown")
+                mcp_plugin_descriptor_by_type[f"plugin:{plugin_type}"] = (
+                    mcp_plugin_descriptor_by_type.get(f"plugin:{plugin_type}", 0) + 1
+                )
+                if item.object_attrs.get("status") == "needs_review":
+                    plugin_descriptor_needs_review_count += 1
+                if item.object_attrs.get("execution_enabled") is True:
+                    mcp_plugin_execution_enabled_count += 1
+                for category in item.object_attrs.get("declared_risks") or []:
+                    mcp_plugin_risk_category_count[str(category)] = mcp_plugin_risk_category_count.get(str(category), 0) + 1
+            if item.object_type == "plugin_entrypoint_descriptor":
+                entrypoint_type = str(item.object_attrs.get("entrypoint_type") or "unknown")
+                mcp_plugin_descriptor_by_type[f"entrypoint:{entrypoint_type}"] = (
+                    mcp_plugin_descriptor_by_type.get(f"entrypoint:{entrypoint_type}", 0) + 1
+                )
+                if item.object_attrs.get("execution_enabled") is True:
+                    mcp_plugin_execution_enabled_count += 1
+                for category in item.object_attrs.get("declared_risks") or []:
+                    mcp_plugin_risk_category_count[str(category)] = mcp_plugin_risk_category_count.get(str(category), 0) + 1
+            if item.object_type == "external_descriptor_skeleton":
+                if item.object_attrs.get("execution_enabled") is True:
+                    mcp_plugin_execution_enabled_count += 1
+                if item.object_attrs.get("activation_status") == "active":
+                    mcp_plugin_activation_enabled_count += 1
+                skeleton_type = str(item.object_attrs.get("skeleton_type") or "other")
+                mcp_plugin_descriptor_by_type[f"skeleton:{skeleton_type}"] = (
+                    mcp_plugin_descriptor_by_type.get(f"skeleton:{skeleton_type}", 0) + 1
+                )
+                for category in item.object_attrs.get("declared_risk_categories") or []:
+                    mcp_plugin_risk_category_count[str(category)] = mcp_plugin_risk_category_count.get(str(category), 0) + 1
+            if item.object_type == "external_descriptor_skeleton_validation":
+                validation_status = str(item.object_attrs.get("status") or "")
+                if validation_status == "passed":
+                    skeleton_validation_passed_count += 1
+                if validation_status == "failed":
+                    skeleton_validation_failed_count += 1
+                if validation_status == "needs_review":
+                    skeleton_validation_needs_review_count += 1
+            if item.object_type == "external_ocel_import_candidate":
+                if item.object_attrs.get("review_status") == "pending_review":
+                    external_ocel_candidate_pending_review_count += 1
+                if item.object_attrs.get("canonical_import_enabled") is True:
+                    external_ocel_candidate_canonical_import_enabled_count += 1
+                if item.object_attrs.get("merge_status") == "not_merged":
+                    external_ocel_candidate_not_merged_count += 1
+            if item.object_type == "external_ocel_validation_result":
+                validation_status = str(item.object_attrs.get("status") or "")
+                schema_status = str(item.object_attrs.get("schema_status") or "unknown")
+                external_ocel_by_schema_status[schema_status] = (
+                    external_ocel_by_schema_status.get(schema_status, 0) + 1
+                )
+                if validation_status in {"valid", "valid_with_warnings"}:
+                    external_ocel_valid_count += 1
+                if validation_status in {"invalid", "error"}:
+                    external_ocel_invalid_count += 1
+                if validation_status in {"needs_review", "valid_with_warnings"}:
+                    external_ocel_needs_review_count += 1
+            if item.object_type == "external_ocel_preview_snapshot":
+                external_ocel_total_preview_event_count += int(item.object_attrs.get("event_count") or 0)
+                external_ocel_total_preview_object_count += int(item.object_attrs.get("object_count") or 0)
+                external_ocel_total_preview_relation_count += int(item.object_attrs.get("relation_count") or 0)
+            if item.object_type == "external_ocel_import_risk_note":
+                risk_level = str(item.object_attrs.get("risk_level") or "unknown")
+                external_ocel_by_risk_level[risk_level] = external_ocel_by_risk_level.get(risk_level, 0) + 1
+        return {
+            "external_capability_source_count": object_type_counts.get("external_capability_source", 0),
+            "external_capability_descriptor_count": object_type_counts.get("external_capability_descriptor", 0),
+            "external_capability_import_batch_count": object_type_counts.get("external_capability_import_batch", 0),
+            "external_capability_normalization_result_count": object_type_counts.get(
+                "external_capability_normalization_result",
+                0,
+            ),
+            "external_assimilation_candidate_count": object_type_counts.get("external_assimilation_candidate", 0),
+            "external_capability_risk_note_count": object_type_counts.get("external_capability_risk_note", 0),
+            "external_candidate_disabled_count": disabled_count,
+            "external_candidate_pending_review_count": pending_review_count,
+            "external_candidate_execution_enabled_count": execution_enabled_count,
+            "external_capability_by_type": by_type,
+            "external_capability_by_risk_level": by_risk_level,
+            "external_capability_review_required_count": review_required_count,
+            "external_capability_registry_snapshot_count": object_type_counts.get(
+                "external_capability_registry_snapshot",
+                0,
+            ),
+            "external_capability_registry_view_written_count": event_activity_counts.get(
+                "external_capability_registry_view_written",
+                0,
+            ),
+            "external_capability_review_view_written_count": event_activity_counts.get(
+                "external_capability_review_view_written",
+                0,
+            ),
+            "external_capability_risk_view_written_count": event_activity_counts.get(
+                "external_capability_risk_view_written",
+                0,
+            ),
+            "external_view_disabled_candidate_count": view_disabled_candidate_count,
+            "external_view_execution_enabled_candidate_count": view_execution_enabled_candidate_count,
+            "external_view_pending_review_count": view_pending_review_count,
+            "external_view_high_risk_count": view_high_risk_count,
+            "external_view_critical_risk_count": view_critical_risk_count,
+            "external_adapter_review_queue_count": object_type_counts.get("external_adapter_review_queue", 0),
+            "external_adapter_review_item_count": object_type_counts.get("external_adapter_review_item", 0),
+            "external_adapter_review_checklist_count": object_type_counts.get("external_adapter_review_checklist", 0),
+            "external_adapter_review_finding_count": object_type_counts.get("external_adapter_review_finding", 0),
+            "external_adapter_review_decision_count": object_type_counts.get("external_adapter_review_decision", 0),
+            "external_review_pending_count": review_pending_count,
+            "external_review_in_review_count": review_in_review_count,
+            "external_review_needs_more_info_count": review_needs_more_info_count,
+            "external_review_approved_for_design_count": review_approved_for_design_count,
+            "external_review_rejected_count": review_rejected_count,
+            "external_review_open_finding_count": review_open_finding_count,
+            "external_review_high_risk_finding_count": review_high_risk_finding_count,
+            "external_review_critical_risk_finding_count": review_critical_risk_finding_count,
+            "external_review_non_activating_decision_count": review_non_activating_decision_count,
+            "external_review_runtime_activation_count": review_runtime_activation_count,
+            "external_capability_source_registered_count": event_activity_counts.get(
+                "external_capability_source_registered",
+                0,
+            ),
+            "external_capability_descriptor_imported_count": event_activity_counts.get(
+                "external_capability_descriptor_imported",
+                0,
+            ),
+            "external_capability_import_started_count": event_activity_counts.get(
+                "external_capability_import_started",
+                0,
+            ),
+            "external_capability_import_completed_count": event_activity_counts.get(
+                "external_capability_import_completed",
+                0,
+            ),
+            "external_capability_normalized_count": event_activity_counts.get("external_capability_normalized", 0),
+            "external_assimilation_candidate_created_count": event_activity_counts.get(
+                "external_assimilation_candidate_created",
+                0,
+            ),
+            "external_capability_risk_note_recorded_count": event_activity_counts.get(
+                "external_capability_risk_note_recorded",
+                0,
+            ),
+            "external_adapter_review_queue_created_count": event_activity_counts.get(
+                "external_adapter_review_queue_created",
+                0,
+            ),
+            "external_adapter_review_item_created_count": event_activity_counts.get(
+                "external_adapter_review_item_created",
+                0,
+            ),
+            "external_adapter_review_checklist_created_count": event_activity_counts.get(
+                "external_adapter_review_checklist_created",
+                0,
+            ),
+            "external_adapter_review_finding_recorded_count": event_activity_counts.get(
+                "external_adapter_review_finding_recorded",
+                0,
+            ),
+            "external_adapter_review_decision_recorded_count": event_activity_counts.get(
+                "external_adapter_review_decision_recorded",
+                0,
+            ),
+            "external_adapter_review_decision_marked_non_activating_count": event_activity_counts.get(
+                "external_adapter_review_decision_marked_non_activating",
+                0,
+            ),
+            "mcp_server_descriptor_count": object_type_counts.get("mcp_server_descriptor", 0),
+            "mcp_tool_descriptor_count": object_type_counts.get("mcp_tool_descriptor", 0),
+            "plugin_descriptor_count": object_type_counts.get("plugin_descriptor", 0),
+            "plugin_entrypoint_descriptor_count": object_type_counts.get("plugin_entrypoint_descriptor", 0),
+            "external_descriptor_skeleton_count": object_type_counts.get("external_descriptor_skeleton", 0),
+            "external_descriptor_skeleton_validation_count": object_type_counts.get(
+                "external_descriptor_skeleton_validation",
+                0,
+            ),
+            "mcp_descriptor_needs_review_count": mcp_descriptor_needs_review_count,
+            "plugin_descriptor_needs_review_count": plugin_descriptor_needs_review_count,
+            "skeleton_validation_passed_count": skeleton_validation_passed_count,
+            "skeleton_validation_failed_count": skeleton_validation_failed_count,
+            "skeleton_validation_needs_review_count": skeleton_validation_needs_review_count,
+            "mcp_plugin_execution_enabled_count": mcp_plugin_execution_enabled_count,
+            "mcp_plugin_activation_enabled_count": mcp_plugin_activation_enabled_count,
+            "mcp_plugin_descriptor_by_type": mcp_plugin_descriptor_by_type,
+            "mcp_plugin_risk_category_count": mcp_plugin_risk_category_count,
+            "mcp_server_descriptor_imported_count": event_activity_counts.get("mcp_server_descriptor_imported", 0),
+            "mcp_tool_descriptor_imported_count": event_activity_counts.get("mcp_tool_descriptor_imported", 0),
+            "plugin_descriptor_imported_count": event_activity_counts.get("plugin_descriptor_imported", 0),
+            "plugin_entrypoint_descriptor_imported_count": event_activity_counts.get(
+                "plugin_entrypoint_descriptor_imported",
+                0,
+            ),
+            "external_descriptor_skeleton_created_count": event_activity_counts.get(
+                "external_descriptor_skeleton_created",
+                0,
+            ),
+            "external_descriptor_skeleton_validated_count": event_activity_counts.get(
+                "external_descriptor_skeleton_validated",
+                0,
+            ),
+            "external_descriptor_skeleton_validation_failed_count": event_activity_counts.get(
+                "external_descriptor_skeleton_validation_failed",
+                0,
+            ),
+            "mcp_plugin_descriptor_marked_non_executable_count": event_activity_counts.get(
+                "mcp_plugin_descriptor_marked_non_executable",
+                0,
+            ),
+            "external_ocel_source_count": object_type_counts.get("external_ocel_source", 0),
+            "external_ocel_payload_descriptor_count": object_type_counts.get(
+                "external_ocel_payload_descriptor",
+                0,
+            ),
+            "external_ocel_import_candidate_count": object_type_counts.get(
+                "external_ocel_import_candidate",
+                0,
+            ),
+            "external_ocel_validation_result_count": object_type_counts.get(
+                "external_ocel_validation_result",
+                0,
+            ),
+            "external_ocel_preview_snapshot_count": object_type_counts.get(
+                "external_ocel_preview_snapshot",
+                0,
+            ),
+            "external_ocel_risk_note_count": object_type_counts.get("external_ocel_import_risk_note", 0),
+            "external_ocel_valid_count": external_ocel_valid_count,
+            "external_ocel_invalid_count": external_ocel_invalid_count,
+            "external_ocel_needs_review_count": external_ocel_needs_review_count,
+            "external_ocel_candidate_pending_review_count": external_ocel_candidate_pending_review_count,
+            "external_ocel_candidate_canonical_import_enabled_count": (
+                external_ocel_candidate_canonical_import_enabled_count
+            ),
+            "external_ocel_candidate_not_merged_count": external_ocel_candidate_not_merged_count,
+            "external_ocel_total_preview_event_count": external_ocel_total_preview_event_count,
+            "external_ocel_total_preview_object_count": external_ocel_total_preview_object_count,
+            "external_ocel_total_preview_relation_count": external_ocel_total_preview_relation_count,
+            "external_ocel_by_schema_status": external_ocel_by_schema_status,
+            "external_ocel_by_risk_level": external_ocel_by_risk_level,
+            "external_ocel_payload_registered_count": event_activity_counts.get("external_ocel_payload_registered", 0),
+            "external_ocel_candidate_created_count": event_activity_counts.get("external_ocel_candidate_created", 0),
+            "external_ocel_validation_recorded_count": event_activity_counts.get(
+                "external_ocel_validation_recorded",
+                0,
+            ),
+            "external_ocel_preview_created_count": event_activity_counts.get("external_ocel_preview_created", 0),
+            "external_ocel_risk_note_recorded_count": event_activity_counts.get(
+                "external_ocel_risk_note_recorded",
+                0,
+            ),
         }
 
     @staticmethod

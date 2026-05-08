@@ -49,9 +49,12 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
         event["event_activity"]
         for event in store.fetch_events_by_session("test-session-process-instance")
     ]
-    expected_process_activities = [
+    expected_session_activities = [
         "receive_user_request",
         "start_process_instance",
+        "capability_request_intent_created",
+        "capability_decision_surface_created",
+        "session_context_projection_created",
         "start_process_run_loop",
         "decide_next_activity",
         "decide_skill",
@@ -69,7 +72,7 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
     assert "user_message_received" in activities
     assert "assistant_message_emitted" in activities
     assert "conversation_turn_completed" in activities
-    assert _is_contiguous_subsequence(expected_process_activities, activities)
+    assert _is_contiguous_subsequence(expected_session_activities, activities)
 
     assert store.fetch_objects_by_type("process_instance")
     assert not store.fetch_objects_by_type("goal")
@@ -113,6 +116,16 @@ def test_process_instance_runtime_shape(tmp_path) -> None:
     view = loader.load_process_instance_view(process_id)
     engine = OCPXEngine()
     view_activities = engine.activity_sequence(view)
+    expected_process_activities = [
+        activity
+        for activity in expected_session_activities
+        if activity
+        not in {
+            "capability_request_intent_created",
+            "capability_decision_surface_created",
+            "session_context_projection_created",
+        }
+    ]
     assert _is_contiguous_subsequence(expected_process_activities[1:], view_activities)
     assert engine.summarize_process_instance_view(view)["process_instance_count"] == 1
 

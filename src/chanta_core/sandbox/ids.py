@@ -21,3 +21,23 @@ def new_workspace_write_sandbox_decision_id() -> str:
 
 def new_workspace_write_sandbox_violation_id() -> str:
     return f"workspace_write_sandbox_violation:{uuid4()}"
+
+
+def new_shell_command_intent_id() -> str:
+    return f"shell_command_intent:{uuid4()}"
+
+
+def new_network_access_intent_id() -> str:
+    return f"network_access_intent:{uuid4()}"
+
+
+def new_shell_network_risk_assessment_id() -> str:
+    return f"shell_network_risk_assessment:{uuid4()}"
+
+
+def new_shell_network_pre_sandbox_decision_id() -> str:
+    return f"shell_network_pre_sandbox_decision:{uuid4()}"
+
+
+def new_shell_network_risk_violation_id() -> str:
+    return f"shell_network_risk_violation:{uuid4()}"

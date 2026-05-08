@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from chanta_core.capabilities import CapabilityDecisionSurfaceService
 from chanta_core.agents.default_agent import load_default_agent_profile
 from chanta_core.agents.profile import AgentProfile
 from chanta_core.llm.client import LLMClient
 from chanta_core.ocel.factory import short_hash
+from chanta_core.persona import PersonaLoadingService
 from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.loop.process_run_loop import ProcessRunLoop
 from chanta_core.runtime.run_result import AgentRunResult
-from chanta_core.session import SessionService
+from chanta_core.session import SessionContextAssembler, SessionService
 from chanta_core.skills.registry import SkillRegistry
 from chanta_core.traces.event import AgentEvent
 from chanta_core.traces.trace_service import TraceService
@@ -25,6 +27,12 @@ class AgentRuntime:
         skill_registry: SkillRegistry | None = None,
         process_run_loop: ProcessRunLoop | None = None,
         session_service: SessionService | None = None,
+        session_context_assembler: SessionContextAssembler | None = None,
+        capability_decision_surface_service: CapabilityDecisionSurfaceService | None = None,
+        persona_loading_service: PersonaLoadingService | None = None,
+        enable_session_context_projection: bool = True,
+        enable_capability_decision_surface: bool = True,
+        enable_persona_projection: bool = True,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.prompt_assembly = prompt_assembly or PromptAssemblyService()
@@ -35,6 +43,19 @@ class AgentRuntime:
         self.session_service = session_service or SessionService(
             trace_service=self.trace_service
         )
+        self.session_context_assembler = session_context_assembler or SessionContextAssembler(
+            trace_service=self.trace_service
+        )
+        self.capability_decision_surface_service = (
+            capability_decision_surface_service
+            or CapabilityDecisionSurfaceService(trace_service=self.trace_service)
+        )
+        self.persona_loading_service = persona_loading_service or PersonaLoadingService(
+            trace_service=self.trace_service
+        )
+        self.enable_session_context_projection = enable_session_context_projection
+        self.enable_capability_decision_surface = enable_capability_decision_surface
+        self.enable_persona_projection = enable_persona_projection
 
     def run(
         self,
@@ -96,6 +117,89 @@ class AgentRuntime:
                     profile=self.agent_profile,
                 )
             )
+            prompt_messages: list[dict[str, str]] | None = None
+            persona_projection_block: str | None = None
+            capability_decision_surface_block: str | None = None
+            if self.enable_persona_projection:
+                try:
+                    persona_bundle = self.persona_loading_service.create_default_agent_persona(
+                        agent_name=context.agent_id,
+                        runtime_path="default_agent_repl_llm_chat",
+                    )
+                    persona_projection_block = (
+                        self.persona_loading_service.render_projection_block(
+                            persona_bundle.projection
+                        )
+                    )
+                    context.metadata["persona_projection_id"] = (
+                        persona_bundle.projection.projection_id
+                    )
+                    context.metadata["persona_loadout_id"] = (
+                        persona_bundle.loadout.loadout_id
+                    )
+                except Exception as error:
+                    context.metadata["persona_projection_warning"] = str(error)
+            if self.enable_capability_decision_surface:
+                try:
+                    capability_surface = (
+                        self.capability_decision_surface_service.build_decision_surface(
+                            context.user_input,
+                            session_id=context.session_id,
+                            turn_id=turn_id,
+                            message_id=user_message_id,
+                        )
+                    )
+                    capability_decision_surface_block = (
+                        self.capability_decision_surface_service.render_decision_surface_block(
+                            capability_surface
+                        )
+                    )
+                    context.metadata["capability_decision_surface_id"] = (
+                        capability_surface.surface_id
+                    )
+                    context.metadata["capability_decision_overall_availability"] = (
+                        capability_surface.overall_availability
+                    )
+                    context.metadata["capability_decision_can_fulfill_now"] = (
+                        capability_surface.can_fulfill_now
+                    )
+                except Exception as error:
+                    context.metadata["capability_decision_surface_warning"] = str(error)
+            if self.enable_session_context_projection:
+                try:
+                    prior_messages = self.session_service.fetch_session_messages(
+                        context.session_id
+                    )
+                    turns = self.session_service.fetch_session_turns(context.session_id)
+                    projection = (
+                        self.session_context_assembler.assemble_projection_from_messages(
+                            session_id=context.session_id,
+                            messages=prior_messages,
+                            turns=turns,
+                            exclude_message_ids=[user_message_id],
+                        )
+                    )
+                    prompt_messages = (
+                        self.session_context_assembler.render_projection_to_llm_messages(
+                            projection=projection,
+                            system_prompt=self.agent_profile.system_prompt,
+                            persona_projection_block=persona_projection_block,
+                            capability_profile_block=capability_decision_surface_block,
+                            current_user_message=context.user_input,
+                            avoid_duplicate_current_message=True,
+                        )
+                    )
+                    context.metadata["session_context_projection_id"] = (
+                        projection.projection_id
+                    )
+                    context.metadata["session_context_projection_messages"] = (
+                        projection.total_messages
+                    )
+                    context.metadata["session_context_projection_truncated"] = (
+                        projection.truncated
+                    )
+                except Exception as error:
+                    context.metadata["session_context_projection_warning"] = str(error)
             loop = self.process_run_loop or ProcessRunLoop(
                 llm_client=self.llm_client,
                 trace_service=self.trace_service,
@@ -108,6 +212,7 @@ class AgentRuntime:
                 agent_id=context.agent_id,
                 user_input=context.user_input,
                 system_prompt=self.agent_profile.system_prompt,
+                prompt_messages=prompt_messages,
             )
             events.extend(loop.events)
             response_text = loop_result.response_text

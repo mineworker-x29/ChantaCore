@@ -24,3 +24,27 @@ class WorkspaceWriteSandboxDecisionError(WorkspaceWriteSandboxError):
 
 class WorkspaceWriteSandboxViolationError(WorkspaceWriteSandboxError):
     """Raised when a workspace write sandbox violation is invalid."""
+
+
+class ShellNetworkRiskError(SandboxError):
+    """Base error for shell/network risk pre-sandbox records."""
+
+
+class ShellCommandIntentError(ShellNetworkRiskError):
+    """Raised when a shell command intent is invalid."""
+
+
+class NetworkAccessIntentError(ShellNetworkRiskError):
+    """Raised when a network access intent is invalid."""
+
+
+class ShellNetworkRiskAssessmentError(ShellNetworkRiskError):
+    """Raised when a shell/network risk assessment is invalid."""
+
+
+class ShellNetworkPreSandboxDecisionError(ShellNetworkRiskError):
+    """Raised when a shell/network pre-sandbox decision is invalid."""
+
+
+class ShellNetworkRiskViolationError(ShellNetworkRiskError):
+    """Raised when a shell/network risk violation is invalid."""

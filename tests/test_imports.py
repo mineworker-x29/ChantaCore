@@ -1,5 +1,42 @@
 from chanta_core.agents.profile import AgentProfile
-from chanta_core.delegation.packet import DelegationPacket
+from chanta_core.capabilities import (
+    CapabilityDecision,
+    CapabilityDecisionEvidence,
+    CapabilityDecisionSurface,
+    CapabilityDecisionSurfaceService,
+    CapabilityRequestIntent,
+    CapabilityRequirement,
+    capability_decision_surfaces_to_history_entries,
+    capability_decisions_to_history_entries,
+    capability_request_intents_to_history_entries,
+)
+from chanta_core.delegation import (
+    DelegatedProcessRun,
+    DelegatedProcessRunService,
+    DelegationConformanceContract,
+    DelegationConformanceFinding,
+    DelegationConformanceResult,
+    DelegationConformanceRule,
+    DelegationConformanceRun,
+    DelegationConformanceService,
+    DelegationLink,
+    DelegationPacket,
+    DelegationResult,
+    SidechainContext,
+    SidechainContextEntry,
+    SidechainContextService,
+    SidechainContextSnapshot,
+    SidechainReturnEnvelope,
+    delegated_process_runs_to_history_entries,
+    delegation_conformance_findings_to_history_entries,
+    delegation_conformance_results_to_history_entries,
+    delegation_packets_to_history_entries,
+    delegation_results_to_history_entries,
+    sidechain_context_entries_to_history_entries,
+    sidechain_context_snapshots_to_history_entries,
+    sidechain_contexts_to_history_entries,
+    sidechain_return_envelopes_to_history_entries,
+)
 from chanta_core.editing import (
     EditProposal,
     EditProposalService,
@@ -10,6 +47,57 @@ from chanta_core.editing import (
     PatchApproval,
     PatchBackupService,
     create_unified_diff,
+)
+from chanta_core.external import (
+    ExternalAdapterReviewChecklist,
+    ExternalAdapterReviewDecision,
+    ExternalAdapterReviewFinding,
+    ExternalAdapterReviewItem,
+    ExternalAdapterReviewQueue,
+    ExternalAdapterReviewService,
+    ExternalDescriptorSkeleton,
+    ExternalDescriptorSkeletonValidation,
+    ExternalOCELImportCandidate,
+    ExternalOCELImportCandidateService,
+    ExternalOCELImportRiskNote,
+    ExternalOCELPayloadDescriptor,
+    ExternalOCELPreviewSnapshot,
+    ExternalOCELSource,
+    ExternalOCELValidationResult,
+    ExternalAssimilationCandidate,
+    MCPPluginDescriptorSkeletonService,
+    MCPServerDescriptor,
+    MCPToolDescriptor,
+    PluginDescriptor,
+    PluginEntrypointDescriptor,
+    ExternalCapabilityDescriptor,
+    ExternalCapabilityImportBatch,
+    ExternalCapabilityImportService,
+    ExternalCapabilityNormalizationResult,
+    ExternalCapabilityRegistrySnapshot,
+    ExternalCapabilityRegistryViewService,
+    ExternalCapabilityRiskNote,
+    ExternalCapabilitySource,
+    external_adapter_review_decisions_to_history_entries,
+    external_adapter_review_findings_to_history_entries,
+    external_adapter_review_items_to_history_entries,
+    external_descriptor_skeleton_validations_to_history_entries,
+    external_descriptor_skeletons_to_history_entries,
+    external_ocel_candidates_to_history_entries,
+    external_ocel_preview_snapshots_to_history_entries,
+    external_ocel_risk_notes_to_history_entries,
+    external_ocel_validation_results_to_history_entries,
+    external_assimilation_candidates_to_history_entries,
+    external_capability_descriptors_to_history_entries,
+    external_capability_registry_snapshots_to_history_entries,
+    external_capability_risk_notes_to_history_entries,
+    mcp_server_descriptors_to_history_entries,
+    mcp_tool_descriptors_to_history_entries,
+    plugin_descriptors_to_history_entries,
+    plugin_entrypoint_descriptors_to_history_entries,
+    render_external_capabilities_view,
+    render_external_review_view,
+    render_external_risks_view,
 )
 from chanta_core.instructions import (
     InstructionArtifact,
@@ -137,6 +225,19 @@ from chanta_core.permissions import (
     session_permission_resolutions_to_history_entries,
     session_permission_snapshots_to_history_entries,
 )
+from chanta_core.persona import (
+    AgentRoleBinding,
+    DefaultAgentPersonaBundle,
+    PersonaInstructionArtifact,
+    PersonaLoadout,
+    PersonaLoadingService,
+    PersonaProfile,
+    PersonaProjection,
+    SoulIdentity,
+    persona_instruction_artifacts_to_history_entries,
+    persona_profiles_to_history_entries,
+    persona_projections_to_history_entries,
+)
 from chanta_core.pig.artifact_store import PIArtifactStore
 from chanta_core.pig.artifacts import PIArtifact
 from chanta_core.pig.assimilation import HumanPIAssimilator
@@ -163,6 +264,12 @@ from chanta_core.pig.reports import ProcessRunReport, PIGReportService
 from chanta_core.pig.service import PIGService
 from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.agent_runtime import AgentRuntime
+from chanta_core.runtime.capability_contract import (
+    AgentCapabilityProfile,
+    RuntimeCapabilityIntrospectionService,
+    RuntimeCapabilitySnapshot,
+    build_default_agent_capability_prompt_block,
+)
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.runtime.decision import (
     DecisionContext,
@@ -189,29 +296,46 @@ from chanta_core.scheduler import (
     SchedulerService,
 )
 from chanta_core.sandbox import (
+    NetworkAccessIntent,
+    ShellCommandIntent,
+    ShellNetworkPreSandboxDecision,
+    ShellNetworkRiskAssessment,
+    ShellNetworkRiskPreSandboxService,
+    ShellNetworkRiskViolation,
     WorkspaceRoot,
     WorkspaceWriteBoundary,
     WorkspaceWriteIntent,
     WorkspaceWriteSandboxDecision,
     WorkspaceWriteSandboxService,
     WorkspaceWriteSandboxViolation,
+    network_access_intents_to_history_entries,
+    shell_command_intents_to_history_entries,
+    shell_network_pre_sandbox_decisions_to_history_entries,
+    shell_network_risk_assessments_to_history_entries,
+    shell_network_risk_violations_to_history_entries,
     workspace_write_intents_to_history_entries,
     workspace_write_sandbox_decisions_to_history_entries,
     workspace_write_sandbox_violations_to_history_entries,
 )
 from chanta_core.session import (
     AgentSession,
+    ChatSessionContextPolicy,
     ConversationTurn,
+    SessionContextAssembler,
+    SessionContextProjection,
     SessionContextSnapshot,
     SessionContinuityService,
     SessionForkRequest,
     SessionForkResult,
     SessionMessage,
+    SessionPromptRenderResult,
     SessionResumeRequest,
     SessionResumeResult,
     SessionService,
+    session_context_projections_to_history_entries,
     session_context_snapshot_to_history_entries,
     session_messages_to_history_entries,
+    session_prompt_render_results_to_history_entries,
 )
 from chanta_core.runtime.loop import (
     ProcessActivityDecider,
@@ -230,13 +354,16 @@ from chanta_core.skills.builtin import (
     create_echo_skill,
     create_ingest_human_pi_skill,
     create_inspect_ocel_recent_skill,
+    create_list_workspace_files_skill,
     create_llm_chat_skill,
     create_propose_file_edit_skill,
+    create_read_workspace_text_file_skill,
     create_run_worker_once_skill,
     create_run_scheduler_once_skill,
     create_summarize_pi_artifacts_skill,
     create_summarize_process_trace_skill,
     create_summarize_text_skill,
+    create_summarize_workspace_markdown_skill,
 )
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.errors import SkillRegistryError, SkillValidationError
@@ -297,8 +424,22 @@ from chanta_core.utility.time import utc_now_iso
 from chanta_core.workspace import (
     WorkspaceAccessError,
     WorkspaceConfig,
+    WorkspaceFileListRequest,
+    WorkspaceFileListResult,
     WorkspaceInspector,
+    WorkspaceMarkdownSummaryRequest,
+    WorkspaceMarkdownSummaryResult,
     WorkspacePathGuard,
+    WorkspaceReadBoundary,
+    WorkspaceReadRoot,
+    WorkspaceReadService,
+    WorkspaceReadViolation,
+    WorkspaceTextFileReadRequest,
+    WorkspaceTextFileReadResult,
+    workspace_file_list_results_to_history_entries,
+    workspace_markdown_summary_results_to_history_entries,
+    workspace_read_violations_to_history_entries,
+    workspace_text_file_read_results_to_history_entries,
 )
 from chanta_core.workers import (
     ProcessJob,
@@ -315,6 +456,15 @@ from chanta_core.workers import (
 
 
 def test_required_imports() -> None:
+    assert CapabilityRequestIntent is not None
+    assert CapabilityRequirement is not None
+    assert CapabilityDecision is not None
+    assert CapabilityDecisionSurface is not None
+    assert CapabilityDecisionEvidence is not None
+    assert CapabilityDecisionSurfaceService is not None
+    assert capability_request_intents_to_history_entries is not None
+    assert capability_decisions_to_history_entries is not None
+    assert capability_decision_surfaces_to_history_entries is not None
     assert LLMClient is not None
     assert EditProposal is not None
     assert EditProposalService is not None
@@ -378,6 +528,10 @@ def test_required_imports() -> None:
     assert ContextCollapseLayer is not None
     assert AutoCompactLayer is not None
     assert AgentRuntime is not None
+    assert AgentCapabilityProfile is not None
+    assert RuntimeCapabilityIntrospectionService is not None
+    assert RuntimeCapabilitySnapshot is not None
+    assert build_default_agent_capability_prompt_block is not None
     assert ChatService is not None
     assert ProcessActivityDecider is not None
     assert ProcessContextAssembler is not None
@@ -473,12 +627,37 @@ def test_required_imports() -> None:
     assert session_permission_contexts_to_history_entries is not None
     assert session_permission_snapshots_to_history_entries is not None
     assert session_permission_resolutions_to_history_entries is not None
+    assert SoulIdentity is not None
+    assert PersonaProfile is not None
+    assert PersonaInstructionArtifact is not None
+    assert AgentRoleBinding is not None
+    assert PersonaLoadout is not None
+    assert PersonaProjection is not None
+    assert PersonaLoadingService is not None
+    assert DefaultAgentPersonaBundle is not None
+    assert persona_profiles_to_history_entries is not None
+    assert persona_projections_to_history_entries is not None
+    assert persona_instruction_artifacts_to_history_entries is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None
     assert WorkspaceConfig is not None
+    assert WorkspaceFileListRequest is not None
+    assert WorkspaceFileListResult is not None
     assert WorkspaceInspector is not None
+    assert WorkspaceMarkdownSummaryRequest is not None
+    assert WorkspaceMarkdownSummaryResult is not None
     assert WorkspacePathGuard is not None
+    assert WorkspaceReadBoundary is not None
+    assert WorkspaceReadRoot is not None
+    assert WorkspaceReadService is not None
+    assert WorkspaceReadViolation is not None
+    assert WorkspaceTextFileReadRequest is not None
+    assert WorkspaceTextFileReadResult is not None
+    assert workspace_file_list_results_to_history_entries is not None
+    assert workspace_markdown_summary_results_to_history_entries is not None
+    assert workspace_read_violations_to_history_entries is not None
+    assert workspace_text_file_read_results_to_history_entries is not None
     assert RepoFileMatch is not None
     assert RepoScanner is not None
     assert RepoSearchResult is not None
@@ -509,8 +688,22 @@ def test_required_imports() -> None:
     assert workspace_write_intents_to_history_entries is not None
     assert workspace_write_sandbox_decisions_to_history_entries is not None
     assert workspace_write_sandbox_violations_to_history_entries is not None
+    assert ShellCommandIntent is not None
+    assert NetworkAccessIntent is not None
+    assert ShellNetworkRiskAssessment is not None
+    assert ShellNetworkPreSandboxDecision is not None
+    assert ShellNetworkRiskViolation is not None
+    assert ShellNetworkRiskPreSandboxService is not None
+    assert shell_command_intents_to_history_entries is not None
+    assert network_access_intents_to_history_entries is not None
+    assert shell_network_risk_assessments_to_history_entries is not None
+    assert shell_network_pre_sandbox_decisions_to_history_entries is not None
+    assert shell_network_risk_violations_to_history_entries is not None
     assert AgentSession is not None
+    assert ChatSessionContextPolicy is not None
     assert ConversationTurn is not None
+    assert SessionContextAssembler is not None
+    assert SessionContextProjection is not None
     assert SessionContextSnapshot is not None
     assert SessionContinuityService is not None
     assert SessionResumeRequest is not None
@@ -518,9 +711,12 @@ def test_required_imports() -> None:
     assert SessionForkRequest is not None
     assert SessionForkResult is not None
     assert SessionMessage is not None
+    assert SessionPromptRenderResult is not None
     assert SessionService is not None
+    assert session_context_projections_to_history_entries is not None
     assert session_context_snapshot_to_history_entries is not None
     assert session_messages_to_history_entries is not None
+    assert session_prompt_render_results_to_history_entries is not None
     assert ProcessJob is not None
     assert ProcessJobInvalidTransitionError is not None
     assert ProcessJobStore is not None
@@ -537,15 +733,91 @@ def test_required_imports() -> None:
     assert create_echo_skill is not None
     assert create_ingest_human_pi_skill is not None
     assert create_inspect_ocel_recent_skill is not None
+    assert create_list_workspace_files_skill is not None
     assert create_llm_chat_skill is not None
     assert create_propose_file_edit_skill is not None
+    assert create_read_workspace_text_file_skill is not None
     assert create_run_worker_once_skill is not None
     assert create_run_scheduler_once_skill is not None
     assert create_summarize_pi_artifacts_skill is not None
     assert create_summarize_process_trace_skill is not None
     assert create_summarize_text_skill is not None
+    assert create_summarize_workspace_markdown_skill is not None
     assert Mission is not None
     assert DelegationPacket is not None
+    assert DelegatedProcessRun is not None
+    assert DelegationResult is not None
+    assert DelegationLink is not None
+    assert DelegatedProcessRunService is not None
+    assert DelegationConformanceContract is not None
+    assert DelegationConformanceRule is not None
+    assert DelegationConformanceRun is not None
+    assert DelegationConformanceFinding is not None
+    assert DelegationConformanceResult is not None
+    assert DelegationConformanceService is not None
+    assert SidechainContext is not None
+    assert SidechainContextEntry is not None
+    assert SidechainContextSnapshot is not None
+    assert SidechainReturnEnvelope is not None
+    assert SidechainContextService is not None
+    assert ExternalCapabilitySource is not None
+    assert ExternalCapabilityDescriptor is not None
+    assert ExternalCapabilityImportBatch is not None
+    assert ExternalCapabilityNormalizationResult is not None
+    assert ExternalAssimilationCandidate is not None
+    assert ExternalCapabilityRiskNote is not None
+    assert ExternalCapabilityRegistrySnapshot is not None
+    assert ExternalAdapterReviewQueue is not None
+    assert ExternalAdapterReviewItem is not None
+    assert ExternalAdapterReviewChecklist is not None
+    assert ExternalAdapterReviewFinding is not None
+    assert ExternalAdapterReviewDecision is not None
+    assert MCPServerDescriptor is not None
+    assert MCPToolDescriptor is not None
+    assert PluginDescriptor is not None
+    assert PluginEntrypointDescriptor is not None
+    assert ExternalDescriptorSkeleton is not None
+    assert ExternalDescriptorSkeletonValidation is not None
+    assert ExternalOCELSource is not None
+    assert ExternalOCELPayloadDescriptor is not None
+    assert ExternalOCELImportCandidate is not None
+    assert ExternalOCELValidationResult is not None
+    assert ExternalOCELPreviewSnapshot is not None
+    assert ExternalOCELImportRiskNote is not None
+    assert ExternalCapabilityImportService is not None
+    assert ExternalCapabilityRegistryViewService is not None
+    assert ExternalAdapterReviewService is not None
+    assert MCPPluginDescriptorSkeletonService is not None
+    assert ExternalOCELImportCandidateService is not None
+    assert external_capability_descriptors_to_history_entries is not None
+    assert external_assimilation_candidates_to_history_entries is not None
+    assert external_capability_risk_notes_to_history_entries is not None
+    assert external_capability_registry_snapshots_to_history_entries is not None
+    assert external_adapter_review_items_to_history_entries is not None
+    assert external_adapter_review_findings_to_history_entries is not None
+    assert external_adapter_review_decisions_to_history_entries is not None
+    assert mcp_server_descriptors_to_history_entries is not None
+    assert mcp_tool_descriptors_to_history_entries is not None
+    assert plugin_descriptors_to_history_entries is not None
+    assert plugin_entrypoint_descriptors_to_history_entries is not None
+    assert external_descriptor_skeletons_to_history_entries is not None
+    assert external_descriptor_skeleton_validations_to_history_entries is not None
+    assert external_ocel_candidates_to_history_entries is not None
+    assert external_ocel_validation_results_to_history_entries is not None
+    assert external_ocel_preview_snapshots_to_history_entries is not None
+    assert external_ocel_risk_notes_to_history_entries is not None
+    assert render_external_capabilities_view is not None
+    assert render_external_review_view is not None
+    assert render_external_risks_view is not None
+    assert delegation_packets_to_history_entries is not None
+    assert delegated_process_runs_to_history_entries is not None
+    assert delegation_results_to_history_entries is not None
+    assert delegation_conformance_findings_to_history_entries is not None
+    assert delegation_conformance_results_to_history_entries is not None
+    assert sidechain_contexts_to_history_entries is not None
+    assert sidechain_context_entries_to_history_entries is not None
+    assert sidechain_context_snapshots_to_history_entries is not None
+    assert sidechain_return_envelopes_to_history_entries is not None
     assert OCELObject is not None
     assert OCELEvent is not None
     assert OCELRelation is not None

@@ -28,3 +28,19 @@ class SessionForkError(SessionContinuityError):
 
 class SessionContextReconstructionError(SessionContinuityError):
     """Raised when session context reconstruction fails."""
+
+
+class SessionContextError(SessionError):
+    """Base error for bounded session context projection failures."""
+
+
+class SessionContextPolicyError(SessionContextError):
+    """Raised when a session context policy is invalid."""
+
+
+class SessionContextProjectionError(SessionContextError):
+    """Raised when a session context projection cannot be assembled."""
+
+
+class SessionPromptRenderError(SessionContextError):
+    """Raised when a session prompt render cannot be produced."""

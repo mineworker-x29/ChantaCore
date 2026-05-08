@@ -78,6 +78,9 @@ def test_inspect_ocel_recent_skill_uses_tool_ocel(tmp_path) -> None:
     )
 
     assert result.success is True
+    assert "inspection_scope=recent_global" in str(result.output_text)
+    assert result.output_attrs["inspection_scope"] == "recent_global"
+    assert result.output_attrs["persistence_scope"] == "persisted_store"
     assert result.output_attrs["tool_results"]
     assert {item["tool_id"] for item in result.output_attrs["tool_results"]} == {"tool:ocel"}
     activities = [

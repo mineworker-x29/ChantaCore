@@ -44,18 +44,22 @@ def execute_llm_chat_skill(
         session_id=context.session_id,
         metadata={"process_instance_id": context.process_instance_id},
     )
-    messages = context_assembler.assemble_for_llm_chat(
-        user_input=context.user_input,
-        system_prompt=context.system_prompt,
-        pig_context=context.pig_context or context.context_attrs.get("pig_context"),
-        context_budget=context.context_attrs.get("context_budget"),
-        compaction_pipeline=context.context_attrs.get("compaction_pipeline"),
-        context_snapshot_policy=context.context_attrs.get("context_snapshot_policy"),
-        context_snapshot_store=context.context_attrs.get("context_snapshot_store"),
-        context_audit_service=context.context_attrs.get("context_audit_service"),
-        session_id=context.session_id,
-        process_instance_id=context.process_instance_id,
-    )
+    provided_messages = context.context_attrs.get("prompt_messages")
+    if provided_messages:
+        messages = _sanitize_prompt_messages(provided_messages)
+    else:
+        messages = context_assembler.assemble_for_llm_chat(
+            user_input=context.user_input,
+            system_prompt=context.system_prompt,
+            pig_context=context.pig_context or context.context_attrs.get("pig_context"),
+            context_budget=context.context_attrs.get("context_budget"),
+            compaction_pipeline=context.context_attrs.get("compaction_pipeline"),
+            context_snapshot_policy=context.context_attrs.get("context_snapshot_policy"),
+            context_snapshot_store=context.context_attrs.get("context_snapshot_store"),
+            context_audit_service=context.context_attrs.get("context_audit_service"),
+            session_id=context.session_id,
+            process_instance_id=context.process_instance_id,
+        )
     iteration = int(context.context_attrs.get("iteration", 0))
     trace_service.record_context_assembled(
         execution_context,
@@ -110,3 +114,17 @@ def execute_llm_chat_skill(
             "response_length": len(response_text),
         },
     )
+
+
+def _sanitize_prompt_messages(raw_messages: Any) -> list[dict[str, str]]:
+    messages: list[dict[str, str]] = []
+    if not isinstance(raw_messages, list):
+        return messages
+    for item in raw_messages:
+        if not isinstance(item, dict):
+            continue
+        role = str(item.get("role") or "")
+        content = str(item.get("content") or "")
+        if role in {"system", "user", "assistant", "tool"} and content:
+            messages.append({"role": role, "content": content})
+    return messages

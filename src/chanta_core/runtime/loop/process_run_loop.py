@@ -70,6 +70,7 @@ class ProcessRunLoop:
         user_input: str,
         system_prompt: str | None = None,
         skill_id: str | None = None,
+        prompt_messages: list[dict[str, str]] | None = None,
     ) -> ProcessRunResult:
         context = ExecutionContext.create(
             agent_id=agent_id,
@@ -176,6 +177,7 @@ class ProcessRunLoop:
                         "temperature": self.agent_profile.default_temperature,
                         "max_tokens": self.agent_profile.max_tokens,
                         "agent_profile": self.agent_profile,
+                        "prompt_messages": prompt_messages,
                         "pig_context_included": pig_context is not None,
                         "context_budget": (
                             self.policy.context_budget

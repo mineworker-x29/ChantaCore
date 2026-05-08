@@ -70,8 +70,11 @@ def execute_inspect_ocel_recent_skill(
     object_object_relation_count = int(
         relations_result.output_attrs.get("object_object_relation_count") or 0
     )
+    inspection_scope = "recent_global"
+    persistence_scope = "persisted_store"
     output_text = (
-        "OCEL recent inspection: "
+        "OCEL recent inspection "
+        f"(inspection_scope={inspection_scope}, persistence_scope={persistence_scope}): "
         f"{event_count} events, {object_count} objects, "
         f"{event_object_relation_count} event-object relations, "
         f"{object_object_relation_count} object-object relations."
@@ -87,6 +90,10 @@ def execute_inspect_ocel_recent_skill(
             "object_count": object_count,
             "event_object_relation_count": event_object_relation_count,
             "object_object_relation_count": object_object_relation_count,
+            "inspection_scope": inspection_scope,
+            "persistence_scope": persistence_scope,
+            "current_session_scope_enabled": False,
+            "current_process_instance_scope_enabled": False,
             "recent_event_activities": recent_activities,
             "duplicate_relations_valid": bool(duplicate_validation.get("valid")),
             "tool_results": [

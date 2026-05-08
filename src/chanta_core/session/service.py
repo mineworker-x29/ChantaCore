@@ -192,6 +192,98 @@ class SessionService:
             message_attrs=message_attrs,
         )
 
+    def fetch_session_messages(self, session_id: str) -> list[SessionMessage]:
+        """Read session messages from OCEL object state.
+
+        SessionMessage OCEL records remain canonical; this method only reconstructs
+        read-model dataclasses for prompt projection.
+        """
+        rows = self.trace_service.ocel_store.fetch_objects_by_type("message")
+        messages: list[SessionMessage] = []
+        for row in rows:
+            attrs = dict(row.get("object_attrs") or row.get("state") or {})
+            if attrs.get("session_id") != session_id:
+                continue
+            content = str(attrs.get("content") or "")
+            message_attrs = {
+                key: value
+                for key, value in attrs.items()
+                if key
+                not in {
+                    "object_key",
+                    "display_name",
+                    "message_id",
+                    "session_id",
+                    "turn_id",
+                    "role",
+                    "content",
+                    "content_preview",
+                    "content_hash",
+                    "created_at",
+                }
+            }
+            messages.append(
+                SessionMessage(
+                    message_id=str(attrs.get("message_id") or row.get("object_id")),
+                    session_id=str(attrs.get("session_id") or session_id),
+                    turn_id=attrs.get("turn_id"),
+                    role=str(attrs.get("role") or "user"),
+                    content=content,
+                    content_preview=str(
+                        attrs.get("content_preview") or make_content_preview(content)
+                    ),
+                    content_hash=str(attrs.get("content_hash") or hash_content(content)),
+                    created_at=str(attrs.get("created_at") or ""),
+                    message_attrs=message_attrs,
+                )
+            )
+        messages.sort(key=lambda item: (item.created_at, item.message_id))
+        return messages
+
+    def fetch_session_turns(self, session_id: str) -> list[ConversationTurn]:
+        """Read conversation turns from OCEL object state for bounded projection."""
+        rows = self.trace_service.ocel_store.fetch_objects_by_type("conversation_turn")
+        turns: list[ConversationTurn] = []
+        for row in rows:
+            attrs = dict(row.get("object_attrs") or row.get("state") or {})
+            if attrs.get("session_id") != session_id:
+                continue
+            turn_attrs = {
+                key: value
+                for key, value in attrs.items()
+                if key
+                not in {
+                    "object_key",
+                    "display_name",
+                    "turn_id",
+                    "session_id",
+                    "status",
+                    "started_at",
+                    "completed_at",
+                    "turn_index",
+                    "process_instance_id",
+                    "user_message_id",
+                    "assistant_message_id",
+                    "updated_at",
+                }
+            }
+            turns.append(
+                ConversationTurn(
+                    turn_id=str(attrs.get("turn_id") or row.get("object_id")),
+                    session_id=str(attrs.get("session_id") or session_id),
+                    status=str(attrs.get("status") or "started"),
+                    started_at=str(attrs.get("started_at") or attrs.get("updated_at") or ""),
+                    completed_at=attrs.get("completed_at"),
+                    process_instance_id=attrs.get("process_instance_id"),
+                    user_message_id=attrs.get("user_message_id"),
+                    assistant_message_id=attrs.get("assistant_message_id"),
+                    turn_index=attrs.get("turn_index"),
+                    turn_attrs=turn_attrs,
+                )
+            )
+        turns.sort(key=lambda item: (item.started_at, item.turn_id))
+        return turns
+
     def complete_turn(
         self,
         *,

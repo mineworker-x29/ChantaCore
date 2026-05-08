@@ -9,6 +9,11 @@ from chanta_core.runtime.chat_service import ChatService
 from chanta_core.settings.app_settings import load_app_settings
 
 
+EMPTY_MODEL_RESPONSE_MESSAGE = (
+    "[empty model response: the configured LLM returned no assistant content]"
+)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="chanta-cli",
@@ -37,14 +42,22 @@ def resolve_prompt(direct_prompt: str | None) -> str:
     raise SystemExit("prompt is required when stdin is empty")
 
 
+def format_assistant_output(response_text: str) -> str:
+    if response_text.strip():
+        return response_text
+    return EMPTY_MODEL_RESPONSE_MESSAGE
+
+
 def run_ask(args: argparse.Namespace) -> int:
+    load_app_settings()
     prompt = resolve_prompt(args.prompt)
     result = AgentRuntime().run(prompt, session_id=args.session_id)
-    print(result.response_text)
+    print(format_assistant_output(result.response_text))
     return 0
 
 
 def run_repl(args: argparse.Namespace) -> int:
+    load_app_settings()
     chat = ChatService()
     session_id = args.session_id
     print("Interactive session started. Type /exit to quit.")
@@ -61,7 +74,7 @@ def run_repl(args: argparse.Namespace) -> int:
             return 0
 
         response_text = chat.chat(user_input, session_id=session_id)
-        print(f"assistant> {response_text}")
+        print(f"assistant> {format_assistant_output(response_text)}")
 
 
 def run_show_config() -> int:

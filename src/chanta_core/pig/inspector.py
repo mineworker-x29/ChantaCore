@@ -124,6 +124,19 @@ class PISubstrateInspector:
             "process_outcome_summary": report.report_attrs.get("process_outcome_summary", {}),
             "permission_summary": report.report_attrs.get("permission_summary", {}),
             "workspace_write_sandbox_summary": report.report_attrs.get("workspace_write_sandbox_summary", {}),
+            "workspace_read_summary": report.report_attrs.get("workspace_read_summary", {}),
+            "shell_network_pre_sandbox_summary": report.report_attrs.get("shell_network_pre_sandbox_summary", {}),
+            "delegation_summary": report.report_attrs.get("delegation_summary", {}),
+            "sidechain_summary": report.report_attrs.get("sidechain_summary", {}),
+            "delegation_conformance_summary": report.report_attrs.get("delegation_conformance_summary", {}),
+            "session_context_projection_summary": report.report_attrs.get(
+                "session_context_projection_summary", {}
+            ),
+            "capability_decision_summary": report.report_attrs.get(
+                "capability_decision_summary", {}
+            ),
+            "persona_summary": report.report_attrs.get("persona_summary", {}),
+            "external_capability_summary": report.report_attrs.get("external_capability_summary", {}),
         }
         conformance_summary = {
             "status": conformance.status,
@@ -187,6 +200,19 @@ class PISubstrateInspector:
                 "process_outcome_summary": pig_summary.get("process_outcome_summary", {}),
                 "permission_summary": pig_summary.get("permission_summary", {}),
                 "workspace_write_sandbox_summary": pig_summary.get("workspace_write_sandbox_summary", {}),
+                "workspace_read_summary": pig_summary.get("workspace_read_summary", {}),
+                "shell_network_pre_sandbox_summary": pig_summary.get("shell_network_pre_sandbox_summary", {}),
+                "delegation_summary": pig_summary.get("delegation_summary", {}),
+                "sidechain_summary": pig_summary.get("sidechain_summary", {}),
+                "delegation_conformance_summary": pig_summary.get("delegation_conformance_summary", {}),
+                "session_context_projection_summary": pig_summary.get(
+                    "session_context_projection_summary", {}
+                ),
+                "capability_decision_summary": pig_summary.get(
+                    "capability_decision_summary", {}
+                ),
+                "persona_summary": pig_summary.get("persona_summary", {}),
+                "external_capability_summary": pig_summary.get("external_capability_summary", {}),
             },
         )
 
@@ -284,6 +310,27 @@ class PISubstrateInspector:
                 f"- Permission requests: {(pig_summary.get('permission_summary') or {}).get('permission_request_count', 0)}",
                 f"- Session permission resolutions: {(pig_summary.get('permission_summary') or {}).get('session_permission_resolution_count', 0)}",
                 f"- Workspace write sandbox decisions: {(pig_summary.get('workspace_write_sandbox_summary') or {}).get('workspace_write_sandbox_decision_count', 0)}",
+                f"- Workspace read results: {(pig_summary.get('workspace_read_summary') or {}).get('workspace_text_file_read_result_count', 0)}",
+                f"- Workspace read violations: {(pig_summary.get('workspace_read_summary') or {}).get('workspace_read_violation_count', 0)}",
+                f"- Shell/network pre-sandbox decisions: {(pig_summary.get('shell_network_pre_sandbox_summary') or {}).get('shell_network_pre_sandbox_decision_count', 0)}",
+                f"- Delegated process runs: {(pig_summary.get('delegation_summary') or {}).get('delegated_process_run_count', 0)}",
+                f"- Sidechain contexts: {(pig_summary.get('sidechain_summary') or {}).get('sidechain_context_count', 0)}",
+                f"- Delegation conformance results: {(pig_summary.get('delegation_conformance_summary') or {}).get('delegation_conformance_result_count', 0)}",
+                f"- Session context projections: {(pig_summary.get('session_context_projection_summary') or {}).get('session_context_projection_count', 0)}",
+                f"- Session prompt renders: {(pig_summary.get('session_context_projection_summary') or {}).get('session_prompt_render_count', 0)}",
+                f"- Capability decision surfaces: {(pig_summary.get('capability_decision_summary') or {}).get('capability_decision_surface_count', 0)}",
+                f"- Capability unfulfillable requests: {(pig_summary.get('capability_decision_summary') or {}).get('capability_unfulfillable_request_count', 0)}",
+                f"- Persona projections: {(pig_summary.get('persona_summary') or {}).get('persona_projection_count', 0)}",
+                f"- External capability candidates: {(pig_summary.get('external_capability_summary') or {}).get('external_assimilation_candidate_count', 0)}",
+                f"- External execution-enabled candidates: {(pig_summary.get('external_capability_summary') or {}).get('external_candidate_execution_enabled_count', 0)}",
+                f"- External registry snapshots: {(pig_summary.get('external_capability_summary') or {}).get('external_capability_registry_snapshot_count', 0)}",
+                f"- External view execution-enabled candidates: {(pig_summary.get('external_capability_summary') or {}).get('external_view_execution_enabled_candidate_count', 0)}",
+                f"- External adapter review items: {(pig_summary.get('external_capability_summary') or {}).get('external_adapter_review_item_count', 0)}",
+                f"- External review runtime activation count: {(pig_summary.get('external_capability_summary') or {}).get('external_review_runtime_activation_count', 0)}",
+                f"- MCP/plugin descriptor skeletons: {(pig_summary.get('external_capability_summary') or {}).get('external_descriptor_skeleton_count', 0)}",
+                f"- MCP/plugin execution-enabled count: {(pig_summary.get('external_capability_summary') or {}).get('mcp_plugin_execution_enabled_count', 0)}",
+                f"- External OCEL import candidates: {(pig_summary.get('external_capability_summary') or {}).get('external_ocel_import_candidate_count', 0)}",
+                f"- External OCEL canonical-import-enabled candidates: {(pig_summary.get('external_capability_summary') or {}).get('external_ocel_candidate_canonical_import_enabled_count', 0)}",
                 "",
                 "Conformance:",
                 f"- Process status: {conformance_summary.get('status')}",

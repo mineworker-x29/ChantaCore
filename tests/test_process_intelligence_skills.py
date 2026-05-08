@@ -76,6 +76,8 @@ def test_process_intelligence_skills_read_ocel_ocpx_pig_without_llm(tmp_path) ->
     assert inspect_result.success is True
     assert inspect_result.output_text
     assert inspect_result.output_attrs["event_count"] > 0
+    assert inspect_result.output_attrs["inspection_scope"] == "recent_global"
+    assert inspect_result.output_attrs["persistence_scope"] == "persisted_store"
     assert "recent_event_activities" in inspect_result.output_attrs
     assert inspect_result.output_attrs["duplicate_relations_valid"] is True
 

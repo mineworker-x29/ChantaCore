@@ -14,7 +14,14 @@ class OCPXLoader:
         self.store = store or OCELStore()
 
     def load_session_view(self, session_id: str) -> OCPXProcessView:
-        rows = self.store.fetch_events_by_session(session_id)
+        session_object_id = (
+            session_id if session_id.startswith("session:") else f"session:{session_id}"
+        )
+        rows = self._merge_event_rows(
+            self.store.fetch_events_by_session(session_id),
+            self.store.fetch_events_by_object(session_object_id, qualifier="parent_session"),
+            self.store.fetch_events_by_object(session_object_id, qualifier="child_session"),
+        )
         return self._build_view(
             rows=rows,
             source="ocel_store:session",
@@ -32,9 +39,19 @@ class OCPXLoader:
         )
 
     def load_process_instance_view(self, process_instance_id: str) -> OCPXProcessView:
-        rows = self.store.fetch_events_by_object(
-            process_instance_id,
-            qualifier="process_context",
+        rows = self._merge_event_rows(
+            self.store.fetch_events_by_object(
+                process_instance_id,
+                qualifier="process_context",
+            ),
+            self.store.fetch_events_by_object(
+                process_instance_id,
+                qualifier="parent_process",
+            ),
+            self.store.fetch_events_by_object(
+                process_instance_id,
+                qualifier="child_process",
+            ),
         )
         return self._build_view(
             rows=rows,
@@ -120,3 +137,16 @@ class OCPXLoader:
             objects=list(objects_by_id.values()),
             view_attrs=view_attrs,
         )
+
+    @staticmethod
+    def _merge_event_rows(*row_groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        merged_rows: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        for rows in row_groups:
+            for row in rows:
+                event_id = str(row["event_id"])
+                if event_id in seen_ids:
+                    continue
+                merged_rows.append(row)
+                seen_ids.add(event_id)
+        return merged_rows

@@ -6,13 +6,16 @@ from chanta_core.skills.builtin import (
     create_echo_skill,
     create_ingest_human_pi_skill,
     create_inspect_ocel_recent_skill,
+    create_list_workspace_files_skill,
     create_llm_chat_skill,
     create_propose_file_edit_skill,
+    create_read_workspace_text_file_skill,
     create_run_worker_once_skill,
     create_run_scheduler_once_skill,
     create_summarize_pi_artifacts_skill,
     create_summarize_process_trace_skill,
     create_summarize_text_skill,
+    create_summarize_workspace_markdown_skill,
 )
 from chanta_core.skills.errors import SkillRegistryError
 from chanta_core.skills.skill import Skill
@@ -76,8 +79,11 @@ class SkillRegistry:
         self.register(create_run_scheduler_once_skill())
         self.register(create_summarize_text_skill())
         self.register(create_inspect_ocel_recent_skill())
+        self.register(create_list_workspace_files_skill())
+        self.register(create_read_workspace_text_file_skill())
         self.register(create_summarize_pi_artifacts_skill())
         self.register(create_summarize_process_trace_skill())
+        self.register(create_summarize_workspace_markdown_skill())
 
     def list_skills(self) -> list[Skill]:
         return [self._skills_by_id[skill_id] for skill_id in sorted(self._skills_by_id)]

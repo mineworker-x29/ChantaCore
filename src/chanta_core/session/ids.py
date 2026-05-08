@@ -25,3 +25,15 @@ def new_session_resume_id() -> str:
 
 def new_session_fork_id() -> str:
     return f"session_fork:{uuid4()}"
+
+
+def new_session_context_policy_id() -> str:
+    return f"session_context_policy:{uuid4()}"
+
+
+def new_session_context_projection_id() -> str:
+    return f"session_context_projection:{uuid4()}"
+
+
+def new_session_prompt_render_id() -> str:
+    return f"session_prompt_render:{uuid4()}"
