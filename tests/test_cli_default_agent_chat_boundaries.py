@@ -1,5 +1,10 @@
 from chanta_core.agents.default_agent import load_default_agent_profile
-from chanta_core.cli.main import EMPTY_MODEL_RESPONSE_MESSAGE, format_assistant_output
+from chanta_core.cli.main import (
+    EMPTY_MODEL_RESPONSE_MESSAGE,
+    LLM_PROVIDER_UNAVAILABLE_MESSAGE,
+    format_assistant_output,
+    format_runtime_error,
+)
 from chanta_core.llm.types import ChatMessage
 from chanta_core.runtime.loop.context import ProcessContextAssembler
 from chanta_core.skills.builtin import create_llm_chat_skill
@@ -47,6 +52,14 @@ def test_cli_formats_empty_model_response_as_diagnostic() -> None:
     assert format_assistant_output("") == EMPTY_MODEL_RESPONSE_MESSAGE
     assert format_assistant_output("   \n") == EMPTY_MODEL_RESPONSE_MESSAGE
     assert format_assistant_output("hello") == "hello"
+
+
+def test_cli_formats_no_loaded_model_error_as_diagnostic() -> None:
+    error = RuntimeError(
+        "Error code: 400 - {'error': {'message': 'No models loaded. Please load a model.'}}"
+    )
+
+    assert format_runtime_error(error) == LLM_PROVIDER_UNAVAILABLE_MESSAGE
 
 
 def test_what_can_you_do_response_uses_capability_contract() -> None:

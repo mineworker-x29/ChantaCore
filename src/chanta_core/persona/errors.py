@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 
 class PersonaError(Exception):
@@ -27,3 +27,16 @@ class PersonaLoadoutError(PersonaError):
 
 class PersonaProjectionError(PersonaError):
     """Raised when a persona projection cannot be rendered."""
+
+
+class PersonaSourceImportError(PersonaError):
+    """Raised when staged persona source import cannot proceed."""
+
+
+class PersonalOverlayError(PersonaError):
+    """Raised when a Personal Overlay boundary operation cannot proceed."""
+
+
+class PersonalModeLoadoutError(PersonaError):
+    """Raised when a Personal Mode loadout operation cannot proceed."""
+

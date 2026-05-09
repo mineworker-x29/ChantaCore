@@ -1,4 +1,4 @@
-from chanta_core.ocel.store import OCELStore
+﻿from chanta_core.ocel.store import OCELStore
 from chanta_core.runtime.agent_runtime import AgentRuntime
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.traces.trace_service import TraceService
@@ -24,7 +24,10 @@ def test_chat_service_injects_capability_decision_guidance_without_execution(tmp
     )
     chat = ChatService(runtime=runtime)
 
-    response = chat.chat("/Souls/ChantaVeraAide markdown 파일 읽어봐", session_id="session:test")
+    response = chat.chat(
+        "/PersonalDirectory/sample_profile.md read markdown",
+        session_id="session:test",
+    )
 
     assert response == "fake response"
     prompt_text = "\n".join(message["content"] for message in client.calls[-1])
@@ -33,3 +36,4 @@ def test_chat_service_injects_capability_decision_guidance_without_execution(tmp
     assert "Do not execute tools" in prompt_text
     assert store.fetch_objects_by_type("capability_decision_surface")
     assert not store.fetch_objects_by_type("permission_grant")
+

@@ -29,6 +29,17 @@ logs/
 *.sqlite3
 *.db
 
+# Private/local persona material
+.chanta_private/
+.private/
+local_persona/
+persona_private/
+**/message_to_*.md
+**/messages/**
+**/letters/**
+**/*personal_private*
+**/*personal_overlay_private*
+
 # IDE
 .vscode/
 .idea/
@@ -36,3 +47,4 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+

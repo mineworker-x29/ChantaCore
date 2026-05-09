@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -640,6 +640,16 @@ class PIGReportService:
                 f"- Agent role bindings: {(persona_summary or {}).get('agent_role_binding_count', 0)}",
                 f"- Loadouts/projections: {(persona_summary or {}).get('persona_loadout_count', 0)}/{(persona_summary or {}).get('persona_projection_count', 0)}",
                 f"- Capability boundaries/prompt attachments: {(persona_summary or {}).get('persona_capability_boundary_count', 0)}/{(persona_summary or {}).get('persona_projection_attached_to_prompt_count', 0)}",
+                f"- Source import objects: {(persona_summary or {}).get('persona_source_count', 0)}/{(persona_summary or {}).get('persona_source_ingestion_candidate_count', 0)}/{(persona_summary or {}).get('persona_assimilation_draft_count', 0)}/{(persona_summary or {}).get('persona_projection_candidate_count', 0)}",
+                f"- Source valid/invalid/review/private: {(persona_summary or {}).get('persona_source_valid_count', 0)}/{(persona_summary or {}).get('persona_source_invalid_count', 0)}/{(persona_summary or {}).get('persona_source_needs_review_count', 0)}/{(persona_summary or {}).get('persona_private_source_count', 0)}",
+                f"- Source types: {PIGReportService._inline_counts((persona_summary or {}).get('persona_source_by_type') or {})}",
+                f"- Source risk levels: {PIGReportService._inline_counts((persona_summary or {}).get('persona_source_by_risk_level') or {})}",
+                f"- Personal Directory / Overlay objects: {(persona_summary or {}).get('personal_directory_config_count', 0)}/{(persona_summary or {}).get('personal_directory_manifest_count', 0)}/{(persona_summary or {}).get('personal_projection_ref_count', 0)}/{(persona_summary or {}).get('personal_overlay_load_result_count', 0)}",
+                f"- Personal Overlay denied/failed/safe/attached: {(persona_summary or {}).get('personal_overlay_load_denied_count', 0)}/{(persona_summary or {}).get('personal_overlay_boundary_failed_count', 0)}/{(persona_summary or {}).get('personal_overlay_safe_projection_count', 0)}/{(persona_summary or {}).get('personal_projection_attached_to_prompt_count', 0)}",
+                f"- Personal Core / Mode objects: {(persona_summary or {}).get('personal_core_profile_count', 0)}/{(persona_summary or {}).get('personal_mode_profile_count', 0)}/{(persona_summary or {}).get('personal_mode_boundary_count', 0)}/{(persona_summary or {}).get('personal_mode_loadout_count', 0)}/{(persona_summary or {}).get('personal_mode_loadout_draft_count', 0)}",
+                f"- Personal Mode capabilities: available/requires-permission/not-implemented {(persona_summary or {}).get('personal_mode_capability_available_now_count', 0)}/{(persona_summary or {}).get('personal_mode_capability_requires_permission_count', 0)}/{(persona_summary or {}).get('personal_mode_capability_not_implemented_count', 0)}",
+                f"- Personal Mode types: {PIGReportService._inline_counts((persona_summary or {}).get('personal_mode_by_type') or {})}",
+                f"- Personal Mode boundary types: {PIGReportService._inline_counts((persona_summary or {}).get('personal_mode_boundary_by_type') or {})}",
                 "",
                 "Tool Registry / Policy View:",
                 f"- Tool descriptors: {(tool_registry_summary or {}).get('tool_descriptor_count', 0)}",
@@ -1070,6 +1080,18 @@ class PIGReportService:
         view: OCPXProcessView,
     ) -> dict[str, Any]:
         capability_boundary_count = 0
+        persona_source_by_type: dict[str, int] = {}
+        persona_source_by_risk_level: dict[str, int] = {}
+        persona_private_source_count = 0
+        persona_candidate_canonical_import_enabled_count = 0
+        personal_overlay_safe_projection_count = 0
+        personal_overlay_boundary_failed_count = 0
+        personal_mode_private_count = 0
+        personal_mode_boundary_by_type: dict[str, int] = {}
+        personal_mode_by_type: dict[str, int] = {}
+        personal_mode_capability_available_now_count = 0
+        personal_mode_capability_requires_permission_count = 0
+        personal_mode_capability_not_implemented_count = 0
         for item in view.objects:
             if item.object_type == "persona_profile":
                 capability_boundary_count += len(
@@ -1078,6 +1100,49 @@ class PIGReportService:
             if item.object_type == "persona_instruction_artifact":
                 if item.object_attrs.get("artifact_type") == "capability_boundary":
                     capability_boundary_count += 1
+            if item.object_type == "persona_source":
+                source_type = str(item.object_attrs.get("source_type") or "unknown")
+                persona_source_by_type[source_type] = persona_source_by_type.get(source_type, 0) + 1
+                if bool(item.object_attrs.get("private")):
+                    persona_private_source_count += 1
+            if item.object_type == "persona_source_risk_note":
+                risk_level = str(item.object_attrs.get("risk_level") or "unknown")
+                persona_source_by_risk_level[risk_level] = (
+                    persona_source_by_risk_level.get(risk_level, 0) + 1
+                )
+            if item.object_type in {
+                "persona_source_ingestion_candidate",
+                "persona_projection_candidate",
+            }:
+                if bool(item.object_attrs.get("canonical_import_enabled")):
+                    persona_candidate_canonical_import_enabled_count += 1
+            if item.object_type == "personal_projection_ref":
+                if bool(item.object_attrs.get("safe_for_prompt")):
+                    personal_overlay_safe_projection_count += 1
+            if item.object_type == "personal_overlay_boundary_finding":
+                if item.object_attrs.get("status") == "failed":
+                    personal_overlay_boundary_failed_count += 1
+            if item.object_type == "personal_core_profile":
+                if bool(item.object_attrs.get("private")):
+                    personal_mode_private_count += 1
+            if item.object_type == "personal_mode_profile":
+                mode_type = str(item.object_attrs.get("mode_type") or "unknown")
+                personal_mode_by_type[mode_type] = personal_mode_by_type.get(mode_type, 0) + 1
+                if bool(item.object_attrs.get("private")):
+                    personal_mode_private_count += 1
+            if item.object_type == "personal_mode_boundary":
+                boundary_type = str(item.object_attrs.get("boundary_type") or "unknown")
+                personal_mode_boundary_by_type[boundary_type] = (
+                    personal_mode_boundary_by_type.get(boundary_type, 0) + 1
+                )
+            if item.object_type == "personal_mode_capability_binding":
+                availability = str(item.object_attrs.get("availability") or "unknown")
+                if availability == "available_now":
+                    personal_mode_capability_available_now_count += 1
+                if bool(item.object_attrs.get("requires_permission")):
+                    personal_mode_capability_requires_permission_count += 1
+                if availability == "not_implemented":
+                    personal_mode_capability_not_implemented_count += 1
         return {
             "soul_identity_count": object_type_counts.get("soul_identity", 0),
             "persona_profile_count": object_type_counts.get("persona_profile", 0),
@@ -1088,6 +1153,109 @@ class PIGReportService:
             "persona_loadout_count": object_type_counts.get("persona_loadout", 0),
             "persona_projection_count": object_type_counts.get("persona_projection", 0),
             "persona_capability_boundary_count": capability_boundary_count,
+            "persona_source_count": object_type_counts.get("persona_source", 0),
+            "persona_source_manifest_count": object_type_counts.get(
+                "persona_source_manifest", 0
+            ),
+            "persona_source_ingestion_candidate_count": object_type_counts.get(
+                "persona_source_ingestion_candidate", 0
+            ),
+            "persona_source_validation_result_count": object_type_counts.get(
+                "persona_source_validation_result", 0
+            ),
+            "persona_assimilation_draft_count": object_type_counts.get(
+                "persona_assimilation_draft", 0
+            ),
+            "persona_projection_candidate_count": object_type_counts.get(
+                "persona_projection_candidate", 0
+            ),
+            "persona_source_risk_note_count": object_type_counts.get(
+                "persona_source_risk_note", 0
+            ),
+            "persona_source_valid_count": sum(
+                1
+                for item in view.objects
+                if item.object_type == "persona_source_validation_result"
+                and item.object_attrs.get("status") == "valid"
+            ),
+            "persona_source_invalid_count": sum(
+                1
+                for item in view.objects
+                if item.object_type == "persona_source_validation_result"
+                and item.object_attrs.get("status") == "invalid"
+            ),
+            "persona_source_needs_review_count": sum(
+                1
+                for item in view.objects
+                if item.object_type == "persona_source_validation_result"
+                and item.object_attrs.get("status") == "needs_review"
+            ),
+            "persona_candidate_pending_review_count": sum(
+                1
+                for item in view.objects
+                if item.object_type == "persona_source_ingestion_candidate"
+                and item.object_attrs.get("review_status") == "pending_review"
+            ),
+            "persona_candidate_canonical_import_enabled_count": persona_candidate_canonical_import_enabled_count,
+            "persona_source_by_type": persona_source_by_type,
+            "persona_source_by_risk_level": persona_source_by_risk_level,
+            "persona_private_source_count": persona_private_source_count,
+            "personal_directory_config_count": object_type_counts.get(
+                "personal_directory_config", 0
+            ),
+            "personal_directory_manifest_count": object_type_counts.get(
+                "personal_directory_manifest", 0
+            ),
+            "personal_projection_ref_count": object_type_counts.get(
+                "personal_projection_ref", 0
+            ),
+            "personal_overlay_load_request_count": object_type_counts.get(
+                "personal_overlay_load_request", 0
+            ),
+            "personal_overlay_load_result_count": object_type_counts.get(
+                "personal_overlay_load_result", 0
+            ),
+            "personal_overlay_boundary_finding_count": object_type_counts.get(
+                "personal_overlay_boundary_finding", 0
+            ),
+            "personal_overlay_load_denied_count": event_activity_counts.get(
+                "personal_overlay_load_denied", 0
+            ),
+            "personal_overlay_boundary_failed_count": personal_overlay_boundary_failed_count,
+            "personal_projection_attached_to_prompt_count": event_activity_counts.get(
+                "personal_projection_attached_to_prompt", 0
+            ),
+            "personal_overlay_safe_projection_count": personal_overlay_safe_projection_count,
+            "personal_core_profile_count": object_type_counts.get(
+                "personal_core_profile", 0
+            ),
+            "personal_mode_profile_count": object_type_counts.get(
+                "personal_mode_profile", 0
+            ),
+            "personal_mode_boundary_count": object_type_counts.get(
+                "personal_mode_boundary", 0
+            ),
+            "personal_mode_capability_binding_count": object_type_counts.get(
+                "personal_mode_capability_binding", 0
+            ),
+            "personal_mode_loadout_count": object_type_counts.get(
+                "personal_mode_loadout", 0
+            ),
+            "personal_mode_loadout_draft_count": object_type_counts.get(
+                "personal_mode_loadout_draft", 0
+            ),
+            "personal_mode_private_count": personal_mode_private_count,
+            "personal_mode_boundary_by_type": personal_mode_boundary_by_type,
+            "personal_mode_by_type": personal_mode_by_type,
+            "personal_mode_capability_available_now_count": (
+                personal_mode_capability_available_now_count
+            ),
+            "personal_mode_capability_requires_permission_count": (
+                personal_mode_capability_requires_permission_count
+            ),
+            "personal_mode_capability_not_implemented_count": (
+                personal_mode_capability_not_implemented_count
+            ),
             "persona_projection_attached_to_prompt_count": event_activity_counts.get(
                 "persona_projection_attached_to_prompt", 0
             ),
@@ -2092,3 +2260,6 @@ class PIGReportService:
             if event.event_attrs.get("process_instance_id"):
                 return str(event.event_attrs["process_instance_id"])
         return None
+
+
+

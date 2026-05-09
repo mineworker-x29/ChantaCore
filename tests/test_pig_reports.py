@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -20,7 +20,12 @@ from chanta_core.ocel.store import OCELStore
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.outcomes import ProcessOutcomeEvaluationService
 from chanta_core.permissions import PermissionModelService, SessionPermissionService
-from chanta_core.persona import PersonaLoadingService
+from chanta_core.persona import (
+    PersonaLoadingService,
+    PersonaSourceStagedImportService,
+    PersonalModeLoadoutService,
+    PersonalOverlayLoaderService,
+)
 from chanta_core.pig.reports import PIGReportService, ProcessRunReport
 from chanta_core.runtime.loop import ProcessRunLoop
 from chanta_core.sandbox import WorkspaceWriteSandboxService
@@ -124,7 +129,7 @@ def test_report_includes_capability_decision_counts(tmp_path) -> None:
     store = OCELStore(tmp_path / "pig_report_capability_decision.sqlite")
     CapabilityDecisionSurfaceService(
         trace_service=TraceService(ocel_store=store)
-    ).build_decision_surface("powershell 실행", session_id="session:capability")
+    ).build_decision_surface("powershell ?ㅽ뻾", session_id="session:capability")
     service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
 
     report = service.build_recent_report(limit=50)
@@ -181,6 +186,89 @@ def test_report_includes_persona_counts(tmp_path) -> None:
     assert summary["persona_capability_boundary_count"] >= 1
     assert summary["persona_projection_attached_to_prompt_count"] >= 1
     assert "Persona Projection" in report.report_text
+
+
+def test_report_includes_persona_source_import_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_persona_source_import.sqlite")
+    service = PersonaSourceStagedImportService(trace_service=TraceService(ocel_store=store))
+    source = service.register_source_from_text(
+        source_name="profile.md",
+        text="identity: public dummy\nboundary: review before activation",
+        source_ref="profile.md",
+        media_type="text/markdown",
+        private=True,
+    )
+    manifest = service.create_manifest(
+        manifest_name="dummy",
+        source_root=str(tmp_path),
+        sources=[source],
+    )
+    candidate = service.create_ingestion_candidate(
+        manifest=manifest,
+        sources=[source],
+        private=True,
+    )
+    service.validate_candidate(candidate, [source])
+    draft = service.create_assimilation_draft(candidate=candidate, sources=[source])
+    service.create_projection_candidate(draft=draft, candidate=candidate)
+    service.record_risk_note(
+        source_id=source.source_id,
+        candidate_id=candidate.candidate_id,
+        risk_level="low",
+        risk_categories=["review"],
+        message="Review before use.",
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["persona_summary"]
+
+    assert summary["persona_source_count"] >= 1
+    assert summary["persona_source_manifest_count"] >= 1
+    assert summary["persona_source_ingestion_candidate_count"] >= 1
+    assert summary["persona_source_validation_result_count"] >= 1
+    assert summary["persona_assimilation_draft_count"] >= 1
+    assert summary["persona_projection_candidate_count"] >= 1
+    assert summary["persona_source_risk_note_count"] >= 1
+    assert summary["persona_source_needs_review_count"] >= 1
+    assert summary["persona_candidate_pending_review_count"] >= 1
+    assert summary["persona_candidate_canonical_import_enabled_count"] == 0
+    assert summary["persona_source_by_type"]["markdown"] >= 1
+    assert summary["persona_source_by_risk_level"]["low"] >= 1
+    assert summary["persona_private_source_count"] >= 1
+    assert "Source import objects" in report.report_text
+
+
+def test_report_includes_personal_overlay_counts(tmp_path) -> None:
+    root = tmp_path / "dummy_personal_directory"
+    (root / "overlay").mkdir(parents=True)
+    (root / "overlay" / "core.md").write_text("projection", encoding="utf-8")
+    store = OCELStore(tmp_path / "pig_report_personal_overlay.sqlite")
+    service = PersonalOverlayLoaderService(trace_service=TraceService(ocel_store=store))
+    config = service.register_config(directory_name="dummy", directory_root=root)
+    manifest = service.load_manifest(config)
+    findings = service.check_overlay_boundaries(manifest, public_repo_root=tmp_path / "public_repo")
+    refs = service.register_projection_refs(manifest)
+    service.load_projection_for_prompt(
+        manifest=manifest,
+        projection_refs=refs,
+        boundary_findings=findings,
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=100)
+    summary = report.report_attrs["persona_summary"]
+
+    assert summary["personal_directory_config_count"] >= 1
+    assert summary["personal_directory_manifest_count"] >= 1
+    assert summary["personal_projection_ref_count"] >= 1
+    assert summary["personal_overlay_load_request_count"] >= 1
+    assert summary["personal_overlay_load_result_count"] >= 1
+    assert summary["personal_overlay_load_denied_count"] == 0
+    assert summary["personal_overlay_boundary_failed_count"] == 0
+    assert summary["personal_overlay_safe_projection_count"] >= 1
+    assert summary["personal_projection_attached_to_prompt_count"] >= 1
+    assert "Personal Directory / Overlay objects" in report.report_text
 
 
 def test_build_process_instance_and_session_reports(tmp_path) -> None:
@@ -1075,3 +1163,83 @@ def test_report_includes_external_ocel_import_candidate_counts(tmp_path) -> None
     assert summary["external_ocel_by_schema_status"]["ocel_like"] >= 1
     assert summary["external_ocel_by_risk_level"]["medium"] >= 1
     assert "External OCEL sources/descriptors/candidates" in report.report_text
+
+
+def test_report_includes_personal_mode_loadout_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_personal_mode_loadout.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = PersonalModeLoadoutService(trace_service=trace_service)
+    core = service.register_core_profile(
+        profile_name="dummy_personal_profile",
+        profile_type="assistant",
+        identity_statement="A public-safe assistant identity.",
+        private=True,
+    )
+    mode = service.register_mode_profile(
+        core_profile_id=core.core_profile_id,
+        mode_name="research_mode",
+        mode_type="research_mode",
+        role_statement="Analyze provided documents.",
+        private=True,
+    )
+    boundary = service.register_mode_boundary(
+        mode_profile_id=mode.mode_profile_id,
+        boundary_type="capability_boundary",
+        boundary_text="Runtime capability profile is authoritative.",
+        severity="high",
+    )
+    service.register_mode_boundary(
+        mode_profile_id=mode.mode_profile_id,
+        boundary_type="privacy_boundary",
+        boundary_text="Do not expose local personal directory contents.",
+        severity="high",
+    )
+    binding = service.register_capability_binding(
+        mode_profile_id=mode.mode_profile_id,
+        capability_name="document_reasoning",
+        capability_category="reasoning",
+        availability="available_now",
+        can_execute_now=True,
+    )
+    service.register_capability_binding(
+        mode_profile_id=mode.mode_profile_id,
+        capability_name="local_execution",
+        capability_category="runtime",
+        availability="not_implemented",
+        can_execute_now=False,
+        requires_permission=True,
+    )
+    service.create_mode_loadout(
+        core_profile=core,
+        mode_profile=mode,
+        boundaries=[boundary],
+        capability_bindings=[binding],
+    )
+    service.create_mode_loadout_draft(
+        core_profile=core,
+        mode_profile=mode,
+        projected_blocks=[{"kind": "role", "content": "Analyze provided documents."}],
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["persona_summary"]
+
+    assert summary["personal_core_profile_count"] >= 1
+    assert summary["personal_mode_profile_count"] >= 1
+    assert summary["personal_mode_boundary_count"] >= 2
+    assert summary["personal_mode_capability_binding_count"] >= 2
+    assert summary["personal_mode_loadout_count"] >= 1
+    assert summary["personal_mode_loadout_draft_count"] >= 1
+    assert summary["personal_mode_private_count"] >= 2
+    assert summary["personal_mode_boundary_by_type"]["capability_boundary"] >= 1
+    assert summary["personal_mode_by_type"]["research_mode"] >= 1
+    assert summary["personal_mode_capability_available_now_count"] >= 1
+    assert summary["personal_mode_capability_requires_permission_count"] >= 1
+    assert summary["personal_mode_capability_not_implemented_count"] >= 1
+    assert "Personal Core / Mode objects" in report.report_text
+
+
+
+
+

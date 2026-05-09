@@ -1,7 +1,7 @@
-# ChantaCore v0.4 Restore - ProcessInstance & Skill Trace Ontology
+﻿# ChantaCore v0.4 Restore - ProcessInstance & Skill Trace Ontology
 
 작성일: 2026-05-02
-작성자: Vera
+작성자: ChantaCore Maintainers
 대상 버전: ChantaCore v0.4.0
 버전 이름: ProcessInstance & Skill Trace Ontology
 

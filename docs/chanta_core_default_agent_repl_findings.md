@@ -1,8 +1,8 @@
-# ChantaCore Default Agent REPL Findings for GPT Mode Vera
+﻿# ChantaCore Default Agent REPL Findings for external planning assistant
 
 Date: 2026-05-08
 
-Audience: GPT mode Vera / ChantaCore architecture planning
+Audience: external planning assistant / ChantaCore architecture planning
 
 Status: Design handoff note. This document is not canonical runtime state. It is a human-readable design memo derived from local code inspection and live CLI checks. Canonical runtime state remains OCEL.
 
@@ -25,7 +25,7 @@ The command below starts the interactive loop:
 The command below sends a single prompt:
 
 ```powershell
-.\.venv\Scripts\chanta-cli.exe ask "넌 뭘 할 수 있어?"
+.\.venv\Scripts\chanta-cli.exe ask "??萸??????덉뼱?"
 ```
 
 The CLI has three commands:
@@ -92,7 +92,7 @@ In the current default chat path, the agent does not have direct access to:
 Therefore, a prompt such as:
 
 ```text
-/Souls/ChantaVeraAide 밑에 있는 markdown 파일들 읽어봐봐
+/Souls/sample_personal_directory 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄
 ```
 
 cannot be performed by the Default Agent through the current REPL path. The correct behavior is not to claim that it read the files. It should state the limitation plainly.
@@ -136,7 +136,7 @@ Interpretation:
 
 The configured reasoning model used nearly all completion budget on reasoning tokens and reached the length limit before emitting final assistant content.
 
-This is a stronger explanation than “the agent chose not to answer,” because the OpenAI-compatible response showed an empty `message.content` with `finish_reason=length`.
+This is a stronger explanation than ?쐔he agent chose not to answer,??because the OpenAI-compatible response showed an empty `message.content` with `finish_reason=length`.
 
 The immediate mitigation was to increase the Default Agent `max_tokens` from `384` to `1024`.
 
@@ -191,7 +191,7 @@ The current Default Agent cannot yet:
 - connect to MCP;
 - perform active runtime registry updates;
 - carry full conversational history into every turn by default;
-- behave like Codex/Vera with workspace tool access.
+- behave like Codex-like assistant with workspace tool access.
 
 ## Design Implications
 
@@ -247,7 +247,7 @@ Suggested design:
 - Keep canonical persistence in OCEL/session objects.
 - Do not make terminal scrollback canonical.
 
-This would make follow-up prompts such as “방금 말한 것 다시 설명해봐” behave more naturally.
+This would make follow-up prompts such as ?쒕갑湲?留먰븳 寃??ㅼ떆 ?ㅻ챸?대킄??behave more naturally.
 
 ### 4. Add workspace read as an explicit reviewed skill, not ambient power
 
@@ -298,7 +298,7 @@ The runtime should not blindly show that field as assistant output. It may conta
 - increase output budget;
 - detect empty final content;
 - surface an operational diagnostic;
-- optionally retry with a stronger “final answer only” prompt or lower reasoning settings if the provider supports it;
+- optionally retry with a stronger ?쐄inal answer only??prompt or lower reasoning settings if the provider supports it;
 - never expose hidden reasoning as a substitute for final answer.
 
 ### 7. Provider/model profile should be explicit
@@ -337,7 +337,7 @@ is useful, but the agent should clarify whether it inspected:
 - last N events;
 - persisted OCEL store on disk.
 
-Without that, users may infer that the agent has fully reconstructed “the conversation,” when it may only have run a coarse recent inspection.
+Without that, users may infer that the agent has fully reconstructed ?쐔he conversation,??when it may only have run a coarse recent inspection.
 
 ### 9. Default Agent should be honest about relation to Souls
 
@@ -408,7 +408,7 @@ Observed result:
 Live CLI check:
 
 ```powershell
-.\.venv\Scripts\chanta-cli.exe ask "넌 뭘 할 수 있어?"
+.\.venv\Scripts\chanta-cli.exe ask "??萸??????덉뼱?"
 ```
 
 Observed behavior after fix:
@@ -420,7 +420,7 @@ Observed behavior after fix:
 Live CLI check:
 
 ```powershell
-.\.venv\Scripts\chanta-cli.exe ask "/Souls/ChantaVeraAide 밑에 있는 markdown 파일들 읽어봐봐"
+.\.venv\Scripts\chanta-cli.exe ask "/Souls/sample_personal_directory 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄"
 ```
 
 Observed behavior after fix:
@@ -465,3 +465,4 @@ It should be rechecked before using it as a basis for v0.15+ design decisions.
 ## Final Conclusion
 
 The current ChantaCore Default Agent REPL is functional as an OCEL-recorded local LLM chat surface, but it is not yet a capable active agent or Soul. Future design should add explicit capability introspection, bounded session history, and permission-gated workspace skills rather than letting the Default Agent imply unavailable powers.
+

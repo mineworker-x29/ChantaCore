@@ -12,6 +12,10 @@ from chanta_core.settings.app_settings import load_app_settings
 EMPTY_MODEL_RESPONSE_MESSAGE = (
     "[empty model response: the configured LLM returned no assistant content]"
 )
+LLM_PROVIDER_UNAVAILABLE_MESSAGE = (
+    "[LLM provider unavailable: no model is loaded. Load a model in the local "
+    "provider, then retry.]"
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -48,10 +52,23 @@ def format_assistant_output(response_text: str) -> str:
     return EMPTY_MODEL_RESPONSE_MESSAGE
 
 
+def format_runtime_error(error: Exception) -> str:
+    message = str(error)
+    if "No models loaded" in message:
+        return LLM_PROVIDER_UNAVAILABLE_MESSAGE
+    if message.strip():
+        return f"[runtime error: {message}]"
+    return "[runtime error: no details available]"
+
+
 def run_ask(args: argparse.Namespace) -> int:
     load_app_settings()
     prompt = resolve_prompt(args.prompt)
-    result = AgentRuntime().run(prompt, session_id=args.session_id)
+    try:
+        result = AgentRuntime().run(prompt, session_id=args.session_id)
+    except Exception as error:
+        print(format_runtime_error(error), file=sys.stderr)
+        return 1
     print(format_assistant_output(result.response_text))
     return 0
 
@@ -73,7 +90,11 @@ def run_repl(args: argparse.Namespace) -> int:
         if user_input == "/exit":
             return 0
 
-        response_text = chat.chat(user_input, session_id=session_id)
+        try:
+            response_text = chat.chat(user_input, session_id=session_id)
+        except Exception as error:
+            print(f"assistant> {format_runtime_error(error)}")
+            continue
         print(f"assistant> {format_assistant_output(response_text)}")
 
 

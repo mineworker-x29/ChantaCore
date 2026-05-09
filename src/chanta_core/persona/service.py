@@ -422,7 +422,7 @@ class PersonaLoadingService:
                 "endpoint with OCEL provenance."
             ),
             role_statement=(
-                "Assist Chanta Minero through trace-aware conversation while staying "
+                "Assist the current operator through trace-aware conversation while staying "
                 "inside the current runtime capability contract."
             ),
             tone_guidance=[

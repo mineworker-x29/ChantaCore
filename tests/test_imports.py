@@ -1,4 +1,4 @@
-from chanta_core.agents.profile import AgentProfile
+﻿from chanta_core.agents.profile import AgentProfile
 from chanta_core.capabilities import (
     CapabilityDecision,
     CapabilityDecisionEvidence,
@@ -228,15 +228,50 @@ from chanta_core.permissions import (
 from chanta_core.persona import (
     AgentRoleBinding,
     DefaultAgentPersonaBundle,
+    PersonalCoreProfile,
+    PersonalOverlayBoundaryFinding,
+    PersonalDirectoryConfig,
+    PersonalModeBoundary,
+    PersonalModeCapabilityBinding,
+    PersonalModeLoadout,
+    PersonalModeLoadoutDraft,
+    PersonalModeLoadoutService,
+    PersonalModeProfile,
+    PersonalOverlayLoaderService,
+    PersonalOverlayLoadRequest,
+    PersonalOverlayLoadResult,
+    PersonalDirectoryManifest,
+    PersonalProjectionRef,
+    PersonaAssimilationDraft,
     PersonaInstructionArtifact,
     PersonaLoadout,
     PersonaLoadingService,
     PersonaProfile,
+    PersonaProjectionCandidate,
     PersonaProjection,
+    PersonaSource,
+    PersonaSourceIngestionCandidate,
+    PersonaSourceManifest,
+    PersonaSourceRiskNote,
+    PersonaSourceStagedImportService,
+    PersonaSourceValidationResult,
     SoulIdentity,
+    personal_core_profiles_to_history_entries,
+    personal_mode_boundaries_to_history_entries,
+    personal_mode_loadouts_to_history_entries,
+    personal_mode_profiles_to_history_entries,
+    personal_overlay_boundary_findings_to_history_entries,
+    personal_overlay_load_results_to_history_entries,
+    personal_directory_manifests_to_history_entries,
+    personal_projection_refs_to_history_entries,
+    persona_assimilation_drafts_to_history_entries,
     persona_instruction_artifacts_to_history_entries,
+    persona_ingestion_candidates_to_history_entries,
     persona_profiles_to_history_entries,
+    persona_projection_candidates_to_history_entries,
     persona_projections_to_history_entries,
+    persona_source_risk_notes_to_history_entries,
+    persona_sources_to_history_entries,
 )
 from chanta_core.pig.artifact_store import PIArtifactStore
 from chanta_core.pig.artifacts import PIArtifact
@@ -633,11 +668,46 @@ def test_required_imports() -> None:
     assert AgentRoleBinding is not None
     assert PersonaLoadout is not None
     assert PersonaProjection is not None
+    assert PersonaSource is not None
+    assert PersonaSourceManifest is not None
+    assert PersonaSourceIngestionCandidate is not None
+    assert PersonaSourceValidationResult is not None
+    assert PersonaAssimilationDraft is not None
+    assert PersonaProjectionCandidate is not None
+    assert PersonaSourceRiskNote is not None
+    assert PersonaSourceStagedImportService is not None
+    assert PersonalCoreProfile is not None
+    assert PersonalModeProfile is not None
+    assert PersonalModeBoundary is not None
+    assert PersonalModeCapabilityBinding is not None
+    assert PersonalModeLoadout is not None
+    assert PersonalModeLoadoutDraft is not None
+    assert PersonalModeLoadoutService is not None
+    assert PersonalDirectoryConfig is not None
+    assert PersonalDirectoryManifest is not None
+    assert PersonalOverlayLoadRequest is not None
+    assert PersonalProjectionRef is not None
+    assert PersonalOverlayLoadResult is not None
+    assert PersonalOverlayBoundaryFinding is not None
+    assert PersonalOverlayLoaderService is not None
     assert PersonaLoadingService is not None
     assert DefaultAgentPersonaBundle is not None
     assert persona_profiles_to_history_entries is not None
     assert persona_projections_to_history_entries is not None
     assert persona_instruction_artifacts_to_history_entries is not None
+    assert persona_sources_to_history_entries is not None
+    assert persona_ingestion_candidates_to_history_entries is not None
+    assert persona_assimilation_drafts_to_history_entries is not None
+    assert persona_projection_candidates_to_history_entries is not None
+    assert persona_source_risk_notes_to_history_entries is not None
+    assert personal_core_profiles_to_history_entries is not None
+    assert personal_mode_profiles_to_history_entries is not None
+    assert personal_mode_boundaries_to_history_entries is not None
+    assert personal_mode_loadouts_to_history_entries is not None
+    assert personal_directory_manifests_to_history_entries is not None
+    assert personal_projection_refs_to_history_entries is not None
+    assert personal_overlay_load_results_to_history_entries is not None
+    assert personal_overlay_boundary_findings_to_history_entries is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None
@@ -866,3 +936,5 @@ def test_required_imports() -> None:
     assert DecisionScorer is not None
     assert DecisionService is not None
     assert utc_now_iso is not None
+
+

@@ -1,4 +1,4 @@
-# ChantaCore v0.14.3a - Default Agent Capability Contract
+﻿# ChantaCore v0.14.3a - Default Agent Capability Contract
 
 Date: 2026-05-08
 
@@ -21,7 +21,7 @@ What can you do?
 or:
 
 ```text
-/Souls/ChantaVeraAide 밑에 있는 markdown 파일들 읽어봐봐
+/Souls/sample_personal_directory 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄
 ```
 
 ## Confirmed Current Runtime Path
@@ -251,3 +251,4 @@ Likely next design steps:
 v0.14.3a hardens the Default Agent's self-description.
 
 It makes capability self-reporting runtime-derived, explicit, and bounded. It does not add new active powers.
+

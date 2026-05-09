@@ -1,7 +1,7 @@
-# ChantaCore v0.3.2 Restore Notes
+﻿# ChantaCore v0.3.2 Restore Notes
 
 작성일: 2026-05-02
-작성자: Vera
+작성자: ChantaCore Maintainers
 대상 버전: ChantaCore v0.3.2 - OCEL Canonical Model Alignment & Execution Ontology
 
 ## 1. 목적

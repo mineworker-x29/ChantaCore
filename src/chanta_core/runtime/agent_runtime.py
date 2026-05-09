@@ -1,11 +1,13 @@
-from __future__ import annotations
+﻿from __future__ import annotations
+
+from pathlib import Path
 
 from chanta_core.capabilities import CapabilityDecisionSurfaceService
 from chanta_core.agents.default_agent import load_default_agent_profile
 from chanta_core.agents.profile import AgentProfile
 from chanta_core.llm.client import LLMClient
 from chanta_core.ocel.factory import short_hash
-from chanta_core.persona import PersonaLoadingService
+from chanta_core.persona import PersonaLoadingService, PersonalOverlayLoaderService
 from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.loop.process_run_loop import ProcessRunLoop
@@ -30,9 +32,12 @@ class AgentRuntime:
         session_context_assembler: SessionContextAssembler | None = None,
         capability_decision_surface_service: CapabilityDecisionSurfaceService | None = None,
         persona_loading_service: PersonaLoadingService | None = None,
+        personal_overlay_loader_service: PersonalOverlayLoaderService | None = None,
+        personal_overlay_public_repo_root: str | Path | None = None,
         enable_session_context_projection: bool = True,
         enable_capability_decision_surface: bool = True,
         enable_persona_projection: bool = True,
+        enable_personal_overlay: bool = True,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.prompt_assembly = prompt_assembly or PromptAssemblyService()
@@ -53,9 +58,15 @@ class AgentRuntime:
         self.persona_loading_service = persona_loading_service or PersonaLoadingService(
             trace_service=self.trace_service
         )
+        self.personal_overlay_loader_service = (
+            personal_overlay_loader_service
+            or PersonalOverlayLoaderService(trace_service=self.trace_service)
+        )
+        self.personal_overlay_public_repo_root = personal_overlay_public_repo_root
         self.enable_session_context_projection = enable_session_context_projection
         self.enable_capability_decision_surface = enable_capability_decision_surface
         self.enable_persona_projection = enable_persona_projection
+        self.enable_personal_overlay = enable_personal_overlay
 
     def run(
         self,
@@ -139,6 +150,40 @@ class AgentRuntime:
                     )
                 except Exception as error:
                     context.metadata["persona_projection_warning"] = str(error)
+            if self.enable_personal_overlay:
+                try:
+                    config = self.personal_overlay_loader_service.load_config_from_env()
+                    if config is not None:
+                        manifest = self.personal_overlay_loader_service.load_manifest(config)
+                        findings = self.personal_overlay_loader_service.check_overlay_boundaries(
+                            manifest,
+                            public_repo_root=self.personal_overlay_public_repo_root or Path.cwd(),
+                        )
+                        refs = self.personal_overlay_loader_service.register_projection_refs(
+                            manifest
+                        )
+                        load_result = self.personal_overlay_loader_service.load_projection_for_prompt(
+                            manifest=manifest,
+                            projection_refs=refs,
+                            session_id=context.session_id,
+                            turn_id=turn_id,
+                            max_chars=4000,
+                            boundary_findings=findings,
+                        )
+                        block = self.personal_overlay_loader_service.render_personal_overlay_block(
+                            load_result
+                        )
+                        if block:
+                            persona_projection_block = (
+                                f"{persona_projection_block}\n\n{block}"
+                                if persona_projection_block
+                                else block
+                            )
+                        context.metadata["personal_directory_manifest_id"] = manifest.manifest_id
+                        context.metadata["personal_overlay_load_result_id"] = load_result.result_id
+                        context.metadata["personal_overlay_denied"] = load_result.denied
+                except Exception as error:
+                    context.metadata["personal_overlay_warning"] = str(error)
             if self.enable_capability_decision_surface:
                 try:
                     capability_surface = (
@@ -264,3 +309,4 @@ class AgentRuntime:
                 "assistant_message_id": assistant_message_id,
             },
         )
+

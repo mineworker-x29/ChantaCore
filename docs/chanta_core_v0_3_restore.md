@@ -1,7 +1,7 @@
-# ChantaCore v0.3 Restore Notes
+﻿# ChantaCore v0.3 Restore Notes
 
 작성일: 2026-05-02  
-작성자: Vera  
+작성자: ChantaCore Maintainers  
 대상 경로: `D:\ChantaResearchGroup\ChantaCore`  
 복원 기준 이름: `ChantaCore v0.3`
 
