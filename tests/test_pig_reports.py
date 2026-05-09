@@ -21,6 +21,9 @@ from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.outcomes import ProcessOutcomeEvaluationService
 from chanta_core.permissions import PermissionModelService, SessionPermissionService
 from chanta_core.persona import (
+    PersonalConformanceService,
+    PersonalModeBindingService,
+    PersonalRuntimeSmokeTestService,
     PersonaLoadingService,
     PersonaSourceStagedImportService,
     PersonalModeLoadoutService,
@@ -1238,6 +1241,141 @@ def test_report_includes_personal_mode_loadout_counts(tmp_path) -> None:
     assert summary["personal_mode_capability_requires_permission_count"] >= 1
     assert summary["personal_mode_capability_not_implemented_count"] >= 1
     assert "Personal Core / Mode objects" in report.report_text
+
+
+def test_report_includes_personal_mode_binding_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_personal_mode_binding.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    loadout_service = PersonalModeLoadoutService(trace_service=trace_service)
+    core = loadout_service.register_core_profile(
+        profile_name="sample_personal_assistant",
+        profile_type="assistant",
+        identity_statement="A public-safe assistant identity.",
+    )
+    mode = loadout_service.register_mode_profile(
+        core_profile_id=core.core_profile_id,
+        mode_name="local_runtime_mode",
+        mode_type="local_runtime_mode",
+        role_statement="Use explicitly bound runtime context.",
+    )
+    loadout = loadout_service.create_mode_loadout(core_profile=core, mode_profile=mode)
+    binding_service = PersonalModeBindingService(trace_service=trace_service)
+    selection = binding_service.select_mode(mode_profile=mode, loadout=loadout)
+    runtime_binding = binding_service.bind_runtime(
+        selection=selection,
+        runtime_kind="local_runtime",
+    )
+    binding_service.register_runtime_capability_binding(
+        runtime_binding_id=runtime_binding.binding_id,
+        capability_name="workspace_read",
+        capability_category="workspace",
+        availability="available_now",
+        can_execute_now=True,
+    )
+    binding_service.register_runtime_capability_binding(
+        runtime_binding_id=runtime_binding.binding_id,
+        capability_name="network_access",
+        capability_category="network",
+        availability="not_implemented",
+        can_execute_now=False,
+        requires_permission=True,
+    )
+    request = binding_service.create_activation_request(
+        mode_profile_id=mode.mode_profile_id,
+        loadout_id=loadout.loadout_id,
+        runtime_kind="local_runtime",
+    )
+    binding_service.activate_mode_for_prompt_context(
+        request=request,
+        mode_profile=mode,
+        loadout=loadout,
+        runtime_kind="local_runtime",
+    )
+    report_service = PIGReportService(ocpx_loader=OCPXLoader(store=store))
+
+    report = report_service.build_recent_report(limit=200)
+    summary = report.report_attrs["persona_summary"]
+
+    assert summary["personal_mode_selection_count"] >= 1
+    assert summary["personal_runtime_binding_count"] >= 1
+    assert summary["personal_runtime_capability_binding_count"] >= 2
+    assert summary["personal_mode_activation_request_count"] >= 1
+    assert summary["personal_mode_activation_result_count"] >= 1
+    assert summary["personal_mode_prompt_context_activation_count"] >= 1
+    assert summary["personal_runtime_binding_by_kind"]["local_runtime"] >= 1
+    assert summary["personal_context_ingress_by_type"]["local_runtime_context"] >= 1
+    assert summary["personal_runtime_capability_available_now_count"] >= 1
+    assert summary["personal_runtime_capability_requires_permission_count"] >= 1
+    assert summary["personal_runtime_capability_not_implemented_count"] >= 1
+    assert "Personal Mode Binding objects" in report.report_text
+
+
+def test_report_includes_personal_conformance_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_personal_conformance.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = PersonalConformanceService(trace_service=trace_service)
+    contract, _ = service.register_default_rules()
+    run = service.start_run(contract_id=contract.contract_id, target_kind="manual")
+    finding = service.record_finding(
+        run_id=run.run_id,
+        rule_type="canonical_import_disabled",
+        status="passed",
+        message="Dummy conformance check passed.",
+    )
+    service.record_result(
+        run_id=run.run_id,
+        contract_id=contract.contract_id,
+        findings=[finding],
+    )
+
+    report = PIGReportService(ocpx_loader=OCPXLoader(store=store)).build_recent_report(limit=100)
+    summary = report.report_attrs["persona_summary"]
+
+    assert summary["personal_conformance_contract_count"] >= 1
+    assert summary["personal_conformance_rule_count"] >= 18
+    assert summary["personal_conformance_run_count"] >= 1
+    assert summary["personal_conformance_finding_count"] >= 1
+    assert summary["personal_conformance_result_count"] >= 1
+    assert summary["personal_conformance_passed_count"] >= 1
+    assert summary["personal_conformance_by_rule_type"]["canonical_import_disabled"] >= 1
+    assert "Personal Conformance objects" in report.report_text
+
+
+def test_report_includes_personal_smoke_test_counts(tmp_path) -> None:
+    store = OCELStore(tmp_path / "pig_report_personal_smoke_test.sqlite")
+    trace_service = TraceService(ocel_store=store)
+    service = PersonalRuntimeSmokeTestService(trace_service=trace_service)
+    scenario = service.create_scenario(
+        scenario_name="sample_personal_assistant_smoke",
+        scenario_type="mode_self_report",
+    )
+    case = service.create_case(
+        scenario_id=scenario.scenario_id,
+        case_name="mode_self_report",
+        input_prompt="Who are you?",
+        expected_behavior="Report current mode.",
+        required_claims=["research_mode"],
+        expected_mode="research_mode",
+    )
+    service.run_cases_against_static_outputs(
+        scenario=scenario,
+        cases=[case],
+        outputs_by_case_id={case.case_id: "research_mode"},
+        observed_mode="research_mode",
+    )
+
+    report = PIGReportService(ocpx_loader=OCPXLoader(store=store)).build_recent_report(limit=100)
+    summary = report.report_attrs["persona_summary"]
+
+    assert summary["personal_smoke_test_scenario_count"] >= 1
+    assert summary["personal_smoke_test_case_count"] >= 1
+    assert summary["personal_smoke_test_run_count"] >= 1
+    assert summary["personal_smoke_test_observation_count"] >= 1
+    assert summary["personal_smoke_test_assertion_count"] >= 1
+    assert summary["personal_smoke_test_result_count"] >= 1
+    assert summary["personal_smoke_test_passed_count"] >= 1
+    assert summary["personal_smoke_test_by_scenario_type"]["mode_self_report"] >= 1
+    assert "Personal Smoke Test objects" in report.report_text
 
 
 

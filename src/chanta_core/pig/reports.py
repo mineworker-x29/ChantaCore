@@ -650,6 +650,18 @@ class PIGReportService:
                 f"- Personal Mode capabilities: available/requires-permission/not-implemented {(persona_summary or {}).get('personal_mode_capability_available_now_count', 0)}/{(persona_summary or {}).get('personal_mode_capability_requires_permission_count', 0)}/{(persona_summary or {}).get('personal_mode_capability_not_implemented_count', 0)}",
                 f"- Personal Mode types: {PIGReportService._inline_counts((persona_summary or {}).get('personal_mode_by_type') or {})}",
                 f"- Personal Mode boundary types: {PIGReportService._inline_counts((persona_summary or {}).get('personal_mode_boundary_by_type') or {})}",
+                f"- Personal Mode Binding objects: {(persona_summary or {}).get('personal_mode_selection_count', 0)}/{(persona_summary or {}).get('personal_runtime_binding_count', 0)}/{(persona_summary or {}).get('personal_runtime_capability_binding_count', 0)}/{(persona_summary or {}).get('personal_mode_activation_result_count', 0)}",
+                f"- Personal Mode Binding activation: denied/prompt-context {(persona_summary or {}).get('personal_mode_activation_denied_count', 0)}/{(persona_summary or {}).get('personal_mode_prompt_context_activation_count', 0)}",
+                f"- Personal runtime kinds: {PIGReportService._inline_counts((persona_summary or {}).get('personal_runtime_binding_by_kind') or {})}",
+                f"- Personal context ingress: {PIGReportService._inline_counts((persona_summary or {}).get('personal_context_ingress_by_type') or {})}",
+                f"- Personal Conformance objects: {(persona_summary or {}).get('personal_conformance_contract_count', 0)}/{(persona_summary or {}).get('personal_conformance_rule_count', 0)}/{(persona_summary or {}).get('personal_conformance_run_count', 0)}/{(persona_summary or {}).get('personal_conformance_result_count', 0)}",
+                f"- Personal Conformance status: passed/failed/review/inconclusive {(persona_summary or {}).get('personal_conformance_passed_count', 0)}/{(persona_summary or {}).get('personal_conformance_failed_count', 0)}/{(persona_summary or {}).get('personal_conformance_needs_review_count', 0)}/{(persona_summary or {}).get('personal_conformance_inconclusive_count', 0)}",
+                f"- Personal Conformance findings: failed/warning {(persona_summary or {}).get('personal_conformance_failed_finding_count', 0)}/{(persona_summary or {}).get('personal_conformance_warning_finding_count', 0)}",
+                f"- Personal Conformance rule types: {PIGReportService._inline_counts((persona_summary or {}).get('personal_conformance_by_rule_type') or {})}",
+                f"- Personal Smoke Test objects: {(persona_summary or {}).get('personal_smoke_test_scenario_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_case_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_run_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_result_count', 0)}",
+                f"- Personal Smoke Test status: passed/failed/review {(persona_summary or {}).get('personal_smoke_test_passed_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_failed_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_needs_review_count', 0)}",
+                f"- Personal Smoke Test assertions: failed/warning {(persona_summary or {}).get('personal_smoke_test_failed_assertion_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_warning_assertion_count', 0)}",
+                f"- Personal Smoke Test scenario types: {PIGReportService._inline_counts((persona_summary or {}).get('personal_smoke_test_by_scenario_type') or {})}",
                 "",
                 "Tool Registry / Policy View:",
                 f"- Tool descriptors: {(tool_registry_summary or {}).get('tool_descriptor_count', 0)}",
@@ -1092,6 +1104,29 @@ class PIGReportService:
         personal_mode_capability_available_now_count = 0
         personal_mode_capability_requires_permission_count = 0
         personal_mode_capability_not_implemented_count = 0
+        personal_runtime_binding_by_kind: dict[str, int] = {}
+        personal_context_ingress_by_type: dict[str, int] = {}
+        personal_runtime_capability_available_now_count = 0
+        personal_runtime_capability_requires_permission_count = 0
+        personal_runtime_capability_not_implemented_count = 0
+        personal_mode_prompt_context_activation_count = 0
+        personal_conformance_passed_count = 0
+        personal_conformance_failed_count = 0
+        personal_conformance_needs_review_count = 0
+        personal_conformance_inconclusive_count = 0
+        personal_conformance_failed_finding_count = 0
+        personal_conformance_warning_finding_count = 0
+        personal_conformance_by_rule_type: dict[str, int] = {}
+        personal_conformance_score_total = 0.0
+        personal_conformance_score_count = 0
+        personal_smoke_test_passed_count = 0
+        personal_smoke_test_failed_count = 0
+        personal_smoke_test_needs_review_count = 0
+        personal_smoke_test_failed_assertion_count = 0
+        personal_smoke_test_warning_assertion_count = 0
+        personal_smoke_test_by_scenario_type: dict[str, int] = {}
+        personal_smoke_test_score_total = 0.0
+        personal_smoke_test_score_count = 0
         for item in view.objects:
             if item.object_type == "persona_profile":
                 capability_boundary_count += len(
@@ -1143,6 +1178,73 @@ class PIGReportService:
                     personal_mode_capability_requires_permission_count += 1
                 if availability == "not_implemented":
                     personal_mode_capability_not_implemented_count += 1
+            if item.object_type == "personal_runtime_binding":
+                runtime_kind = str(item.object_attrs.get("runtime_kind") or "unknown")
+                context_ingress = str(item.object_attrs.get("context_ingress") or "unknown")
+                personal_runtime_binding_by_kind[runtime_kind] = (
+                    personal_runtime_binding_by_kind.get(runtime_kind, 0) + 1
+                )
+                personal_context_ingress_by_type[context_ingress] = (
+                    personal_context_ingress_by_type.get(context_ingress, 0) + 1
+                )
+            if item.object_type == "personal_runtime_capability_binding":
+                availability = str(item.object_attrs.get("availability") or "unknown")
+                if availability == "available_now":
+                    personal_runtime_capability_available_now_count += 1
+                if bool(item.object_attrs.get("requires_permission")):
+                    personal_runtime_capability_requires_permission_count += 1
+                if availability == "not_implemented":
+                    personal_runtime_capability_not_implemented_count += 1
+            if item.object_type == "personal_mode_activation_result":
+                if item.object_attrs.get("activation_scope") == "prompt_context_only":
+                    personal_mode_prompt_context_activation_count += 1
+            if item.object_type == "personal_conformance_finding":
+                rule_type = str(item.object_attrs.get("rule_type") or "unknown")
+                personal_conformance_by_rule_type[rule_type] = (
+                    personal_conformance_by_rule_type.get(rule_type, 0) + 1
+                )
+                status = str(item.object_attrs.get("status") or "")
+                if status in {"failed", "error"}:
+                    personal_conformance_failed_finding_count += 1
+                if status == "warning":
+                    personal_conformance_warning_finding_count += 1
+            if item.object_type == "personal_conformance_result":
+                status = str(item.object_attrs.get("status") or "")
+                if status == "passed":
+                    personal_conformance_passed_count += 1
+                if status == "failed":
+                    personal_conformance_failed_count += 1
+                if status == "needs_review":
+                    personal_conformance_needs_review_count += 1
+                if status == "inconclusive":
+                    personal_conformance_inconclusive_count += 1
+                score = item.object_attrs.get("score")
+                if isinstance(score, (int, float)):
+                    personal_conformance_score_total += float(score)
+                    personal_conformance_score_count += 1
+            if item.object_type == "personal_smoke_test_scenario":
+                scenario_type = str(item.object_attrs.get("scenario_type") or "unknown")
+                personal_smoke_test_by_scenario_type[scenario_type] = (
+                    personal_smoke_test_by_scenario_type.get(scenario_type, 0) + 1
+                )
+            if item.object_type == "personal_smoke_test_assertion":
+                status = str(item.object_attrs.get("status") or "")
+                if status in {"failed", "error"}:
+                    personal_smoke_test_failed_assertion_count += 1
+                if status == "warning":
+                    personal_smoke_test_warning_assertion_count += 1
+            if item.object_type == "personal_smoke_test_result":
+                status = str(item.object_attrs.get("status") or "")
+                if status == "passed":
+                    personal_smoke_test_passed_count += 1
+                if status == "failed":
+                    personal_smoke_test_failed_count += 1
+                if status == "needs_review":
+                    personal_smoke_test_needs_review_count += 1
+                score = item.object_attrs.get("score")
+                if isinstance(score, (int, float)):
+                    personal_smoke_test_score_total += float(score)
+                    personal_smoke_test_score_count += 1
         return {
             "soul_identity_count": object_type_counts.get("soul_identity", 0),
             "persona_profile_count": object_type_counts.get("persona_profile", 0),
@@ -1255,6 +1357,94 @@ class PIGReportService:
             ),
             "personal_mode_capability_not_implemented_count": (
                 personal_mode_capability_not_implemented_count
+            ),
+            "personal_mode_selection_count": object_type_counts.get(
+                "personal_mode_selection", 0
+            ),
+            "personal_runtime_binding_count": object_type_counts.get(
+                "personal_runtime_binding", 0
+            ),
+            "personal_runtime_capability_binding_count": object_type_counts.get(
+                "personal_runtime_capability_binding", 0
+            ),
+            "personal_mode_activation_request_count": object_type_counts.get(
+                "personal_mode_activation_request", 0
+            ),
+            "personal_mode_activation_result_count": object_type_counts.get(
+                "personal_mode_activation_result", 0
+            ),
+            "personal_mode_activation_denied_count": event_activity_counts.get(
+                "personal_mode_activation_denied", 0
+            ),
+            "personal_mode_prompt_context_activation_count": (
+                personal_mode_prompt_context_activation_count
+            ),
+            "personal_runtime_binding_by_kind": personal_runtime_binding_by_kind,
+            "personal_context_ingress_by_type": personal_context_ingress_by_type,
+            "personal_runtime_capability_available_now_count": (
+                personal_runtime_capability_available_now_count
+            ),
+            "personal_runtime_capability_requires_permission_count": (
+                personal_runtime_capability_requires_permission_count
+            ),
+            "personal_runtime_capability_not_implemented_count": (
+                personal_runtime_capability_not_implemented_count
+            ),
+            "personal_conformance_contract_count": object_type_counts.get(
+                "personal_conformance_contract", 0
+            ),
+            "personal_conformance_rule_count": object_type_counts.get(
+                "personal_conformance_rule", 0
+            ),
+            "personal_conformance_run_count": object_type_counts.get(
+                "personal_conformance_run", 0
+            ),
+            "personal_conformance_finding_count": object_type_counts.get(
+                "personal_conformance_finding", 0
+            ),
+            "personal_conformance_result_count": object_type_counts.get(
+                "personal_conformance_result", 0
+            ),
+            "personal_conformance_passed_count": personal_conformance_passed_count,
+            "personal_conformance_failed_count": personal_conformance_failed_count,
+            "personal_conformance_needs_review_count": personal_conformance_needs_review_count,
+            "personal_conformance_inconclusive_count": personal_conformance_inconclusive_count,
+            "personal_conformance_failed_finding_count": personal_conformance_failed_finding_count,
+            "personal_conformance_warning_finding_count": personal_conformance_warning_finding_count,
+            "personal_conformance_by_rule_type": personal_conformance_by_rule_type,
+            "average_personal_conformance_score": (
+                personal_conformance_score_total / personal_conformance_score_count
+                if personal_conformance_score_count
+                else None
+            ),
+            "personal_smoke_test_scenario_count": object_type_counts.get(
+                "personal_smoke_test_scenario", 0
+            ),
+            "personal_smoke_test_case_count": object_type_counts.get(
+                "personal_smoke_test_case", 0
+            ),
+            "personal_smoke_test_run_count": object_type_counts.get(
+                "personal_smoke_test_run", 0
+            ),
+            "personal_smoke_test_observation_count": object_type_counts.get(
+                "personal_smoke_test_observation", 0
+            ),
+            "personal_smoke_test_assertion_count": object_type_counts.get(
+                "personal_smoke_test_assertion", 0
+            ),
+            "personal_smoke_test_result_count": object_type_counts.get(
+                "personal_smoke_test_result", 0
+            ),
+            "personal_smoke_test_passed_count": personal_smoke_test_passed_count,
+            "personal_smoke_test_failed_count": personal_smoke_test_failed_count,
+            "personal_smoke_test_needs_review_count": personal_smoke_test_needs_review_count,
+            "personal_smoke_test_failed_assertion_count": personal_smoke_test_failed_assertion_count,
+            "personal_smoke_test_warning_assertion_count": personal_smoke_test_warning_assertion_count,
+            "personal_smoke_test_by_scenario_type": personal_smoke_test_by_scenario_type,
+            "average_personal_smoke_test_score": (
+                personal_smoke_test_score_total / personal_smoke_test_score_count
+                if personal_smoke_test_score_count
+                else None
             ),
             "persona_projection_attached_to_prompt_count": event_activity_counts.get(
                 "persona_projection_attached_to_prompt", 0

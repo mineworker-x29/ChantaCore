@@ -102,3 +102,67 @@ def new_personal_mode_loadout_id() -> str:
 def new_personal_mode_loadout_draft_id() -> str:
     return f"personal_mode_loadout_draft:{uuid4()}"
 
+
+def new_personal_mode_selection_id() -> str:
+    return f"personal_mode_selection:{uuid4()}"
+
+
+def new_personal_runtime_binding_id() -> str:
+    return f"personal_runtime_binding:{uuid4()}"
+
+
+def new_personal_mode_activation_request_id() -> str:
+    return f"personal_mode_activation_request:{uuid4()}"
+
+
+def new_personal_mode_activation_result_id() -> str:
+    return f"personal_mode_activation_result:{uuid4()}"
+
+
+def new_personal_runtime_capability_binding_id() -> str:
+    return f"personal_runtime_capability_binding:{uuid4()}"
+
+
+def new_personal_conformance_contract_id() -> str:
+    return f"personal_conformance_contract:{uuid4()}"
+
+
+def new_personal_conformance_rule_id() -> str:
+    return f"personal_conformance_rule:{uuid4()}"
+
+
+def new_personal_conformance_run_id() -> str:
+    return f"personal_conformance_run:{uuid4()}"
+
+
+def new_personal_conformance_finding_id() -> str:
+    return f"personal_conformance_finding:{uuid4()}"
+
+
+def new_personal_conformance_result_id() -> str:
+    return f"personal_conformance_result:{uuid4()}"
+
+
+def new_personal_smoke_test_scenario_id() -> str:
+    return f"personal_smoke_test_scenario:{uuid4()}"
+
+
+def new_personal_smoke_test_case_id() -> str:
+    return f"personal_smoke_test_case:{uuid4()}"
+
+
+def new_personal_smoke_test_run_id() -> str:
+    return f"personal_smoke_test_run:{uuid4()}"
+
+
+def new_personal_smoke_test_observation_id() -> str:
+    return f"personal_smoke_test_observation:{uuid4()}"
+
+
+def new_personal_smoke_test_assertion_id() -> str:
+    return f"personal_smoke_test_assertion:{uuid4()}"
+
+
+def new_personal_smoke_test_result_id() -> str:
+    return f"personal_smoke_test_result:{uuid4()}"
+

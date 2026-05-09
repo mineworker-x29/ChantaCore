@@ -40,3 +40,15 @@ class PersonalOverlayError(PersonaError):
 class PersonalModeLoadoutError(PersonaError):
     """Raised when a Personal Mode loadout operation cannot proceed."""
 
+
+class PersonalModeBindingError(PersonaError):
+    """Raised when a Personal Mode binding operation cannot proceed."""
+
+
+class PersonalConformanceError(PersonaError):
+    """Raised when a Personal Conformance operation cannot proceed."""
+
+
+class PersonalSmokeTestError(PersonaError):
+    """Raised when a Personal Smoke Test operation cannot proceed."""
+

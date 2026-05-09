@@ -228,7 +228,16 @@ from chanta_core.permissions import (
 from chanta_core.persona import (
     AgentRoleBinding,
     DefaultAgentPersonaBundle,
+    PersonalConformanceContract,
+    PersonalConformanceFinding,
+    PersonalConformanceResult,
+    PersonalConformanceRule,
+    PersonalConformanceRun,
+    PersonalConformanceService,
     PersonalCoreProfile,
+    PersonalModeActivationRequest,
+    PersonalModeActivationResult,
+    PersonalModeBindingService,
     PersonalOverlayBoundaryFinding,
     PersonalDirectoryConfig,
     PersonalModeBoundary,
@@ -237,11 +246,21 @@ from chanta_core.persona import (
     PersonalModeLoadoutDraft,
     PersonalModeLoadoutService,
     PersonalModeProfile,
+    PersonalModeSelection,
     PersonalOverlayLoaderService,
     PersonalOverlayLoadRequest,
     PersonalOverlayLoadResult,
     PersonalDirectoryManifest,
     PersonalProjectionRef,
+    PersonalRuntimeBinding,
+    PersonalRuntimeCapabilityBinding,
+    PersonalRuntimeSmokeTestService,
+    PersonalSmokeTestAssertion,
+    PersonalSmokeTestCase,
+    PersonalSmokeTestObservation,
+    PersonalSmokeTestResult,
+    PersonalSmokeTestRun,
+    PersonalSmokeTestScenario,
     PersonaAssimilationDraft,
     PersonaInstructionArtifact,
     PersonaLoadout,
@@ -257,13 +276,22 @@ from chanta_core.persona import (
     PersonaSourceValidationResult,
     SoulIdentity,
     personal_core_profiles_to_history_entries,
+    personal_mode_activation_results_to_history_entries,
     personal_mode_boundaries_to_history_entries,
     personal_mode_loadouts_to_history_entries,
     personal_mode_profiles_to_history_entries,
+    personal_mode_selections_to_history_entries,
     personal_overlay_boundary_findings_to_history_entries,
     personal_overlay_load_results_to_history_entries,
     personal_directory_manifests_to_history_entries,
     personal_projection_refs_to_history_entries,
+    personal_runtime_bindings_to_history_entries,
+    personal_runtime_capability_bindings_to_history_entries,
+    personal_conformance_findings_to_history_entries,
+    personal_conformance_results_to_history_entries,
+    personal_smoke_test_assertions_to_history_entries,
+    personal_smoke_test_results_to_history_entries,
+    personal_smoke_test_scenarios_to_history_entries,
     persona_assimilation_drafts_to_history_entries,
     persona_instruction_artifacts_to_history_entries,
     persona_ingestion_candidates_to_history_entries,
@@ -677,6 +705,25 @@ def test_required_imports() -> None:
     assert PersonaSourceRiskNote is not None
     assert PersonaSourceStagedImportService is not None
     assert PersonalCoreProfile is not None
+    assert PersonalModeSelection is not None
+    assert PersonalRuntimeBinding is not None
+    assert PersonalRuntimeCapabilityBinding is not None
+    assert PersonalModeActivationRequest is not None
+    assert PersonalModeActivationResult is not None
+    assert PersonalModeBindingService is not None
+    assert PersonalConformanceContract is not None
+    assert PersonalConformanceRule is not None
+    assert PersonalConformanceRun is not None
+    assert PersonalConformanceFinding is not None
+    assert PersonalConformanceResult is not None
+    assert PersonalConformanceService is not None
+    assert PersonalSmokeTestScenario is not None
+    assert PersonalSmokeTestCase is not None
+    assert PersonalSmokeTestRun is not None
+    assert PersonalSmokeTestObservation is not None
+    assert PersonalSmokeTestAssertion is not None
+    assert PersonalSmokeTestResult is not None
+    assert PersonalRuntimeSmokeTestService is not None
     assert PersonalModeProfile is not None
     assert PersonalModeBoundary is not None
     assert PersonalModeCapabilityBinding is not None
@@ -701,6 +748,10 @@ def test_required_imports() -> None:
     assert persona_projection_candidates_to_history_entries is not None
     assert persona_source_risk_notes_to_history_entries is not None
     assert personal_core_profiles_to_history_entries is not None
+    assert personal_mode_selections_to_history_entries is not None
+    assert personal_runtime_bindings_to_history_entries is not None
+    assert personal_runtime_capability_bindings_to_history_entries is not None
+    assert personal_mode_activation_results_to_history_entries is not None
     assert personal_mode_profiles_to_history_entries is not None
     assert personal_mode_boundaries_to_history_entries is not None
     assert personal_mode_loadouts_to_history_entries is not None
@@ -708,6 +759,11 @@ def test_required_imports() -> None:
     assert personal_projection_refs_to_history_entries is not None
     assert personal_overlay_load_results_to_history_entries is not None
     assert personal_overlay_boundary_findings_to_history_entries is not None
+    assert personal_conformance_findings_to_history_entries is not None
+    assert personal_conformance_results_to_history_entries is not None
+    assert personal_smoke_test_scenarios_to_history_entries is not None
+    assert personal_smoke_test_assertions_to_history_entries is not None
+    assert personal_smoke_test_results_to_history_entries is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None

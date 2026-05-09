@@ -18,6 +18,21 @@ from chanta_core.persona.personal_mode_loadout import (
     PersonalModeLoadout,
     PersonalModeProfile,
 )
+from chanta_core.persona.personal_mode_binding import (
+    PersonalModeActivationResult,
+    PersonalModeSelection,
+    PersonalRuntimeBinding,
+    PersonalRuntimeCapabilityBinding,
+)
+from chanta_core.persona.personal_conformance import (
+    PersonalConformanceFinding,
+    PersonalConformanceResult,
+)
+from chanta_core.persona.personal_smoke_test import (
+    PersonalSmokeTestAssertion,
+    PersonalSmokeTestResult,
+    PersonalSmokeTestScenario,
+)
 from chanta_core.persona.source_import import (
     PersonaAssimilationDraft,
     PersonaProjectionCandidate,
@@ -521,5 +536,332 @@ def personal_mode_boundaries_to_history_entries(
             },
         )
         for boundary in boundaries
+    ]
+
+
+def personal_mode_selections_to_history_entries(
+    selections: list[PersonalModeSelection],
+) -> list[ContextHistoryEntry]:
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=selection.session_id,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal mode selected: {selection.selected_mode_name} "
+                f"({selection.selected_mode_type}); status={selection.status}."
+            ),
+            created_at=selection.created_at,
+            source="personal_mode_binding",
+            priority=45 if selection.status == "selected" else 35,
+            refs=[
+                {"ref_type": "personal_mode_selection", "ref_id": selection.selection_id},
+                {"ref_type": "personal_mode_profile", "ref_id": selection.mode_profile_id},
+            ],
+            entry_attrs={
+                "selected_mode_type": selection.selected_mode_type,
+                "selection_source": selection.selection_source,
+                "private": selection.private,
+            },
+        )
+        for selection in selections
+    ]
+
+
+def personal_runtime_bindings_to_history_entries(
+    bindings: list[PersonalRuntimeBinding],
+) -> list[ContextHistoryEntry]:
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal runtime binding: {binding.runtime_kind}; "
+                f"context_ingress={binding.context_ingress}; status={binding.status}."
+            ),
+            created_at=binding.created_at,
+            source="personal_mode_binding",
+            priority=55,
+            refs=[
+                {"ref_type": "personal_runtime_binding", "ref_id": binding.binding_id},
+                {"ref_type": "personal_mode_profile", "ref_id": binding.mode_profile_id},
+            ],
+            entry_attrs={
+                "runtime_kind": binding.runtime_kind,
+                "context_ingress": binding.context_ingress,
+                "capability_profile_ref": binding.capability_profile_ref,
+                "private": binding.private,
+            },
+        )
+        for binding in bindings
+    ]
+
+
+def personal_mode_activation_results_to_history_entries(
+    results: list[PersonalModeActivationResult],
+) -> list[ContextHistoryEntry]:
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal mode activation result: {result.status}; "
+                f"scope={result.activation_scope}; activated={result.activated}."
+            ),
+            created_at=result.created_at,
+            source="personal_mode_binding",
+            priority=80 if result.status == "denied" else 60,
+            refs=[
+                {"ref_type": "personal_mode_activation_result", "ref_id": result.result_id},
+                {"ref_type": "personal_mode_activation_request", "ref_id": result.request_id},
+            ],
+            entry_attrs={
+                "status": result.status,
+                "activated": result.activated,
+                "activation_scope": result.activation_scope,
+                "denied_reason": result.denied_reason,
+            },
+        )
+        for result in results
+    ]
+
+
+def personal_runtime_capability_bindings_to_history_entries(
+    bindings: list[PersonalRuntimeCapabilityBinding],
+) -> list[ContextHistoryEntry]:
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal runtime capability binding: {binding.capability_name}; "
+                f"{binding.availability}; can_execute_now={binding.can_execute_now}."
+            ),
+            created_at=binding.created_at,
+            source="personal_mode_binding",
+            priority=80 if binding.requires_permission or binding.requires_review else 65,
+            refs=[
+                {
+                    "ref_type": "personal_runtime_capability_binding",
+                    "ref_id": binding.runtime_capability_binding_id,
+                },
+                {"ref_type": "personal_runtime_binding", "ref_id": binding.runtime_binding_id},
+            ],
+            entry_attrs={
+                "capability_name": binding.capability_name,
+                "capability_category": binding.capability_category,
+                "availability": binding.availability,
+                "requires_permission": binding.requires_permission,
+                "requires_review": binding.requires_review,
+            },
+        )
+        for binding in bindings
+    ]
+
+
+def personal_conformance_findings_to_history_entries(
+    findings: list[PersonalConformanceFinding],
+) -> list[ContextHistoryEntry]:
+    priority_by_status = {
+        "failed": 85,
+        "error": 85,
+        "warning": 65,
+        "inconclusive": 55,
+        "passed": 35,
+        "skipped": 25,
+    }
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal conformance finding: {finding.rule_type}; "
+                f"status={finding.status}; severity={finding.severity}."
+            ),
+            created_at=finding.created_at,
+            source="personal_conformance",
+            priority=priority_by_status.get(finding.status, 50),
+            refs=[
+                {
+                    "ref_type": "personal_conformance_finding",
+                    "ref_id": finding.finding_id,
+                },
+                {"ref_type": "personal_conformance_run", "ref_id": finding.run_id},
+            ],
+            entry_attrs={
+                "rule_type": finding.rule_type,
+                "status": finding.status,
+                "severity": finding.severity,
+                "subject_type": finding.subject_type,
+                "subject_ref": finding.subject_ref,
+            },
+        )
+        for finding in findings
+    ]
+
+
+def personal_conformance_results_to_history_entries(
+    results: list[PersonalConformanceResult],
+) -> list[ContextHistoryEntry]:
+    priority_by_status = {
+        "failed": 85,
+        "error": 85,
+        "needs_review": 75,
+        "inconclusive": 60,
+        "passed": 40,
+        "skipped": 25,
+    }
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal conformance result: {result.status}; "
+                f"failed={len(result.failed_finding_ids)}; "
+                f"warnings={len(result.warning_finding_ids)}."
+            ),
+            created_at=result.created_at,
+            source="personal_conformance",
+            priority=priority_by_status.get(result.status, 50),
+            refs=[
+                {"ref_type": "personal_conformance_result", "ref_id": result.result_id},
+                {"ref_type": "personal_conformance_run", "ref_id": result.run_id},
+                {"ref_type": "personal_conformance_contract", "ref_id": result.contract_id},
+            ],
+            entry_attrs={
+                "status": result.status,
+                "score": result.score,
+                "confidence": result.confidence,
+                "failed_finding_count": len(result.failed_finding_ids),
+                "warning_finding_count": len(result.warning_finding_ids),
+            },
+        )
+        for result in results
+    ]
+
+
+def personal_smoke_test_scenarios_to_history_entries(
+    scenarios: list[PersonalSmokeTestScenario],
+) -> list[ContextHistoryEntry]:
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Smoke Test scenario: {scenario.scenario_name}; "
+                f"type={scenario.scenario_type}; status={scenario.status}."
+            ),
+            created_at=scenario.created_at,
+            source="personal_smoke_test",
+            priority=40,
+            refs=[
+                {
+                    "ref_type": "personal_smoke_test_scenario",
+                    "ref_id": scenario.scenario_id,
+                }
+            ],
+            entry_attrs={
+                "scenario_type": scenario.scenario_type,
+                "status": scenario.status,
+                "private": scenario.private,
+            },
+        )
+        for scenario in scenarios
+    ]
+
+
+def personal_smoke_test_assertions_to_history_entries(
+    assertions: list[PersonalSmokeTestAssertion],
+) -> list[ContextHistoryEntry]:
+    priority_by_status = {
+        "failed": 85,
+        "error": 85,
+        "warning": 65,
+        "inconclusive": 55,
+        "passed": 35,
+        "skipped": 25,
+    }
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Smoke Test assertion: {assertion.assertion_type}; "
+                f"status={assertion.status}; severity={assertion.severity}."
+            ),
+            created_at=assertion.created_at,
+            source="personal_smoke_test",
+            priority=priority_by_status.get(assertion.status, 50),
+            refs=[
+                {
+                    "ref_type": "personal_smoke_test_assertion",
+                    "ref_id": assertion.assertion_id,
+                },
+                {"ref_type": "personal_smoke_test_run", "ref_id": assertion.run_id},
+                {"ref_type": "personal_smoke_test_case", "ref_id": assertion.case_id},
+            ],
+            entry_attrs={
+                "assertion_type": assertion.assertion_type,
+                "status": assertion.status,
+                "severity": assertion.severity,
+            },
+        )
+        for assertion in assertions
+    ]
+
+
+def personal_smoke_test_results_to_history_entries(
+    results: list[PersonalSmokeTestResult],
+) -> list[ContextHistoryEntry]:
+    priority_by_status = {
+        "failed": 85,
+        "error": 85,
+        "needs_review": 75,
+        "inconclusive": 60,
+        "passed": 40,
+        "skipped": 25,
+    }
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Smoke Test result: {result.status}; "
+                f"failed={len(result.failed_assertion_ids)}; "
+                f"warnings={len(result.warning_assertion_ids)}."
+            ),
+            created_at=result.created_at,
+            source="personal_smoke_test",
+            priority=priority_by_status.get(result.status, 50),
+            refs=[
+                {"ref_type": "personal_smoke_test_result", "ref_id": result.result_id},
+                {"ref_type": "personal_smoke_test_run", "ref_id": result.run_id},
+            ],
+            entry_attrs={
+                "status": result.status,
+                "score": result.score,
+                "confidence": result.confidence,
+                "failed_assertion_count": len(result.failed_assertion_ids),
+                "warning_assertion_count": len(result.warning_assertion_ids),
+            },
+        )
+        for result in results
     ]
 

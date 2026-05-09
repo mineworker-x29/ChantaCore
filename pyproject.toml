@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chanta-core"
-version = "0.16.2"
+version = "0.16.5"
 description = "OCEL-native external capability registry materialized views."
 readme = "README.md"
 requires-python = ">=3.11"
