@@ -18,6 +18,35 @@ __all__ = [
     "SkillRegistryError",
     "SkillValidationError",
     "SkillRegistry",
+    "ExplicitSkillInvocationRequest",
+    "ExplicitSkillInvocationInput",
+    "ExplicitSkillInvocationDecision",
+    "ExplicitSkillInvocationResult",
+    "ExplicitSkillInvocationViolation",
+    "ExplicitSkillInvocationService",
+    "SkillProposalIntent",
+    "SkillProposalRequirement",
+    "SkillInvocationProposal",
+    "SkillProposalDecision",
+    "SkillProposalReviewNote",
+    "SkillProposalResult",
+    "SkillProposalRouterService",
+    "ReadOnlyExecutionGatePolicy",
+    "SkillExecutionGateRequest",
+    "SkillExecutionGateDecision",
+    "SkillExecutionGateFinding",
+    "SkillExecutionGateResult",
+    "SkillExecutionGateService",
+    "explicit_skill_invocation_requests_to_history_entries",
+    "explicit_skill_invocation_results_to_history_entries",
+    "explicit_skill_invocation_violations_to_history_entries",
+    "skill_proposal_intents_to_history_entries",
+    "skill_invocation_proposals_to_history_entries",
+    "skill_proposal_results_to_history_entries",
+    "skill_proposal_review_notes_to_history_entries",
+    "skill_execution_gate_decisions_to_history_entries",
+    "skill_execution_gate_results_to_history_entries",
+    "skill_execution_gate_findings_to_history_entries",
     "builtin_llm_chat_skill",
     "create_check_self_conformance_skill",
     "create_echo_skill",
@@ -46,6 +75,51 @@ def __getattr__(name: str) -> Any:
         return getattr(errors, name)
     if name == "SkillRegistry":
         return import_module("chanta_core.skills.registry").SkillRegistry
+    if name in {
+        "ExplicitSkillInvocationRequest",
+        "ExplicitSkillInvocationInput",
+        "ExplicitSkillInvocationDecision",
+        "ExplicitSkillInvocationResult",
+        "ExplicitSkillInvocationViolation",
+        "ExplicitSkillInvocationService",
+    }:
+        invocation = import_module("chanta_core.skills.invocation")
+        return getattr(invocation, name)
+    if name in {
+        "SkillProposalIntent",
+        "SkillProposalRequirement",
+        "SkillInvocationProposal",
+        "SkillProposalDecision",
+        "SkillProposalReviewNote",
+        "SkillProposalResult",
+        "SkillProposalRouterService",
+    }:
+        proposal = import_module("chanta_core.skills.proposal")
+        return getattr(proposal, name)
+    if name in {
+        "ReadOnlyExecutionGatePolicy",
+        "SkillExecutionGateRequest",
+        "SkillExecutionGateDecision",
+        "SkillExecutionGateFinding",
+        "SkillExecutionGateResult",
+        "SkillExecutionGateService",
+    }:
+        execution_gate = import_module("chanta_core.skills.execution_gate")
+        return getattr(execution_gate, name)
+    if name in {
+        "explicit_skill_invocation_requests_to_history_entries",
+        "explicit_skill_invocation_results_to_history_entries",
+        "explicit_skill_invocation_violations_to_history_entries",
+        "skill_proposal_intents_to_history_entries",
+        "skill_invocation_proposals_to_history_entries",
+        "skill_proposal_results_to_history_entries",
+        "skill_proposal_review_notes_to_history_entries",
+        "skill_execution_gate_decisions_to_history_entries",
+        "skill_execution_gate_results_to_history_entries",
+        "skill_execution_gate_findings_to_history_entries",
+    }:
+        history_adapter = import_module("chanta_core.skills.history_adapter")
+        return getattr(history_adapter, name)
     if name in {
         "builtin_llm_chat_skill",
         "create_check_self_conformance_skill",

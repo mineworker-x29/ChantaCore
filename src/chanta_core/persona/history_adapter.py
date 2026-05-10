@@ -33,6 +33,16 @@ from chanta_core.persona.personal_smoke_test import (
     PersonalSmokeTestResult,
     PersonalSmokeTestScenario,
 )
+from chanta_core.persona.personal_runtime_surface import (
+    PersonalCLICommandResult,
+    PersonalRuntimeDiagnostic,
+    PersonalRuntimeStatusSnapshot,
+)
+from chanta_core.persona.personal_prompt_activation import (
+    PersonalPromptActivationBlock,
+    PersonalPromptActivationFinding,
+    PersonalPromptActivationResult,
+)
 from chanta_core.persona.source_import import (
     PersonaAssimilationDraft,
     PersonaProjectionCandidate,
@@ -863,5 +873,221 @@ def personal_smoke_test_results_to_history_entries(
             },
         )
         for result in results
+    ]
+
+
+def personal_runtime_status_snapshots_to_history_entries(
+    snapshots: list[PersonalRuntimeStatusSnapshot],
+) -> list[ContextHistoryEntry]:
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                "Personal Runtime status: "
+                f"configured={snapshot.personal_directory_configured}; "
+                f"projections={snapshot.available_projection_count}; "
+                f"profiles={snapshot.available_profile_count}; "
+                f"loadouts={snapshot.available_loadout_count}."
+            ),
+            created_at=snapshot.created_at,
+            source="personal_runtime_surface",
+            priority=55 if snapshot.personal_directory_configured else 40,
+            refs=[
+                {"ref_type": "personal_runtime_status_snapshot", "ref_id": snapshot.status_id},
+                {"ref_type": "personal_runtime_config_view", "ref_id": snapshot.config_view_id},
+            ],
+            entry_attrs={
+                "personal_directory_configured": snapshot.personal_directory_configured,
+                "manifest_id": snapshot.manifest_id,
+                "conformance_status": snapshot.conformance_status,
+                "smoke_status": snapshot.smoke_status,
+            },
+        )
+        for snapshot in snapshots
+    ]
+
+
+def personal_runtime_diagnostics_to_history_entries(
+    diagnostics: list[PersonalRuntimeDiagnostic],
+) -> list[ContextHistoryEntry]:
+    priority_by_severity = {"high": 85, "medium": 70, "low": 45}
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Runtime diagnostic: {diagnostic.status}; "
+                f"{diagnostic.message}"
+            ),
+            created_at=diagnostic.created_at,
+            source="personal_runtime_surface",
+            priority=priority_by_severity.get(diagnostic.severity, 60),
+            refs=[
+                {"ref_type": "personal_runtime_diagnostic", "ref_id": diagnostic.diagnostic_id}
+            ],
+            entry_attrs={
+                "command_name": diagnostic.command_name,
+                "status": diagnostic.status,
+                "severity": diagnostic.severity,
+            },
+        )
+        for diagnostic in diagnostics
+    ]
+
+
+def personal_cli_command_results_to_history_entries(
+    results: list[PersonalCLICommandResult],
+) -> list[ContextHistoryEntry]:
+    def _priority(result: PersonalCLICommandResult) -> int:
+        if result.exit_code:
+            return 85
+        if result.status == "noop":
+            return 65
+        if result.status in {"needs_review", "warning"}:
+            return 70
+        return 45
+
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Runtime CLI result: {result.command_name}; "
+                f"status={result.status}; exit_code={result.exit_code}."
+            ),
+            created_at=result.created_at,
+            source="personal_runtime_surface",
+            priority=_priority(result),
+            refs=[
+                {"ref_type": "personal_cli_command_result", "ref_id": result.result_id},
+                {
+                    "ref_type": "personal_runtime_status_snapshot",
+                    "ref_id": result.status_snapshot_id,
+                },
+            ]
+            + [
+                {"ref_type": "personal_runtime_diagnostic", "ref_id": diagnostic_id}
+                for diagnostic_id in result.diagnostic_ids
+            ],
+            entry_attrs={
+                "command_name": result.command_name,
+                "status": result.status,
+                "exit_code": result.exit_code,
+                "diagnostic_count": len(result.diagnostic_ids),
+            },
+        )
+        for result in results
+    ]
+
+
+def personal_prompt_activation_results_to_history_entries(
+    results: list[PersonalPromptActivationResult],
+) -> list[ContextHistoryEntry]:
+    priority_by_status = {
+        "denied": 90,
+        "error": 90,
+        "needs_review": 75,
+        "attached": 60,
+        "missing_config": 45,
+        "skipped": 35,
+    }
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Prompt Activation result: {result.status}; "
+                f"scope={result.activation_scope}; blocks={len(result.attached_block_ids)}."
+            ),
+            created_at=result.created_at,
+            source="personal_prompt_activation",
+            priority=priority_by_status.get(result.status, 50),
+            refs=[
+                {"ref_type": "personal_prompt_activation_result", "ref_id": result.result_id},
+                {"ref_type": "personal_prompt_activation_request", "ref_id": result.request_id},
+            ],
+            entry_attrs={
+                "status": result.status,
+                "activation_scope": result.activation_scope,
+                "denied": result.denied,
+                "truncated": result.truncated,
+            },
+        )
+        for result in results
+    ]
+
+
+def personal_prompt_activation_blocks_to_history_entries(
+    blocks: list[PersonalPromptActivationBlock],
+) -> list[ContextHistoryEntry]:
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Prompt Activation block: {block.block_type}; "
+                f"safe_for_prompt={block.safe_for_prompt}; chars={block.total_chars}."
+            ),
+            created_at=block.created_at,
+            source="personal_prompt_activation",
+            priority=60 if block.safe_for_prompt else 85,
+            refs=[
+                {"ref_type": "personal_prompt_activation_block", "ref_id": block.block_id},
+                {"ref_type": "personal_prompt_activation_request", "ref_id": block.request_id},
+            ],
+            entry_attrs={
+                "block_type": block.block_type,
+                "safe_for_prompt": block.safe_for_prompt,
+                "source_kind": block.source_kind,
+            },
+        )
+        for block in blocks
+    ]
+
+
+def personal_prompt_activation_findings_to_history_entries(
+    findings: list[PersonalPromptActivationFinding],
+) -> list[ContextHistoryEntry]:
+    def _priority(finding: PersonalPromptActivationFinding) -> int:
+        if finding.status in {"failed", "error"}:
+            return 90
+        if finding.status == "warning":
+            return 75
+        return 45
+
+    return [
+        ContextHistoryEntry(
+            entry_id=new_context_history_entry_id(),
+            session_id=None,
+            process_instance_id=None,
+            role="context",
+            content=(
+                f"Personal Prompt Activation finding: {finding.finding_type}; "
+                f"status={finding.status}."
+            ),
+            created_at=finding.created_at,
+            source="personal_prompt_activation",
+            priority=_priority(finding),
+            refs=[
+                {"ref_type": "personal_prompt_activation_finding", "ref_id": finding.finding_id}
+            ],
+            entry_attrs={
+                "finding_type": finding.finding_type,
+                "status": finding.status,
+                "severity": finding.severity,
+            },
+        )
+        for finding in findings
     ]
 

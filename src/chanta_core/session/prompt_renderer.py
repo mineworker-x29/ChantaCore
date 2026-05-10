@@ -15,6 +15,7 @@ def render_projection_to_llm_messages(
     projection: SessionContextProjection,
     system_prompt: str | None = None,
     persona_projection_block: str | None = None,
+    personal_prompt_activation_block: str | None = None,
     capability_profile_block: str | None = None,
     current_user_message: str | None = None,
     avoid_duplicate_current_message: bool = True,
@@ -23,6 +24,7 @@ def render_projection_to_llm_messages(
         projection=projection,
         system_prompt=system_prompt,
         persona_projection_block=persona_projection_block,
+        personal_prompt_activation_block=personal_prompt_activation_block,
         capability_profile_block=capability_profile_block,
         current_user_message=current_user_message,
         avoid_duplicate_current_message=avoid_duplicate_current_message,
@@ -35,6 +37,7 @@ def render_projection_to_prompt_result(
     projection: SessionContextProjection,
     system_prompt: str | None = None,
     persona_projection_block: str | None = None,
+    personal_prompt_activation_block: str | None = None,
     capability_profile_block: str | None = None,
     current_user_message: str | None = None,
     avoid_duplicate_current_message: bool = True,
@@ -44,6 +47,8 @@ def render_projection_to_prompt_result(
         messages.append({"role": "system", "content": system_prompt})
     if persona_projection_block:
         messages.append({"role": "system", "content": persona_projection_block})
+    if personal_prompt_activation_block:
+        messages.append({"role": "system", "content": personal_prompt_activation_block})
     if capability_profile_block:
         messages.append({"role": "system", "content": capability_profile_block})
     for message in projection.rendered_messages:
@@ -70,5 +75,6 @@ def render_projection_to_prompt_result(
         render_attrs={
             "hidden_reasoning_excluded": True,
             "scrollback_source": False,
+            "personal_prompt_activation_included": bool(personal_prompt_activation_block),
         },
     )

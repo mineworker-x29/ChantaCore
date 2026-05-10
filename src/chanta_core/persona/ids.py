@@ -166,3 +166,43 @@ def new_personal_smoke_test_assertion_id() -> str:
 def new_personal_smoke_test_result_id() -> str:
     return f"personal_smoke_test_result:{uuid4()}"
 
+
+def new_personal_runtime_config_view_id() -> str:
+    return f"personal_runtime_config_view:{uuid4()}"
+
+
+def new_personal_runtime_status_snapshot_id() -> str:
+    return f"personal_runtime_status_snapshot:{uuid4()}"
+
+
+def new_personal_runtime_health_check_id() -> str:
+    return f"personal_runtime_health_check:{uuid4()}"
+
+
+def new_personal_runtime_diagnostic_id() -> str:
+    return f"personal_runtime_diagnostic:{uuid4()}"
+
+
+def new_personal_cli_command_result_id() -> str:
+    return f"personal_cli_command_result:{uuid4()}"
+
+
+def new_personal_prompt_activation_config_id() -> str:
+    return f"personal_prompt_activation_config:{uuid4()}"
+
+
+def new_personal_prompt_activation_request_id() -> str:
+    return f"personal_prompt_activation_request:{uuid4()}"
+
+
+def new_personal_prompt_activation_block_id() -> str:
+    return f"personal_prompt_activation_block:{uuid4()}"
+
+
+def new_personal_prompt_activation_result_id() -> str:
+    return f"personal_prompt_activation_result:{uuid4()}"
+
+
+def new_personal_prompt_activation_finding_id() -> str:
+    return f"personal_prompt_activation_finding:{uuid4()}"
+

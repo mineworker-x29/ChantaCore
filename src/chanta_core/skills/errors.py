@@ -7,3 +7,15 @@ class SkillValidationError(ValueError):
 
 class SkillRegistryError(ValueError):
     """Raised when registry state would become ambiguous or inconsistent."""
+
+
+class ExplicitSkillInvocationError(ValueError):
+    """Raised when explicit skill invocation cannot proceed."""
+
+
+class SkillProposalError(ValueError):
+    """Raised when skill proposal cannot proceed."""
+
+
+class SkillExecutionGateError(ValueError):
+    """Raised when skill execution gate evaluation cannot proceed."""

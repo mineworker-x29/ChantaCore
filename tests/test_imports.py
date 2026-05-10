@@ -48,6 +48,22 @@ from chanta_core.editing import (
     PatchBackupService,
     create_unified_diff,
 )
+from chanta_core.execution import (
+    ExecutionArtifactRef,
+    ExecutionEnvelope,
+    ExecutionEnvelopeService,
+    ExecutionInputSnapshot,
+    ExecutionOutcomeSummary,
+    ExecutionOutputSnapshot,
+    ExecutionProvenanceRecord,
+    execution_envelopes_to_history_entries,
+    execution_outcome_summaries_to_history_entries,
+    execution_provenance_records_to_history_entries,
+    hash_payload,
+    preview_payload,
+    redact_sensitive_fields,
+    summarize_status,
+)
 from chanta_core.external import (
     ExternalAdapterReviewChecklist,
     ExternalAdapterReviewDecision,
@@ -254,7 +270,19 @@ from chanta_core.persona import (
     PersonalProjectionRef,
     PersonalRuntimeBinding,
     PersonalRuntimeCapabilityBinding,
+    PersonalRuntimeConfigView,
+    PersonalRuntimeDiagnostic,
+    PersonalRuntimeHealthCheck,
+    PersonalPromptActivationBlock,
+    PersonalPromptActivationConfig,
+    PersonalPromptActivationFinding,
+    PersonalPromptActivationRequest,
+    PersonalPromptActivationResult,
+    PersonalPromptActivationService,
     PersonalRuntimeSmokeTestService,
+    PersonalRuntimeStatusSnapshot,
+    PersonalRuntimeSurfaceService,
+    PersonalCLICommandResult,
     PersonalSmokeTestAssertion,
     PersonalSmokeTestCase,
     PersonalSmokeTestObservation,
@@ -292,6 +320,12 @@ from chanta_core.persona import (
     personal_smoke_test_assertions_to_history_entries,
     personal_smoke_test_results_to_history_entries,
     personal_smoke_test_scenarios_to_history_entries,
+    personal_cli_command_results_to_history_entries,
+    personal_prompt_activation_blocks_to_history_entries,
+    personal_prompt_activation_findings_to_history_entries,
+    personal_prompt_activation_results_to_history_entries,
+    personal_runtime_diagnostics_to_history_entries,
+    personal_runtime_status_snapshots_to_history_entries,
     persona_assimilation_drafts_to_history_entries,
     persona_instruction_artifacts_to_history_entries,
     persona_ingestion_candidates_to_history_entries,
@@ -431,6 +465,43 @@ from chanta_core.skills.builtin import (
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.skills.errors import SkillRegistryError, SkillValidationError
 from chanta_core.skills.executor import SkillExecutionPolicy, SkillExecutor
+from chanta_core.skills.history_adapter import (
+    explicit_skill_invocation_requests_to_history_entries,
+    explicit_skill_invocation_results_to_history_entries,
+    explicit_skill_invocation_violations_to_history_entries,
+    skill_execution_gate_decisions_to_history_entries,
+    skill_execution_gate_findings_to_history_entries,
+    skill_execution_gate_results_to_history_entries,
+    skill_invocation_proposals_to_history_entries,
+    skill_proposal_intents_to_history_entries,
+    skill_proposal_results_to_history_entries,
+    skill_proposal_review_notes_to_history_entries,
+)
+from chanta_core.skills.execution_gate import (
+    ReadOnlyExecutionGatePolicy,
+    SkillExecutionGateDecision,
+    SkillExecutionGateFinding,
+    SkillExecutionGateRequest,
+    SkillExecutionGateResult,
+    SkillExecutionGateService,
+)
+from chanta_core.skills.invocation import (
+    ExplicitSkillInvocationDecision,
+    ExplicitSkillInvocationInput,
+    ExplicitSkillInvocationRequest,
+    ExplicitSkillInvocationResult,
+    ExplicitSkillInvocationService,
+    ExplicitSkillInvocationViolation,
+)
+from chanta_core.skills.proposal import (
+    SkillInvocationProposal,
+    SkillProposalDecision,
+    SkillProposalIntent,
+    SkillProposalRequirement,
+    SkillProposalResult,
+    SkillProposalReviewNote,
+    SkillProposalRouterService,
+)
 from chanta_core.skills.registry import SkillRegistry
 from chanta_core.skills.result import SkillExecutionResult
 from chanta_core.skills.skill import Skill
@@ -538,6 +609,20 @@ def test_required_imports() -> None:
     assert PatchApplicationService is not None
     assert PatchBackupService is not None
     assert create_unified_diff is not None
+    assert ExecutionEnvelope is not None
+    assert ExecutionProvenanceRecord is not None
+    assert ExecutionInputSnapshot is not None
+    assert ExecutionOutputSnapshot is not None
+    assert ExecutionArtifactRef is not None
+    assert ExecutionOutcomeSummary is not None
+    assert ExecutionEnvelopeService is not None
+    assert execution_envelopes_to_history_entries is not None
+    assert execution_outcome_summaries_to_history_entries is not None
+    assert execution_provenance_records_to_history_entries is not None
+    assert hash_payload is not None
+    assert preview_payload is not None
+    assert redact_sensitive_fields is not None
+    assert summarize_status is not None
     assert InstructionArtifact is not None
     assert InstructionService is not None
     assert ProjectRule is not None
@@ -624,12 +709,41 @@ def test_required_imports() -> None:
     assert memory_entries_to_history_entries is not None
     assert Skill is not None
     assert SkillExecutionContext is not None
+    assert ExplicitSkillInvocationRequest is not None
+    assert ExplicitSkillInvocationInput is not None
+    assert ExplicitSkillInvocationDecision is not None
+    assert ExplicitSkillInvocationResult is not None
+    assert ExplicitSkillInvocationViolation is not None
+    assert ExplicitSkillInvocationService is not None
+    assert SkillProposalIntent is not None
+    assert SkillProposalRequirement is not None
+    assert SkillInvocationProposal is not None
+    assert SkillProposalDecision is not None
+    assert SkillProposalReviewNote is not None
+    assert SkillProposalResult is not None
+    assert SkillProposalRouterService is not None
+    assert ReadOnlyExecutionGatePolicy is not None
+    assert SkillExecutionGateRequest is not None
+    assert SkillExecutionGateDecision is not None
+    assert SkillExecutionGateFinding is not None
+    assert SkillExecutionGateResult is not None
+    assert SkillExecutionGateService is not None
     assert SkillExecutionResult is not None
     assert SkillExecutionPolicy is not None
     assert SkillExecutor is not None
     assert SkillRegistryError is not None
     assert SkillValidationError is not None
     assert SkillRegistry is not None
+    assert explicit_skill_invocation_requests_to_history_entries is not None
+    assert explicit_skill_invocation_results_to_history_entries is not None
+    assert explicit_skill_invocation_violations_to_history_entries is not None
+    assert skill_proposal_intents_to_history_entries is not None
+    assert skill_invocation_proposals_to_history_entries is not None
+    assert skill_proposal_results_to_history_entries is not None
+    assert skill_proposal_review_notes_to_history_entries is not None
+    assert skill_execution_gate_decisions_to_history_entries is not None
+    assert skill_execution_gate_results_to_history_entries is not None
+    assert skill_execution_gate_findings_to_history_entries is not None
     assert Tool is not None
     assert ToolAuthorization is not None
     assert ToolAuthorizationError is not None
@@ -708,6 +822,18 @@ def test_required_imports() -> None:
     assert PersonalModeSelection is not None
     assert PersonalRuntimeBinding is not None
     assert PersonalRuntimeCapabilityBinding is not None
+    assert PersonalRuntimeConfigView is not None
+    assert PersonalRuntimeStatusSnapshot is not None
+    assert PersonalRuntimeHealthCheck is not None
+    assert PersonalRuntimeDiagnostic is not None
+    assert PersonalCLICommandResult is not None
+    assert PersonalPromptActivationConfig is not None
+    assert PersonalPromptActivationRequest is not None
+    assert PersonalPromptActivationBlock is not None
+    assert PersonalPromptActivationResult is not None
+    assert PersonalPromptActivationFinding is not None
+    assert PersonalPromptActivationService is not None
+    assert PersonalRuntimeSurfaceService is not None
     assert PersonalModeActivationRequest is not None
     assert PersonalModeActivationResult is not None
     assert PersonalModeBindingService is not None
@@ -764,6 +890,12 @@ def test_required_imports() -> None:
     assert personal_smoke_test_scenarios_to_history_entries is not None
     assert personal_smoke_test_assertions_to_history_entries is not None
     assert personal_smoke_test_results_to_history_entries is not None
+    assert personal_runtime_status_snapshots_to_history_entries is not None
+    assert personal_runtime_diagnostics_to_history_entries is not None
+    assert personal_cli_command_results_to_history_entries is not None
+    assert personal_prompt_activation_results_to_history_entries is not None
+    assert personal_prompt_activation_blocks_to_history_entries is not None
+    assert personal_prompt_activation_findings_to_history_entries is not None
     assert create_workspace_tool is not None
     assert execute_workspace_tool is not None
     assert WorkspaceAccessError is not None

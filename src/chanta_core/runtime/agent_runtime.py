@@ -7,7 +7,11 @@ from chanta_core.agents.default_agent import load_default_agent_profile
 from chanta_core.agents.profile import AgentProfile
 from chanta_core.llm.client import LLMClient
 from chanta_core.ocel.factory import short_hash
-from chanta_core.persona import PersonaLoadingService, PersonalOverlayLoaderService
+from chanta_core.persona import (
+    PersonaLoadingService,
+    PersonalOverlayLoaderService,
+    PersonalPromptActivationService,
+)
 from chanta_core.prompts.assembly import PromptAssemblyService
 from chanta_core.runtime.execution_context import ExecutionContext
 from chanta_core.runtime.loop.process_run_loop import ProcessRunLoop
@@ -33,11 +37,13 @@ class AgentRuntime:
         capability_decision_surface_service: CapabilityDecisionSurfaceService | None = None,
         persona_loading_service: PersonaLoadingService | None = None,
         personal_overlay_loader_service: PersonalOverlayLoaderService | None = None,
+        personal_prompt_activation_service: PersonalPromptActivationService | None = None,
         personal_overlay_public_repo_root: str | Path | None = None,
         enable_session_context_projection: bool = True,
         enable_capability_decision_surface: bool = True,
         enable_persona_projection: bool = True,
         enable_personal_overlay: bool = True,
+        enable_personal_prompt_activation: bool = True,
     ) -> None:
         self.llm_client = llm_client or LLMClient()
         self.prompt_assembly = prompt_assembly or PromptAssemblyService()
@@ -62,11 +68,16 @@ class AgentRuntime:
             personal_overlay_loader_service
             or PersonalOverlayLoaderService(trace_service=self.trace_service)
         )
+        self.personal_prompt_activation_service = (
+            personal_prompt_activation_service
+            or PersonalPromptActivationService(trace_service=self.trace_service)
+        )
         self.personal_overlay_public_repo_root = personal_overlay_public_repo_root
         self.enable_session_context_projection = enable_session_context_projection
         self.enable_capability_decision_surface = enable_capability_decision_surface
         self.enable_persona_projection = enable_persona_projection
         self.enable_personal_overlay = enable_personal_overlay
+        self.enable_personal_prompt_activation = enable_personal_prompt_activation
 
     def run(
         self,
@@ -130,7 +141,9 @@ class AgentRuntime:
             )
             prompt_messages: list[dict[str, str]] | None = None
             persona_projection_block: str | None = None
+            personal_prompt_activation_block: str | None = None
             capability_decision_surface_block: str | None = None
+            personal_overlay_load_result = None
             if self.enable_persona_projection:
                 try:
                     persona_bundle = self.persona_loading_service.create_default_agent_persona(
@@ -170,6 +183,7 @@ class AgentRuntime:
                             max_chars=4000,
                             boundary_findings=findings,
                         )
+                        personal_overlay_load_result = load_result
                         block = self.personal_overlay_loader_service.render_personal_overlay_block(
                             load_result
                         )
@@ -184,6 +198,31 @@ class AgentRuntime:
                         context.metadata["personal_overlay_denied"] = load_result.denied
                 except Exception as error:
                     context.metadata["personal_overlay_warning"] = str(error)
+            if self.enable_personal_prompt_activation:
+                try:
+                    activation_result = (
+                        self.personal_prompt_activation_service.activate_for_prompt_context(
+                            session_id=context.session_id,
+                            turn_id=turn_id,
+                            explicit_overlay_load_result=personal_overlay_load_result,
+                        )
+                    )
+                    block = self.personal_prompt_activation_service.render_activation_blocks(
+                        result=activation_result
+                    )
+                    if block:
+                        personal_prompt_activation_block = block
+                    context.metadata["personal_prompt_activation_result_id"] = (
+                        activation_result.result_id
+                    )
+                    context.metadata["personal_prompt_activation_status"] = (
+                        activation_result.status
+                    )
+                    context.metadata["personal_prompt_activation_scope"] = (
+                        activation_result.activation_scope
+                    )
+                except Exception as error:
+                    context.metadata["personal_prompt_activation_warning"] = str(error)
             if self.enable_capability_decision_surface:
                 try:
                     capability_surface = (
@@ -229,6 +268,7 @@ class AgentRuntime:
                             projection=projection,
                             system_prompt=self.agent_profile.system_prompt,
                             persona_projection_block=persona_projection_block,
+                            personal_prompt_activation_block=personal_prompt_activation_block,
                             capability_profile_block=capability_decision_surface_block,
                             current_user_message=context.user_input,
                             avoid_duplicate_current_message=True,

@@ -392,7 +392,123 @@ class PIGReportService:
         selected_skills: dict[str, int] = {}
         executed_skills: dict[str, int] = {}
         skill_objects: dict[str, int] = {}
+        explicit_by_skill_id: dict[str, int] = {}
+        explicit_violation_by_type: dict[str, int] = {}
+        proposal_by_skill_id: dict[str, int] = {}
+        proposal_by_requested_operation: dict[str, int] = {}
+        gate_by_skill_id: dict[str, int] = {}
+        gate_finding_by_type: dict[str, int] = {}
+        execution_by_kind: dict[str, int] = {}
+        execution_by_skill_id: dict[str, int] = {}
         failed_skill_execution_count = 0
+        explicit_completed_count = 0
+        explicit_denied_count = 0
+        explicit_unsupported_count = 0
+        explicit_failed_count = 0
+        proposal_available_count = 0
+        proposal_incomplete_count = 0
+        proposal_unsupported_count = 0
+        proposal_needs_review_count = 0
+        gate_allowed_count = 0
+        gate_denied_count = 0
+        gate_needs_review_count = 0
+        gate_unsupported_count = 0
+        gate_executed_count = 0
+        gate_blocked_count = 0
+        execution_completed_count = 0
+        execution_blocked_count = 0
+        execution_failed_count = 0
+        execution_skipped_count = 0
+        execution_with_gate_count = 0
+        execution_without_gate_count = 0
+        execution_full_input_stored_count = 0
+        execution_full_output_stored_count = 0
+        object_type_counts: dict[str, int] = {}
+        for item in view.objects:
+            object_type_counts[item.object_type] = object_type_counts.get(item.object_type, 0) + 1
+            if item.object_type == "explicit_skill_invocation_request":
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                explicit_by_skill_id[skill_id] = explicit_by_skill_id.get(skill_id, 0) + 1
+            if item.object_type == "explicit_skill_invocation_result":
+                status = str(item.object_attrs.get("status") or "")
+                if status == "completed":
+                    explicit_completed_count += 1
+                if status == "denied":
+                    explicit_denied_count += 1
+                if status == "unsupported":
+                    explicit_unsupported_count += 1
+                if status in {"failed", "error"}:
+                    explicit_failed_count += 1
+            if item.object_type == "explicit_skill_invocation_violation":
+                violation_type = str(item.object_attrs.get("violation_type") or "unknown")
+                explicit_violation_by_type[violation_type] = (
+                    explicit_violation_by_type.get(violation_type, 0) + 1
+                )
+            if item.object_type == "skill_proposal_intent":
+                operation = str(item.object_attrs.get("requested_operation") or "unknown")
+                proposal_by_requested_operation[operation] = (
+                    proposal_by_requested_operation.get(operation, 0) + 1
+                )
+            if item.object_type == "skill_invocation_proposal":
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                proposal_by_skill_id[skill_id] = proposal_by_skill_id.get(skill_id, 0) + 1
+                status = str(item.object_attrs.get("proposal_status") or "")
+                if status == "proposed":
+                    proposal_available_count += 1
+                if status == "incomplete":
+                    proposal_incomplete_count += 1
+                if status == "unsupported":
+                    proposal_unsupported_count += 1
+                if status == "needs_review":
+                    proposal_needs_review_count += 1
+            if item.object_type == "skill_execution_gate_request":
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                gate_by_skill_id[skill_id] = gate_by_skill_id.get(skill_id, 0) + 1
+            if item.object_type == "skill_execution_gate_decision":
+                decision = str(item.object_attrs.get("decision") or "")
+                if decision == "allow":
+                    gate_allowed_count += 1
+                if decision == "deny":
+                    gate_denied_count += 1
+                if decision == "needs_review":
+                    gate_needs_review_count += 1
+                if decision == "unsupported":
+                    gate_unsupported_count += 1
+            if item.object_type == "skill_execution_gate_result":
+                if bool(item.object_attrs.get("executed")):
+                    gate_executed_count += 1
+                if bool(item.object_attrs.get("blocked")):
+                    gate_blocked_count += 1
+            if item.object_type == "skill_execution_gate_finding":
+                finding_type = str(item.object_attrs.get("finding_type") or "unknown")
+                gate_finding_by_type[finding_type] = gate_finding_by_type.get(finding_type, 0) + 1
+            if item.object_type == "execution_envelope":
+                kind = str(item.object_attrs.get("execution_kind") or "unknown")
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                status = str(item.object_attrs.get("status") or "")
+                execution_by_kind[kind] = execution_by_kind.get(kind, 0) + 1
+                execution_by_skill_id[skill_id] = execution_by_skill_id.get(skill_id, 0) + 1
+                if status == "completed":
+                    execution_completed_count += 1
+                if status in {"blocked", "denied", "unsupported", "needs_review"}:
+                    execution_blocked_count += 1
+                if status in {"failed", "error"}:
+                    execution_failed_count += 1
+                if status == "skipped":
+                    execution_skipped_count += 1
+            if item.object_type == "execution_provenance_record":
+                if item.object_attrs.get("gate_result_id"):
+                    execution_with_gate_count += 1
+                else:
+                    execution_without_gate_count += 1
+            if item.object_type == "execution_input_snapshot" and bool(
+                item.object_attrs.get("full_input_stored")
+            ):
+                execution_full_input_stored_count += 1
+            if item.object_type == "execution_output_snapshot" and bool(
+                item.object_attrs.get("full_output_stored")
+            ):
+                execution_full_output_stored_count += 1
         for event in view.events:
             if event.event_activity == "fail_skill_execution":
                 failed_skill_execution_count += 1
@@ -417,6 +533,85 @@ class PIGReportService:
             "executed_skills": executed_skills,
             "skill_objects": skill_objects,
             "failed_skill_execution_count": failed_skill_execution_count,
+            "explicit_skill_invocation_request_count": object_type_counts.get(
+                "explicit_skill_invocation_request", 0
+            ),
+            "explicit_skill_invocation_input_count": object_type_counts.get(
+                "explicit_skill_invocation_input", 0
+            ),
+            "explicit_skill_invocation_decision_count": object_type_counts.get(
+                "explicit_skill_invocation_decision", 0
+            ),
+            "explicit_skill_invocation_result_count": object_type_counts.get(
+                "explicit_skill_invocation_result", 0
+            ),
+            "explicit_skill_invocation_violation_count": object_type_counts.get(
+                "explicit_skill_invocation_violation", 0
+            ),
+            "explicit_skill_invocation_completed_count": explicit_completed_count,
+            "explicit_skill_invocation_denied_count": explicit_denied_count,
+            "explicit_skill_invocation_unsupported_count": explicit_unsupported_count,
+            "explicit_skill_invocation_failed_count": explicit_failed_count,
+            "explicit_skill_invocation_by_skill_id": explicit_by_skill_id,
+            "explicit_skill_invocation_violation_by_type": explicit_violation_by_type,
+            "skill_proposal_intent_count": object_type_counts.get("skill_proposal_intent", 0),
+            "skill_proposal_requirement_count": object_type_counts.get(
+                "skill_proposal_requirement", 0
+            ),
+            "skill_invocation_proposal_count": object_type_counts.get(
+                "skill_invocation_proposal", 0
+            ),
+            "skill_proposal_decision_count": object_type_counts.get(
+                "skill_proposal_decision", 0
+            ),
+            "skill_proposal_review_note_count": object_type_counts.get(
+                "skill_proposal_review_note", 0
+            ),
+            "skill_proposal_result_count": object_type_counts.get("skill_proposal_result", 0),
+            "skill_proposal_available_count": proposal_available_count,
+            "skill_proposal_incomplete_count": proposal_incomplete_count,
+            "skill_proposal_unsupported_count": proposal_unsupported_count,
+            "skill_proposal_needs_review_count": proposal_needs_review_count,
+            "skill_proposal_by_skill_id": proposal_by_skill_id,
+            "skill_proposal_by_requested_operation": proposal_by_requested_operation,
+            "skill_execution_gate_request_count": object_type_counts.get(
+                "skill_execution_gate_request", 0
+            ),
+            "skill_execution_gate_decision_count": object_type_counts.get(
+                "skill_execution_gate_decision", 0
+            ),
+            "skill_execution_gate_finding_count": object_type_counts.get(
+                "skill_execution_gate_finding", 0
+            ),
+            "skill_execution_gate_result_count": object_type_counts.get(
+                "skill_execution_gate_result", 0
+            ),
+            "skill_execution_gate_allowed_count": gate_allowed_count,
+            "skill_execution_gate_denied_count": gate_denied_count,
+            "skill_execution_gate_needs_review_count": gate_needs_review_count,
+            "skill_execution_gate_unsupported_count": gate_unsupported_count,
+            "skill_execution_gate_executed_count": gate_executed_count,
+            "skill_execution_gate_blocked_count": gate_blocked_count,
+            "skill_execution_gate_by_skill_id": gate_by_skill_id,
+            "skill_execution_gate_finding_by_type": gate_finding_by_type,
+            "execution_envelope_count": object_type_counts.get("execution_envelope", 0),
+            "execution_provenance_record_count": object_type_counts.get(
+                "execution_provenance_record", 0
+            ),
+            "execution_input_snapshot_count": object_type_counts.get("execution_input_snapshot", 0),
+            "execution_output_snapshot_count": object_type_counts.get("execution_output_snapshot", 0),
+            "execution_artifact_ref_count": object_type_counts.get("execution_artifact_ref", 0),
+            "execution_outcome_summary_count": object_type_counts.get("execution_outcome_summary", 0),
+            "execution_completed_count": execution_completed_count,
+            "execution_blocked_count": execution_blocked_count,
+            "execution_failed_count": execution_failed_count,
+            "execution_skipped_count": execution_skipped_count,
+            "execution_by_kind": execution_by_kind,
+            "execution_by_skill_id": execution_by_skill_id,
+            "execution_with_gate_count": execution_with_gate_count,
+            "execution_without_gate_count": execution_without_gate_count,
+            "execution_full_input_stored_count": execution_full_input_stored_count,
+            "execution_full_output_stored_count": execution_full_output_stored_count,
         }
 
     @staticmethod
@@ -572,6 +767,25 @@ class PIGReportService:
                 "",
                 "Skill Usage:",
                 skill_lines,
+                f"- Explicit Skill Invocation objects: {(skill_usage_summary or {}).get('explicit_skill_invocation_request_count', 0)}/{(skill_usage_summary or {}).get('explicit_skill_invocation_input_count', 0)}/{(skill_usage_summary or {}).get('explicit_skill_invocation_decision_count', 0)}/{(skill_usage_summary or {}).get('explicit_skill_invocation_result_count', 0)}",
+                f"- Explicit Skill Invocation status: completed/denied/unsupported/failed {(skill_usage_summary or {}).get('explicit_skill_invocation_completed_count', 0)}/{(skill_usage_summary or {}).get('explicit_skill_invocation_denied_count', 0)}/{(skill_usage_summary or {}).get('explicit_skill_invocation_unsupported_count', 0)}/{(skill_usage_summary or {}).get('explicit_skill_invocation_failed_count', 0)}",
+                f"- Explicit Skill Invocation by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('explicit_skill_invocation_by_skill_id') or {})}",
+                f"- Explicit Skill Invocation violations: {PIGReportService._inline_counts((skill_usage_summary or {}).get('explicit_skill_invocation_violation_by_type') or {})}",
+                f"- Skill Proposal objects: {(skill_usage_summary or {}).get('skill_proposal_intent_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_requirement_count', 0)}/{(skill_usage_summary or {}).get('skill_invocation_proposal_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_decision_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_result_count', 0)}",
+                f"- Skill Proposal status: available/incomplete/unsupported/needs_review {(skill_usage_summary or {}).get('skill_proposal_available_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_incomplete_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_unsupported_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_needs_review_count', 0)}",
+                f"- Skill Proposal by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_proposal_by_skill_id') or {})}",
+                f"- Skill Proposal by operation: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_proposal_by_requested_operation') or {})}",
+                f"- Skill Execution Gate objects: {(skill_usage_summary or {}).get('skill_execution_gate_request_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_decision_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_finding_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_result_count', 0)}",
+                f"- Skill Execution Gate status: allowed/denied/needs_review/unsupported {(skill_usage_summary or {}).get('skill_execution_gate_allowed_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_denied_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_needs_review_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_unsupported_count', 0)}",
+                f"- Skill Execution Gate result: executed/blocked {(skill_usage_summary or {}).get('skill_execution_gate_executed_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_blocked_count', 0)}",
+                f"- Skill Execution Gate by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_execution_gate_by_skill_id') or {})}",
+                f"- Skill Execution Gate findings: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_execution_gate_finding_by_type') or {})}",
+                f"- Execution Envelope objects: {(skill_usage_summary or {}).get('execution_envelope_count', 0)}/{(skill_usage_summary or {}).get('execution_provenance_record_count', 0)}/{(skill_usage_summary or {}).get('execution_input_snapshot_count', 0)}/{(skill_usage_summary or {}).get('execution_output_snapshot_count', 0)}/{(skill_usage_summary or {}).get('execution_outcome_summary_count', 0)}",
+                f"- Execution Envelope status: completed/blocked/failed/skipped {(skill_usage_summary or {}).get('execution_completed_count', 0)}/{(skill_usage_summary or {}).get('execution_blocked_count', 0)}/{(skill_usage_summary or {}).get('execution_failed_count', 0)}/{(skill_usage_summary or {}).get('execution_skipped_count', 0)}",
+                f"- Execution Envelope by kind: {PIGReportService._inline_counts((skill_usage_summary or {}).get('execution_by_kind') or {})}",
+                f"- Execution Envelope by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('execution_by_skill_id') or {})}",
+                f"- Execution Envelope gate refs: with/without {(skill_usage_summary or {}).get('execution_with_gate_count', 0)}/{(skill_usage_summary or {}).get('execution_without_gate_count', 0)}",
+                f"- Execution Envelope full snapshots: input/output {(skill_usage_summary or {}).get('execution_full_input_stored_count', 0)}/{(skill_usage_summary or {}).get('execution_full_output_stored_count', 0)}",
                 "",
                 "Tool Usage:",
                 tool_lines,
@@ -662,6 +876,13 @@ class PIGReportService:
                 f"- Personal Smoke Test status: passed/failed/review {(persona_summary or {}).get('personal_smoke_test_passed_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_failed_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_needs_review_count', 0)}",
                 f"- Personal Smoke Test assertions: failed/warning {(persona_summary or {}).get('personal_smoke_test_failed_assertion_count', 0)}/{(persona_summary or {}).get('personal_smoke_test_warning_assertion_count', 0)}",
                 f"- Personal Smoke Test scenario types: {PIGReportService._inline_counts((persona_summary or {}).get('personal_smoke_test_by_scenario_type') or {})}",
+                f"- Personal Runtime Surface objects: {(persona_summary or {}).get('personal_runtime_config_view_count', 0)}/{(persona_summary or {}).get('personal_runtime_status_snapshot_count', 0)}/{(persona_summary or {}).get('personal_runtime_health_check_count', 0)}/{(persona_summary or {}).get('personal_cli_command_result_count', 0)}",
+                f"- Personal Runtime Surface config: configured/missing {(persona_summary or {}).get('personal_directory_configured_count', 0)}/{(persona_summary or {}).get('personal_directory_missing_count', 0)}",
+                f"- Personal Runtime Surface commands: validate/smoke {(persona_summary or {}).get('personal_cli_validate_run_count', 0)}/{(persona_summary or {}).get('personal_cli_smoke_run_count', 0)}",
+                f"- Personal Runtime Surface health: failed/warning {(persona_summary or {}).get('personal_runtime_health_failed_count', 0)}/{(persona_summary or {}).get('personal_runtime_health_warning_count', 0)}",
+                f"- Personal Prompt Activation objects: {(persona_summary or {}).get('personal_prompt_activation_config_count', 0)}/{(persona_summary or {}).get('personal_prompt_activation_request_count', 0)}/{(persona_summary or {}).get('personal_prompt_activation_block_count', 0)}/{(persona_summary or {}).get('personal_prompt_activation_result_count', 0)}",
+                f"- Personal Prompt Activation lifecycle: attached/skipped/denied {(persona_summary or {}).get('personal_prompt_activation_attached_count', 0)}/{(persona_summary or {}).get('personal_prompt_activation_skipped_count', 0)}/{(persona_summary or {}).get('personal_prompt_activation_denied_count', 0)}",
+                f"- Personal Prompt Activation scope/unsafe: prompt-context/unsafe-finding {(persona_summary or {}).get('personal_prompt_activation_prompt_context_only_count', 0)}/{(persona_summary or {}).get('personal_prompt_activation_unsafe_finding_count', 0)}",
                 "",
                 "Tool Registry / Policy View:",
                 f"- Tool descriptors: {(tool_registry_summary or {}).get('tool_descriptor_count', 0)}",
@@ -1127,6 +1348,12 @@ class PIGReportService:
         personal_smoke_test_by_scenario_type: dict[str, int] = {}
         personal_smoke_test_score_total = 0.0
         personal_smoke_test_score_count = 0
+        personal_directory_configured_count = 0
+        personal_directory_missing_count = 0
+        personal_runtime_health_failed_count = 0
+        personal_runtime_health_warning_count = 0
+        personal_prompt_activation_prompt_context_only_count = 0
+        personal_prompt_activation_unsafe_finding_count = 0
         for item in view.objects:
             if item.object_type == "persona_profile":
                 capability_boundary_count += len(
@@ -1245,6 +1472,28 @@ class PIGReportService:
                 if isinstance(score, (int, float)):
                     personal_smoke_test_score_total += float(score)
                     personal_smoke_test_score_count += 1
+            if item.object_type == "personal_runtime_config_view":
+                if bool(item.object_attrs.get("personal_directory_configured")):
+                    personal_directory_configured_count += 1
+                else:
+                    personal_directory_missing_count += 1
+            if item.object_type == "personal_runtime_health_check":
+                status = str(item.object_attrs.get("status") or "")
+                if status in {"failed", "error"}:
+                    personal_runtime_health_failed_count += 1
+                if status == "warning":
+                    personal_runtime_health_warning_count += 1
+            if item.object_type == "personal_prompt_activation_result":
+                if item.object_attrs.get("activation_scope") == "prompt_context_only":
+                    personal_prompt_activation_prompt_context_only_count += 1
+            if item.object_type == "personal_prompt_activation_finding":
+                finding_type = str(item.object_attrs.get("finding_type") or "")
+                status = str(item.object_attrs.get("status") or "")
+                if status in {"failed", "error"} or finding_type in {
+                    "unsafe_overlay_projection",
+                    "private_source_body_detected",
+                }:
+                    personal_prompt_activation_unsafe_finding_count += 1
         return {
             "soul_identity_count": object_type_counts.get("soul_identity", 0),
             "persona_profile_count": object_type_counts.get("persona_profile", 0),
@@ -1445,6 +1694,67 @@ class PIGReportService:
                 personal_smoke_test_score_total / personal_smoke_test_score_count
                 if personal_smoke_test_score_count
                 else None
+            ),
+            "personal_runtime_config_view_count": object_type_counts.get(
+                "personal_runtime_config_view", 0
+            ),
+            "personal_runtime_status_snapshot_count": object_type_counts.get(
+                "personal_runtime_status_snapshot", 0
+            ),
+            "personal_runtime_health_check_count": object_type_counts.get(
+                "personal_runtime_health_check", 0
+            ),
+            "personal_runtime_diagnostic_count": object_type_counts.get(
+                "personal_runtime_diagnostic", 0
+            ),
+            "personal_cli_command_result_count": object_type_counts.get(
+                "personal_cli_command_result", 0
+            ),
+            "personal_directory_configured_count": personal_directory_configured_count,
+            "personal_directory_missing_count": personal_directory_missing_count,
+            "personal_cli_validate_run_count": sum(
+                1
+                for item in view.objects
+                if item.object_type == "personal_cli_command_result"
+                and item.object_attrs.get("command_name") == "personal validate"
+            ),
+            "personal_cli_smoke_run_count": sum(
+                1
+                for item in view.objects
+                if item.object_type == "personal_cli_command_result"
+                and item.object_attrs.get("command_name") == "personal smoke"
+            ),
+            "personal_runtime_health_failed_count": personal_runtime_health_failed_count,
+            "personal_runtime_health_warning_count": personal_runtime_health_warning_count,
+            "personal_prompt_activation_config_count": object_type_counts.get(
+                "personal_prompt_activation_config", 0
+            ),
+            "personal_prompt_activation_request_count": object_type_counts.get(
+                "personal_prompt_activation_request", 0
+            ),
+            "personal_prompt_activation_block_count": object_type_counts.get(
+                "personal_prompt_activation_block", 0
+            ),
+            "personal_prompt_activation_result_count": object_type_counts.get(
+                "personal_prompt_activation_result", 0
+            ),
+            "personal_prompt_activation_finding_count": object_type_counts.get(
+                "personal_prompt_activation_finding", 0
+            ),
+            "personal_prompt_activation_attached_count": event_activity_counts.get(
+                "personal_prompt_activation_attached", 0
+            ),
+            "personal_prompt_activation_skipped_count": event_activity_counts.get(
+                "personal_prompt_activation_skipped", 0
+            ),
+            "personal_prompt_activation_denied_count": event_activity_counts.get(
+                "personal_prompt_activation_denied", 0
+            ),
+            "personal_prompt_activation_prompt_context_only_count": (
+                personal_prompt_activation_prompt_context_only_count
+            ),
+            "personal_prompt_activation_unsafe_finding_count": (
+                personal_prompt_activation_unsafe_finding_count
             ),
             "persona_projection_attached_to_prompt_count": event_activity_counts.get(
                 "persona_projection_attached_to_prompt", 0

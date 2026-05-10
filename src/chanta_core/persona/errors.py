@@ -52,3 +52,11 @@ class PersonalConformanceError(PersonaError):
 class PersonalSmokeTestError(PersonaError):
     """Raised when a Personal Smoke Test operation cannot proceed."""
 
+
+class PersonalRuntimeSurfaceError(PersonaError):
+    """Raised when a Personal Runtime CLI surface operation cannot proceed."""
+
+
+class PersonalPromptActivationError(PersonaError):
+    """Raised when a Personal Mode Prompt Activation operation cannot proceed."""
+
