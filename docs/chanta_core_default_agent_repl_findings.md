@@ -1,4 +1,4 @@
-﻿# ChantaCore Default Agent REPL Findings for external planning assistant
+# ChantaCore Default Agent REPL Findings for external planning assistant
 
 Date: 2026-05-08
 
@@ -92,12 +92,12 @@ In the current default chat path, the agent does not have direct access to:
 Therefore, a prompt such as:
 
 ```text
-/Souls/sample_personal_directory 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄
+<PERSONAL_DIRECTORY>/source/sample_profile.md 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄
 ```
 
 cannot be performed by the Default Agent through the current REPL path. The correct behavior is not to claim that it read the files. It should state the limitation plainly.
 
-This limitation does not mean ChantaCore cannot eventually support that behavior. It means the current `skill:llm_chat` path does not provide it.
+This limitation does not mean ChantaCore cannot support bounded workspace reads. Later versions add explicit, root-constrained read-only workspace skills; the default natural-language chat path still must not imply ambient filesystem access.
 
 ### REPL is not yet full conversational memory injection
 
@@ -184,7 +184,7 @@ The current Default Agent can:
 The current Default Agent cannot yet:
 
 - read arbitrary repository files on request;
-- inspect `/Souls/...` directories directly;
+- inspect Personal Directory roots through ambient filesystem access;
 - call shell commands;
 - execute tools;
 - load plugins;
@@ -339,7 +339,7 @@ is useful, but the agent should clarify whether it inspected:
 
 Without that, users may infer that the agent has fully reconstructed ?쐔he conversation,??when it may only have run a coarse recent inspection.
 
-### 9. Default Agent should be honest about relation to Souls
+### 9. Default Agent should be honest about relation to Personal Directories
 
 At this stage, the Default Agent is not yet equivalent to a ChantaCore Soul with active agency.
 
@@ -420,7 +420,7 @@ Observed behavior after fix:
 Live CLI check:
 
 ```powershell
-.\.venv\Scripts\chanta-cli.exe ask "/Souls/sample_personal_directory 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄"
+.\.venv\Scripts\chanta-cli.exe ask "<PERSONAL_DIRECTORY>/source/sample_profile.md 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄"
 ```
 
 Observed behavior after fix:

@@ -2,7 +2,7 @@
 
 Audit date: 2026-05-06
 
-Repository: `D:\ChantaResearchGroup\ChantaCore`
+Repository: `<CHANTA_CORE_REPO>`
 
 Audited range:
 

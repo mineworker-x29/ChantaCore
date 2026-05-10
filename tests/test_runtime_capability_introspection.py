@@ -57,17 +57,32 @@ def test_unsafe_or_unimplemented_actions_are_not_available_now() -> None:
         "MCP connection",
         "plugin loading",
         "arbitrary repository file read",
-        "/Souls directory inspection",
+        "ambient Personal Directory inspection",
         "active runtime registry updates",
         "autonomous Soul behavior",
     }
 
     assert unavailable_items.isdisjoint(set(snapshot.available_now))
-    assert "workspace file read" in snapshot.requires_permission
+    assert "workspace file read explicit invocation gate" in snapshot.requires_permission
     assert "shell execution" in snapshot.requires_permission
     assert "network access" in snapshot.requires_permission
     assert "MCP connection" in snapshot.not_implemented
     assert "plugin loading" in snapshot.not_implemented
+
+
+def test_workspace_read_snapshot_matches_explicit_read_skills() -> None:
+    snapshot = RuntimeCapabilityIntrospectionService().build_default_agent_snapshot()
+    workspace_read = snapshot.snapshot_attrs["workspace_file_read"]
+
+    assert workspace_read["ambient_access"] is False
+    assert workspace_read["available_via_explicit_skill"] is True
+    assert workspace_read["available_in_default_chat_path"] is False
+    assert workspace_read["explicit_skills"] == [
+        "skill:list_workspace_files",
+        "skill:read_workspace_text_file",
+        "skill:summarize_workspace_markdown",
+    ]
+    assert "future workspace read skills" not in snapshot.requires_review
 
 
 def test_capability_snapshot_labels_inspection_scope() -> None:

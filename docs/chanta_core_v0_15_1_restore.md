@@ -26,7 +26,7 @@ Examples:
 
 - ordinary chat and capability self-report -> `llm_chat`
 - previous conversation references -> `session_context`
-- Markdown, `/Souls/`, file read requests -> workspace/file read boundary
+- Markdown, `<PERSONAL_DIRECTORY>/`, file read requests -> workspace/file read boundary
 - PowerShell/bash/command execution -> shell boundary
 - URL/API access -> network boundary
 - MCP mentions -> MCP connection boundary

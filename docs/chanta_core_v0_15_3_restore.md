@@ -10,7 +10,7 @@ This version introduces persona identity records and bounded prompt projection f
 
 Canonical persistence remains OCEL-based. Persona identity, profile, instruction artifact, binding, loadout, and projection records are represented as OCEL objects/events.
 
-Markdown Soul files are not canonical persona source in this version. No canonical JSONL persona store is introduced.
+Markdown Personal Directory files are not canonical persona source in this version. No canonical JSONL persona store is introduced.
 
 ## Added Records
 

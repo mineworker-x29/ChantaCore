@@ -1,8 +1,8 @@
-﻿# ChantaCore v0.2 Restore Notes
+# ChantaCore v0.2 Restore Notes
 
 작성일: 2026-05-01  
 작성자: ChantaCore Maintainers  
-대상 경로: `D:\ChantaResearchGroup\ChantaCore`  
+대상 경로: `<CHANTA_CORE_REPO>`  
 복원 기준 이름: `ChantaCore v0.2`
 
 ## 1. 목적
@@ -412,7 +412,7 @@ ollama
 확인 시점의 `show-config` 결과:
 
 ```text
-env_file=D:\ChantaResearchGroup\ChantaCore\.env
+env_file=<CHANTA_CORE_REPO>\.env
 provider=lm_studio
 base_url=http://localhost:1234/v1
 model=qwen3.6-35b-a3b:2
@@ -689,7 +689,7 @@ tests/test_imports.py
 환경 복원:
 
 ```powershell
-cd D:\ChantaResearchGroup\ChantaCore
+cd <CHANTA_CORE_REPO>
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e .

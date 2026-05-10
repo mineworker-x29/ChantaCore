@@ -87,6 +87,8 @@ class AgentCapabilityProfile:
                 "- requires_permission: " + _join_items(self.snapshot.requires_permission),
                 "- not_implemented: " + _join_items(self.snapshot.not_implemented),
                 "- inspection_scopes: " + _join_items(self.snapshot.inspection_scopes),
+                "- workspace_file_read: "
+                + _workspace_read_capability_summary(self.snapshot.snapshot_attrs),
                 (
                     "When asked what you can do, answer from this capability "
                     "contract. Do not claim capabilities listed as metadata_only, "
@@ -134,10 +136,9 @@ class RuntimeCapabilityIntrospectionService:
                 "imported external capabilities",
                 "MCP/plugin descriptors",
                 "external OCEL import candidates",
-                "future workspace read skills",
             ],
             requires_permission=[
-                "workspace file read",
+                "workspace file read explicit invocation gate",
                 "workspace file write",
                 "shell execution",
                 "network access",
@@ -145,7 +146,7 @@ class RuntimeCapabilityIntrospectionService:
             ],
             not_implemented=[
                 "arbitrary repository file read",
-                "/Souls directory inspection",
+                "ambient Personal Directory inspection",
                 "shell execution",
                 "network calls",
                 "MCP connection",
@@ -167,6 +168,16 @@ class RuntimeCapabilityIntrospectionService:
                 "canonical_runtime_state": "OCEL",
                 "read_model_only": True,
                 "adds_active_capabilities": False,
+                "workspace_file_read": {
+                    "ambient_access": False,
+                    "available_via_explicit_skill": True,
+                    "available_in_default_chat_path": False,
+                    "explicit_skills": [
+                        "skill:list_workspace_files",
+                        "skill:read_workspace_text_file",
+                        "skill:summarize_workspace_markdown",
+                    ],
+                },
             },
         )
 
@@ -191,7 +202,8 @@ class RuntimeCapabilityIntrospectionService:
             limitation_statement=(
                 "It does not directly read files, execute shell commands, call "
                 "network resources, connect MCP, load plugins, or mutate runtime "
-                "registries in the default chat path."
+                "registries in the default chat path. Workspace file read is "
+                "available only through explicit root-constrained read-only skills."
             ),
             soul_boundary_statement=(
                 "It is not yet an active Soul or workspace agent; active "
@@ -213,3 +225,18 @@ def build_default_agent_capability_prompt_block() -> str:
 
 def _join_items(items: list[str]) -> str:
     return ", ".join(items) if items else "none"
+
+
+def _workspace_read_capability_summary(attrs: dict[str, Any]) -> str:
+    info = attrs.get("workspace_file_read")
+    if not isinstance(info, dict):
+        return "ambient_access=false, available_via_explicit_skill=false"
+    explicit_skills = info.get("explicit_skills")
+    if not isinstance(explicit_skills, list):
+        explicit_skills = []
+    return (
+        f"ambient_access={str(bool(info.get('ambient_access'))).lower()}, "
+        f"available_via_explicit_skill={str(bool(info.get('available_via_explicit_skill'))).lower()}, "
+        f"available_in_default_chat_path={str(bool(info.get('available_in_default_chat_path'))).lower()}, "
+        "explicit_skills=" + _join_items([str(item) for item in explicit_skills])
+    )

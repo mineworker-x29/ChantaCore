@@ -12,6 +12,9 @@ def test_capability_profile_contains_identity_limitations_and_soul_boundary() ->
     assert "trace-aware local LLM chat endpoint" in capability_profile.identity_statement
     assert "skill:llm_chat" in capability_profile.current_capability_statement
     assert "does not directly read files" in capability_profile.limitation_statement
+    assert "explicit root-constrained read-only skills" in (
+        capability_profile.limitation_statement
+    )
     assert "not yet an active Soul or workspace agent" in (
         capability_profile.soul_boundary_statement
     )
@@ -30,6 +33,7 @@ def test_default_agent_prompt_includes_runtime_derived_capability_contract() -> 
     assert "requires_review:" in profile.system_prompt
     assert "requires_permission:" in profile.system_prompt
     assert "not_implemented:" in profile.system_prompt
+    assert "workspace_file_read:" in profile.system_prompt
     assert "When asked what you can do" in profile.system_prompt
 
 
@@ -40,6 +44,8 @@ def test_default_agent_prompt_does_not_claim_unavailable_capabilities() -> None:
     assert "MCP connection" in profile.system_prompt
     assert "plugin loading" in profile.system_prompt
     assert "workspace file read" in profile.system_prompt
+    assert "available_via_explicit_skill=true" in profile.system_prompt
+    assert "skill:read_workspace_text_file" in profile.system_prompt
     assert "active runtime registry updates" in profile.system_prompt
     assert "not yet an active Soul" in profile.system_prompt
     assert "I can read files" not in profile.system_prompt

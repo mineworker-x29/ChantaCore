@@ -1,8 +1,8 @@
-﻿# ChantaCore v0.3 Restore Notes
+# ChantaCore v0.3 Restore Notes
 
 작성일: 2026-05-02  
 작성자: ChantaCore Maintainers  
-대상 경로: `D:\ChantaResearchGroup\ChantaCore`  
+대상 경로: `<CHANTA_CORE_REPO>`  
 복원 기준 이름: `ChantaCore v0.3`
 
 ## 1. 목적
@@ -764,7 +764,7 @@ OCPX는 아직 heavy process mining algorithm을 구현하지 않는다. PIG도 
 새 환경에서 v0.3 상태를 복원하는 보수적 절차:
 
 ```powershell
-cd D:\ChantaResearchGroup\ChantaCore
+cd <CHANTA_CORE_REPO>
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e .

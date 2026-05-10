@@ -1,4 +1,4 @@
-﻿# ChantaCore v0.14.3a - Default Agent Capability Contract
+# ChantaCore v0.14.3a - Default Agent Capability Contract
 
 Date: 2026-05-08
 
@@ -21,7 +21,7 @@ What can you do?
 or:
 
 ```text
-/Souls/sample_personal_directory 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄
+<PERSONAL_DIRECTORY>/source/sample_profile.md 諛묒뿉 ?덈뒗 markdown ?뚯씪???쎌뼱遊먮킄
 ```
 
 ## Confirmed Current Runtime Path
@@ -42,7 +42,7 @@ The default path can record OCEL/session/process events and call the configured 
 It does not directly:
 
 - read arbitrary repository files;
-- inspect `/Souls` directories;
+- inspect Personal Directory roots through ambient filesystem access;
 - execute shell commands;
 - call network resources;
 - connect MCP;
@@ -104,13 +104,13 @@ These require later explicit review workflows:
 
 - imported external capabilities;
 - MCP/plugin descriptors;
-- future workspace read skills.
+- future capability expansions beyond the explicit read-only workspace skills.
 
 ### requires_permission
 
 These require explicit permission/safety layers before use:
 
-- workspace file read;
+- workspace file read explicit invocation gate;
 - workspace file write;
 - shell execution;
 - network access;
@@ -121,7 +121,7 @@ These require explicit permission/safety layers before use:
 These are not implemented in the Default Agent chat path:
 
 - arbitrary repository file read;
-- `/Souls` directory inspection;
+- ambient Personal Directory inspection;
 - shell execution;
 - network calls;
 - MCP connection;
@@ -166,7 +166,7 @@ active workspace Soul with autonomous tool use
 To become Soul-like, later versions need explicit reviewed capabilities such as:
 
 - bounded session history assembly;
-- workspace read skills;
+- workspace read skill routing beyond explicit invocation;
 - workspace write skills;
 - permission gates;
 - sandbox/conformance integration;
@@ -241,7 +241,7 @@ Future versions should add capabilities only as explicit, reviewed, OCEL-recorde
 Likely next design steps:
 
 - session history assembly through a bounded `SessionContextPolicy`;
-- workspace file read as an explicit reviewed skill;
+- workspace file read through explicit, root-constrained read-only skills;
 - capability inventory derived from active `SkillRegistry` and permission policy;
 - OCEL object/event support for capability snapshots if the read-model becomes persistent;
 - later Soul activation only after safety/conformance layers exist.

@@ -1,9 +1,9 @@
-﻿# ChantaCore v0.3.1 Restore Notes
+# ChantaCore v0.3.1 Restore Notes
 
 작성일: 2026-05-02
 작성자: ChantaCore Maintainers
 대상 버전: ChantaCore v0.3.1 - OCEL Relation Hygiene & Store Validation
-대상 저장소: `D:\ChantaResearchGroup\ChantaCore`
+대상 저장소: `<CHANTA_CORE_REPO>`
 
 ## 1. 문서 목적
 
@@ -541,7 +541,7 @@ failure path에서는 `agent_run_failed` event와 `error` object가 저장되어
 새 환경에서 v0.3.1 상태를 복원하는 기본 절차:
 
 ```powershell
-cd D:\ChantaResearchGroup\ChantaCore
+cd <CHANTA_CORE_REPO>
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e .

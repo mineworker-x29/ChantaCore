@@ -439,7 +439,7 @@ def _detect_operation_and_targets(prompt: str) -> tuple[str, list[dict[str, Any]
         return "runtime_registry_update", targets
     if _has_any(text, ["방금", "이전 대화", "아까", "previous conversation"]):
         return "session_context", targets
-    if _has_any(text, ["read", "읽어", "markdown", ".md", "/souls/", "directory", "폴더"]):
+    if _has_any(text, ["read", "읽어", "markdown", ".md", "personal directory", "directory", "폴더"]):
         return "workspace_file_read", targets
     if _has_any(text, ["뭘 할 수", "무엇을 할 수", "what can you do", "할 수 있어"]):
         return "chat", targets
@@ -637,7 +637,7 @@ def _recommended_response(availability: str, mode: str) -> str:
 def _extract_targets(prompt: str) -> list[dict[str, Any]]:
     targets: list[dict[str, Any]] = []
     for token in prompt.replace("\\", "/").split():
-        if token.endswith(".md") or token.startswith("/") or "/souls/" in token.casefold():
+        if token.endswith(".md") or token.startswith("/"):
             targets.append({"type": "path_hint", "ref": token.strip(".,;:")})
         elif token.startswith("http://") or token.startswith("https://"):
             targets.append({"type": "url", "ref": token.strip(".,;:")})
