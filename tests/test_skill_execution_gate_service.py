@@ -19,11 +19,13 @@ def test_default_policy_contains_read_only_workspace_skills() -> None:
     assert "shell" in policy.denied_skill_categories
 
 
-def test_read_only_workspace_skill_allowed_by_default_with_permission_warning() -> None:
+def test_read_only_workspace_skill_allowed_by_default_with_permission_warning(tmp_path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "example.txt").write_bytes(b"public-safe text")
     service = SkillExecutionGateService()
     request = service.create_gate_request(
         skill_id="skill:read_workspace_text_file",
-        input_payload={"root_path": "<ROOT>", "relative_path": "docs/example.txt"},
+        input_payload={"root_path": str(tmp_path), "relative_path": "docs/example.txt"},
         invocation_mode="test",
     )
 
@@ -35,7 +37,9 @@ def test_read_only_workspace_skill_allowed_by_default_with_permission_warning() 
     assert any(finding.status == "warning" for finding in service.last_findings)
 
 
-def test_requires_permission_policy_needs_review_without_permission() -> None:
+def test_requires_permission_policy_needs_review_without_permission(tmp_path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "example.txt").write_bytes(b"public-safe text")
     service = SkillExecutionGateService()
     policy = service.create_default_policy(
         requires_permission_for_read_only=True,
@@ -43,7 +47,7 @@ def test_requires_permission_policy_needs_review_without_permission() -> None:
     )
     request = service.create_gate_request(
         skill_id="skill:read_workspace_text_file",
-        input_payload={"root_path": "<ROOT>", "relative_path": "docs/example.txt"},
+        input_payload={"root_path": str(tmp_path), "relative_path": "docs/example.txt"},
         invocation_mode="test",
     )
 
@@ -54,19 +58,21 @@ def test_requires_permission_policy_needs_review_without_permission() -> None:
     assert decision.requires_permission is True
 
 
-def test_permission_and_session_permission_denial_block_execution() -> None:
+def test_permission_and_session_permission_denial_block_execution(tmp_path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "example.txt").write_bytes(b"public-safe text")
     probe = InvocationProbe()
     service = SkillExecutionGateService(explicit_skill_invocation_service=probe)
 
     permission_result = service.gate_explicit_invocation(
         skill_id="skill:read_workspace_text_file",
-        input_payload={"root_path": "<ROOT>", "relative_path": "docs/example.txt"},
+        input_payload={"root_path": str(tmp_path), "relative_path": "docs/example.txt"},
         permission_decision_id="permission_decision:deny",
         request_attrs={"permission_decision": "deny"},
     )
     session_result = service.gate_explicit_invocation(
         skill_id="skill:read_workspace_text_file",
-        input_payload={"root_path": "<ROOT>", "relative_path": "docs/example.txt"},
+        input_payload={"root_path": str(tmp_path), "relative_path": "docs/example.txt"},
         session_permission_resolution_id="session_permission_resolution:deny",
         request_attrs={"session_permission_decision": "deny"},
     )
@@ -90,13 +96,15 @@ def test_denied_gate_does_not_call_explicit_invocation() -> None:
     assert probe.calls == 0
 
 
-def test_allowed_gate_calls_explicit_invocation() -> None:
+def test_allowed_gate_calls_explicit_invocation(tmp_path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "example.txt").write_bytes(b"public-safe text")
     probe = InvocationProbe()
     service = SkillExecutionGateService(explicit_skill_invocation_service=probe)
 
     result = service.gate_explicit_invocation(
         skill_id="skill:read_workspace_text_file",
-        input_payload={"root_path": "<ROOT>", "relative_path": "docs/example.txt"},
+        input_payload={"root_path": str(tmp_path), "relative_path": "docs/example.txt"},
     )
 
     assert result.executed is True

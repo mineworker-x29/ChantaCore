@@ -49,6 +49,12 @@ from chanta_core.editing import (
     create_unified_diff,
 )
 from chanta_core.execution import (
+    ExecutionAuditFilter,
+    ExecutionAuditFinding,
+    ExecutionAuditQuery,
+    ExecutionAuditRecordView,
+    ExecutionAuditResult,
+    ExecutionAuditService,
     ExecutionArtifactRef,
     ExecutionEnvelope,
     ExecutionEnvelopeService,
@@ -56,9 +62,23 @@ from chanta_core.execution import (
     ExecutionOutcomeSummary,
     ExecutionOutputSnapshot,
     ExecutionProvenanceRecord,
+    ExecutionResultPromotionCandidate,
+    ExecutionResultPromotionDecision,
+    ExecutionResultPromotionFinding,
+    ExecutionResultPromotionPolicy,
+    ExecutionResultPromotionResult,
+    ExecutionResultPromotionReviewRequest,
+    ExecutionResultPromotionService,
+    execution_audit_findings_to_history_entries,
+    execution_audit_queries_to_history_entries,
+    execution_audit_results_to_history_entries,
     execution_envelopes_to_history_entries,
     execution_outcome_summaries_to_history_entries,
     execution_provenance_records_to_history_entries,
+    execution_result_promotion_candidates_to_history_entries,
+    execution_result_promotion_decisions_to_history_entries,
+    execution_result_promotion_findings_to_history_entries,
+    execution_result_promotion_results_to_history_entries,
     hash_payload,
     preview_payload,
     redact_sensitive_fields,
@@ -208,6 +228,73 @@ from chanta_core.ocel.models import OCELObject, OCELRecord, OCELEvent, OCELRelat
 from chanta_core.ocel.query import OCELQueryService
 from chanta_core.ocel.store import OCELStore
 from chanta_core.ocel.validators import OCELValidator
+from chanta_core.observation_digest import (
+    AgentBehaviorInference,
+    AgentObservationBatch,
+    AgentObservationNormalizedEvent,
+    AgentObservationSource,
+    AgentProcessNarrative,
+    DigestionService,
+    ExternalSkillAdapterCandidate,
+    ExternalSkillAssimilationCandidate,
+    ExternalSkillBehaviorFingerprint,
+    ExternalSkillSourceDescriptor,
+    ExternalSkillStaticProfile,
+    ObservationDigestionFinding,
+    ObservationDigestionResult,
+    ObservationService,
+    ObservedAgentRun,
+    behavior_inferences_to_history_entries,
+    external_skill_adapter_candidates_to_history_entries,
+    external_skill_assimilation_candidates_to_history_entries,
+    external_skill_profiles_to_history_entries,
+    observed_runs_to_history_entries,
+    observation_digestion_findings_to_history_entries,
+    observation_digestion_results_to_history_entries,
+    observation_sources_to_history_entries,
+    process_narratives_to_history_entries,
+)
+from chanta_core.digestion import (
+    ExternalSkillDeclaredCapability,
+    ExternalSkillInstructionProfile,
+    ExternalSkillManifestProfile,
+    ExternalSkillResourceInventory,
+    ExternalSkillStaticDigestionFinding,
+    ExternalSkillStaticDigestionReport,
+    ExternalSkillStaticDigestionService,
+    ExternalSkillStaticRiskProfile,
+)
+from chanta_core.observation import (
+    AgentBehaviorInferenceV2,
+    AgentFleetObservationSnapshot,
+    AgentInstance,
+    AgentMovementOntologyTerm,
+    AgentObservationAdapterProfile,
+    AgentObservationCollectorContract,
+    AgentObservationCorrection,
+    AgentObservationNormalizedEventV2,
+    AgentObservationReview,
+    AgentObservationSpineFinding,
+    AgentObservationSpinePolicy,
+    AgentObservationSpineResult,
+    AgentObservationSpineService,
+    AgentRuntimeDescriptor,
+    ObservedAgentObject,
+    ObservedAgentRelation,
+    ObservationExportPolicy,
+    ObservationRedactionPolicy,
+    RuntimeEnvironmentSnapshot,
+    CrossHarnessTraceAdapterPolicy,
+    CrossHarnessTraceAdapterService,
+    HarnessTraceAdapterContract,
+    HarnessTraceAdapterCoverageReport,
+    HarnessTraceAdapterFinding,
+    HarnessTraceAdapterResult,
+    HarnessTraceMappingRule,
+    HarnessTraceNormalizationPlan,
+    HarnessTraceNormalizationResult,
+    HarnessTraceSourceInspection,
+)
 from chanta_core.ocpx.engine import OCPXEngine
 from chanta_core.ocpx.loader import OCPXLoader
 from chanta_core.ocpx.models import OCPXProcessView
@@ -367,6 +454,13 @@ from chanta_core.runtime.capability_contract import (
     RuntimeCapabilitySnapshot,
     build_default_agent_capability_prompt_block,
 )
+from chanta_core.runtime.history_adapter import (
+    personal_runtime_workbench_findings_to_history_entries,
+    personal_runtime_workbench_pending_items_to_history_entries,
+    personal_runtime_workbench_recent_activities_to_history_entries,
+    personal_runtime_workbench_results_to_history_entries,
+    personal_runtime_workbench_snapshots_to_history_entries,
+)
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.runtime.decision import (
     DecisionContext,
@@ -444,6 +538,15 @@ from chanta_core.runtime.loop import (
     ProcessRunResult,
     ProcessRunState,
 )
+from chanta_core.runtime.workbench import (
+    PersonalRuntimeWorkbenchFinding,
+    PersonalRuntimeWorkbenchPanel,
+    PersonalRuntimeWorkbenchPendingItem,
+    PersonalRuntimeWorkbenchRecentActivity,
+    PersonalRuntimeWorkbenchResult,
+    PersonalRuntimeWorkbenchService,
+    PersonalRuntimeWorkbenchSnapshot,
+)
 from chanta_core.skills.builtin import (
     create_apply_approved_patch_skill,
     builtin_llm_chat_skill,
@@ -472,10 +575,67 @@ from chanta_core.skills.history_adapter import (
     skill_execution_gate_decisions_to_history_entries,
     skill_execution_gate_findings_to_history_entries,
     skill_execution_gate_results_to_history_entries,
+    internal_skill_descriptors_to_history_entries,
+    internal_skill_observability_contracts_to_history_entries,
+    internal_skill_onboarding_findings_to_history_entries,
+    internal_skill_onboarding_results_to_history_entries,
     skill_invocation_proposals_to_history_entries,
     skill_proposal_intents_to_history_entries,
     skill_proposal_results_to_history_entries,
     skill_proposal_review_notes_to_history_entries,
+    skill_proposal_review_decisions_to_history_entries,
+    skill_proposal_review_findings_to_history_entries,
+    skill_proposal_review_requests_to_history_entries,
+    skill_proposal_review_results_to_history_entries,
+    reviewed_execution_bridge_decisions_to_history_entries,
+    reviewed_execution_bridge_requests_to_history_entries,
+    reviewed_execution_bridge_results_to_history_entries,
+    reviewed_execution_bridge_violations_to_history_entries,
+    skill_registry_entries_to_history_entries,
+    skill_registry_findings_to_history_entries,
+    skill_registry_results_to_history_entries,
+    skill_registry_views_to_history_entries,
+    observation_digest_intents_to_history_entries,
+    observation_digest_invocation_findings_to_history_entries,
+    observation_digest_invocation_results_to_history_entries,
+    observation_digest_conformance_checks_to_history_entries,
+    observation_digest_conformance_findings_to_history_entries,
+    observation_digest_conformance_reports_to_history_entries,
+    observation_digest_proposal_findings_to_history_entries,
+    observation_digest_proposal_results_to_history_entries,
+    observation_digest_proposal_sets_to_history_entries,
+    observation_digest_runtime_bindings_to_history_entries,
+    observation_digest_smoke_results_to_history_entries,
+    external_skill_declared_capabilities_to_history_entries,
+    external_skill_instruction_profiles_to_history_entries,
+    external_skill_manifest_profiles_to_history_entries,
+    external_skill_resource_inventories_to_history_entries,
+    external_skill_static_digestion_findings_to_history_entries,
+    external_skill_static_digestion_reports_to_history_entries,
+    external_skill_static_risk_profiles_to_history_entries,
+    agent_instances_to_history_entries,
+    agent_runtime_descriptors_to_history_entries,
+    behavior_inferences_v2_to_history_entries,
+    environment_snapshots_to_history_entries,
+    export_policies_to_history_entries,
+    fleet_snapshots_to_history_entries,
+    movement_ontology_terms_to_history_entries,
+    normalized_events_v2_to_history_entries,
+    observation_corrections_to_history_entries,
+    observation_reviews_to_history_entries,
+    observation_spine_findings_to_history_entries,
+    observation_spine_results_to_history_entries,
+    observed_objects_to_history_entries,
+    observed_relations_to_history_entries,
+    redaction_policies_to_history_entries,
+    cross_harness_adapter_policies_to_history_entries,
+    harness_trace_adapter_contracts_to_history_entries,
+    harness_trace_adapter_coverage_reports_to_history_entries,
+    harness_trace_adapter_findings_to_history_entries,
+    harness_trace_adapter_results_to_history_entries,
+    harness_trace_mapping_rules_to_history_entries,
+    harness_trace_normalization_results_to_history_entries,
+    harness_trace_source_inspections_to_history_entries,
 )
 from chanta_core.skills.execution_gate import (
     ReadOnlyExecutionGatePolicy,
@@ -484,6 +644,18 @@ from chanta_core.skills.execution_gate import (
     SkillExecutionGateRequest,
     SkillExecutionGateResult,
     SkillExecutionGateService,
+)
+from chanta_core.skills.onboarding import (
+    InternalSkillDescriptor,
+    InternalSkillGateContract,
+    InternalSkillInputContract,
+    InternalSkillObservabilityContract,
+    InternalSkillOnboardingFinding,
+    InternalSkillOnboardingResult,
+    InternalSkillOnboardingReview,
+    InternalSkillOnboardingService,
+    InternalSkillOutputContract,
+    InternalSkillRiskProfile,
 )
 from chanta_core.skills.invocation import (
     ExplicitSkillInvocationDecision,
@@ -502,7 +674,55 @@ from chanta_core.skills.proposal import (
     SkillProposalReviewNote,
     SkillProposalRouterService,
 )
+from chanta_core.skills.proposal_review import (
+    SkillProposalReviewContract,
+    SkillProposalReviewDecision,
+    SkillProposalReviewFinding,
+    SkillProposalReviewRequest,
+    SkillProposalReviewResult,
+    SkillProposalReviewService,
+)
+from chanta_core.skills.reviewed_execution_bridge import (
+    ReviewedExecutionBridgeDecision,
+    ReviewedExecutionBridgeRequest,
+    ReviewedExecutionBridgeResult,
+    ReviewedExecutionBridgeService,
+    ReviewedExecutionBridgeViolation,
+)
 from chanta_core.skills.registry import SkillRegistry
+from chanta_core.skills.registry_view import (
+    SkillRegistryEntry,
+    SkillRegistryFilter,
+    SkillRegistryFinding,
+    SkillRegistryResult,
+    SkillRegistryView,
+    SkillRegistryViewService,
+)
+from chanta_core.skills.observation_digest_proposal import (
+    ObservationDigestIntentCandidate,
+    ObservationDigestProposalBinding,
+    ObservationDigestProposalFinding,
+    ObservationDigestProposalPolicy,
+    ObservationDigestProposalResult,
+    ObservationDigestProposalService,
+    ObservationDigestProposalSet,
+)
+from chanta_core.skills.observation_digest_invocation import (
+    ObservationDigestInvocationFinding,
+    ObservationDigestInvocationPolicy,
+    ObservationDigestInvocationResult,
+    ObservationDigestSkillInvocationService,
+    ObservationDigestSkillRuntimeBinding,
+)
+from chanta_core.skills.observation_digest_conformance import (
+    ObservationDigestConformanceCheck,
+    ObservationDigestConformanceFinding,
+    ObservationDigestConformancePolicy,
+    ObservationDigestConformanceReport,
+    ObservationDigestConformanceService,
+    ObservationDigestSmokeCase,
+    ObservationDigestSmokeResult,
+)
 from chanta_core.skills.result import SkillExecutionResult
 from chanta_core.skills.skill import Skill
 from chanta_core.tools import (
@@ -567,11 +787,23 @@ from chanta_core.workspace import (
     WorkspaceReadBoundary,
     WorkspaceReadRoot,
     WorkspaceReadService,
+    WorkspaceReadSummarizationService,
+    WorkspaceReadSummaryCandidate,
+    WorkspaceReadSummaryFinding,
+    WorkspaceReadSummaryPolicy,
+    WorkspaceReadSummaryRequest,
+    WorkspaceReadSummaryResult,
+    WorkspaceReadSummarySection,
     WorkspaceReadViolation,
     WorkspaceTextFileReadRequest,
     WorkspaceTextFileReadResult,
+    summarize_file_via_workspace_read,
     workspace_file_list_results_to_history_entries,
     workspace_markdown_summary_results_to_history_entries,
+    workspace_read_summary_candidates_to_history_entries,
+    workspace_read_summary_findings_to_history_entries,
+    workspace_read_summary_requests_to_history_entries,
+    workspace_read_summary_results_to_history_entries,
     workspace_read_violations_to_history_entries,
     workspace_text_file_read_results_to_history_entries,
 )
@@ -616,9 +848,29 @@ def test_required_imports() -> None:
     assert ExecutionArtifactRef is not None
     assert ExecutionOutcomeSummary is not None
     assert ExecutionEnvelopeService is not None
+    assert ExecutionAuditQuery is not None
+    assert ExecutionAuditFilter is not None
+    assert ExecutionAuditRecordView is not None
+    assert ExecutionAuditResult is not None
+    assert ExecutionAuditFinding is not None
+    assert ExecutionAuditService is not None
+    assert ExecutionResultPromotionPolicy is not None
+    assert ExecutionResultPromotionCandidate is not None
+    assert ExecutionResultPromotionReviewRequest is not None
+    assert ExecutionResultPromotionDecision is not None
+    assert ExecutionResultPromotionFinding is not None
+    assert ExecutionResultPromotionResult is not None
+    assert ExecutionResultPromotionService is not None
     assert execution_envelopes_to_history_entries is not None
     assert execution_outcome_summaries_to_history_entries is not None
     assert execution_provenance_records_to_history_entries is not None
+    assert execution_audit_queries_to_history_entries is not None
+    assert execution_audit_results_to_history_entries is not None
+    assert execution_audit_findings_to_history_entries is not None
+    assert execution_result_promotion_candidates_to_history_entries is not None
+    assert execution_result_promotion_results_to_history_entries is not None
+    assert execution_result_promotion_findings_to_history_entries is not None
+    assert execution_result_promotion_decisions_to_history_entries is not None
     assert hash_payload is not None
     assert preview_payload is not None
     assert redact_sensitive_fields is not None
@@ -677,6 +929,18 @@ def test_required_imports() -> None:
     assert AutoCompactLayer is not None
     assert AgentRuntime is not None
     assert AgentCapabilityProfile is not None
+    assert PersonalRuntimeWorkbenchSnapshot is not None
+    assert PersonalRuntimeWorkbenchPanel is not None
+    assert PersonalRuntimeWorkbenchPendingItem is not None
+    assert PersonalRuntimeWorkbenchRecentActivity is not None
+    assert PersonalRuntimeWorkbenchFinding is not None
+    assert PersonalRuntimeWorkbenchResult is not None
+    assert PersonalRuntimeWorkbenchService is not None
+    assert personal_runtime_workbench_snapshots_to_history_entries is not None
+    assert personal_runtime_workbench_results_to_history_entries is not None
+    assert personal_runtime_workbench_pending_items_to_history_entries is not None
+    assert personal_runtime_workbench_recent_activities_to_history_entries is not None
+    assert personal_runtime_workbench_findings_to_history_entries is not None
     assert RuntimeCapabilityIntrospectionService is not None
     assert RuntimeCapabilitySnapshot is not None
     assert build_default_agent_capability_prompt_block is not None
@@ -722,12 +986,58 @@ def test_required_imports() -> None:
     assert SkillProposalReviewNote is not None
     assert SkillProposalResult is not None
     assert SkillProposalRouterService is not None
+    assert SkillProposalReviewContract is not None
+    assert SkillProposalReviewRequest is not None
+    assert SkillProposalReviewDecision is not None
+    assert SkillProposalReviewFinding is not None
+    assert SkillProposalReviewResult is not None
+    assert SkillProposalReviewService is not None
+    assert ReviewedExecutionBridgeRequest is not None
+    assert ReviewedExecutionBridgeDecision is not None
+    assert ReviewedExecutionBridgeResult is not None
+    assert ReviewedExecutionBridgeViolation is not None
+    assert ReviewedExecutionBridgeService is not None
     assert ReadOnlyExecutionGatePolicy is not None
     assert SkillExecutionGateRequest is not None
     assert SkillExecutionGateDecision is not None
     assert SkillExecutionGateFinding is not None
     assert SkillExecutionGateResult is not None
     assert SkillExecutionGateService is not None
+    assert InternalSkillDescriptor is not None
+    assert InternalSkillInputContract is not None
+    assert InternalSkillOutputContract is not None
+    assert InternalSkillRiskProfile is not None
+    assert InternalSkillGateContract is not None
+    assert InternalSkillObservabilityContract is not None
+    assert InternalSkillOnboardingReview is not None
+    assert InternalSkillOnboardingFinding is not None
+    assert InternalSkillOnboardingResult is not None
+    assert InternalSkillOnboardingService is not None
+    assert SkillRegistryView is not None
+    assert SkillRegistryEntry is not None
+    assert SkillRegistryFilter is not None
+    assert SkillRegistryFinding is not None
+    assert SkillRegistryResult is not None
+    assert SkillRegistryViewService is not None
+    assert ObservationDigestProposalPolicy is not None
+    assert ObservationDigestIntentCandidate is not None
+    assert ObservationDigestProposalBinding is not None
+    assert ObservationDigestProposalSet is not None
+    assert ObservationDigestProposalFinding is not None
+    assert ObservationDigestProposalResult is not None
+    assert ObservationDigestProposalService is not None
+    assert ObservationDigestSkillRuntimeBinding is not None
+    assert ObservationDigestInvocationPolicy is not None
+    assert ObservationDigestInvocationFinding is not None
+    assert ObservationDigestInvocationResult is not None
+    assert ObservationDigestSkillInvocationService is not None
+    assert ObservationDigestConformancePolicy is not None
+    assert ObservationDigestConformanceCheck is not None
+    assert ObservationDigestSmokeCase is not None
+    assert ObservationDigestSmokeResult is not None
+    assert ObservationDigestConformanceFinding is not None
+    assert ObservationDigestConformanceReport is not None
+    assert ObservationDigestConformanceService is not None
     assert SkillExecutionResult is not None
     assert SkillExecutionPolicy is not None
     assert SkillExecutor is not None
@@ -741,9 +1051,36 @@ def test_required_imports() -> None:
     assert skill_invocation_proposals_to_history_entries is not None
     assert skill_proposal_results_to_history_entries is not None
     assert skill_proposal_review_notes_to_history_entries is not None
+    assert skill_proposal_review_requests_to_history_entries is not None
+    assert skill_proposal_review_decisions_to_history_entries is not None
+    assert skill_proposal_review_results_to_history_entries is not None
+    assert skill_proposal_review_findings_to_history_entries is not None
+    assert reviewed_execution_bridge_requests_to_history_entries is not None
+    assert reviewed_execution_bridge_decisions_to_history_entries is not None
+    assert reviewed_execution_bridge_results_to_history_entries is not None
+    assert reviewed_execution_bridge_violations_to_history_entries is not None
     assert skill_execution_gate_decisions_to_history_entries is not None
     assert skill_execution_gate_results_to_history_entries is not None
     assert skill_execution_gate_findings_to_history_entries is not None
+    assert internal_skill_descriptors_to_history_entries is not None
+    assert internal_skill_onboarding_results_to_history_entries is not None
+    assert internal_skill_onboarding_findings_to_history_entries is not None
+    assert internal_skill_observability_contracts_to_history_entries is not None
+    assert skill_registry_views_to_history_entries is not None
+    assert skill_registry_entries_to_history_entries is not None
+    assert skill_registry_results_to_history_entries is not None
+    assert skill_registry_findings_to_history_entries is not None
+    assert observation_digest_intents_to_history_entries is not None
+    assert observation_digest_proposal_sets_to_history_entries is not None
+    assert observation_digest_proposal_results_to_history_entries is not None
+    assert observation_digest_proposal_findings_to_history_entries is not None
+    assert observation_digest_runtime_bindings_to_history_entries is not None
+    assert observation_digest_invocation_results_to_history_entries is not None
+    assert observation_digest_invocation_findings_to_history_entries is not None
+    assert observation_digest_conformance_checks_to_history_entries is not None
+    assert observation_digest_smoke_results_to_history_entries is not None
+    assert observation_digest_conformance_findings_to_history_entries is not None
+    assert observation_digest_conformance_reports_to_history_entries is not None
     assert Tool is not None
     assert ToolAuthorization is not None
     assert ToolAuthorizationError is not None
@@ -909,11 +1246,23 @@ def test_required_imports() -> None:
     assert WorkspaceReadBoundary is not None
     assert WorkspaceReadRoot is not None
     assert WorkspaceReadService is not None
+    assert WorkspaceReadSummaryPolicy is not None
+    assert WorkspaceReadSummaryRequest is not None
+    assert WorkspaceReadSummarySection is not None
+    assert WorkspaceReadSummaryResult is not None
+    assert WorkspaceReadSummaryCandidate is not None
+    assert WorkspaceReadSummaryFinding is not None
+    assert WorkspaceReadSummarizationService is not None
     assert WorkspaceReadViolation is not None
     assert WorkspaceTextFileReadRequest is not None
     assert WorkspaceTextFileReadResult is not None
+    assert summarize_file_via_workspace_read is not None
     assert workspace_file_list_results_to_history_entries is not None
     assert workspace_markdown_summary_results_to_history_entries is not None
+    assert workspace_read_summary_requests_to_history_entries is not None
+    assert workspace_read_summary_results_to_history_entries is not None
+    assert workspace_read_summary_candidates_to_history_entries is not None
+    assert workspace_read_summary_findings_to_history_entries is not None
     assert workspace_read_violations_to_history_entries is not None
     assert workspace_text_file_read_results_to_history_entries is not None
     assert RepoFileMatch is not None
@@ -1091,6 +1440,97 @@ def test_required_imports() -> None:
     assert OCELIngestionResult is not None
     assert OCELValidator is not None
     assert OCELQueryService is not None
+    assert AgentObservationSource is not None
+    assert AgentObservationBatch is not None
+    assert AgentObservationNormalizedEvent is not None
+    assert ObservedAgentRun is not None
+    assert AgentBehaviorInference is not None
+    assert AgentProcessNarrative is not None
+    assert ExternalSkillSourceDescriptor is not None
+    assert ExternalSkillStaticProfile is not None
+    assert ExternalSkillBehaviorFingerprint is not None
+    assert ExternalSkillAssimilationCandidate is not None
+    assert ExternalSkillAdapterCandidate is not None
+    assert ObservationDigestionFinding is not None
+    assert ObservationDigestionResult is not None
+    assert ObservationService is not None
+    assert DigestionService is not None
+    assert ExternalSkillResourceInventory is not None
+    assert ExternalSkillManifestProfile is not None
+    assert ExternalSkillInstructionProfile is not None
+    assert ExternalSkillDeclaredCapability is not None
+    assert ExternalSkillStaticRiskProfile is not None
+    assert ExternalSkillStaticDigestionReport is not None
+    assert ExternalSkillStaticDigestionFinding is not None
+    assert ExternalSkillStaticDigestionService is not None
+    assert AgentInstance is not None
+    assert AgentRuntimeDescriptor is not None
+    assert RuntimeEnvironmentSnapshot is not None
+    assert AgentObservationSpinePolicy is not None
+    assert AgentObservationCollectorContract is not None
+    assert AgentObservationAdapterProfile is not None
+    assert AgentMovementOntologyTerm is not None
+    assert AgentObservationNormalizedEventV2 is not None
+    assert ObservedAgentObject is not None
+    assert ObservedAgentRelation is not None
+    assert AgentBehaviorInferenceV2 is not None
+    assert AgentObservationReview is not None
+    assert AgentObservationCorrection is not None
+    assert ObservationRedactionPolicy is not None
+    assert ObservationExportPolicy is not None
+    assert AgentFleetObservationSnapshot is not None
+    assert AgentObservationSpineFinding is not None
+    assert AgentObservationSpineResult is not None
+    assert AgentObservationSpineService is not None
+    assert CrossHarnessTraceAdapterPolicy is not None
+    assert HarnessTraceAdapterContract is not None
+    assert HarnessTraceSourceInspection is not None
+    assert HarnessTraceMappingRule is not None
+    assert HarnessTraceNormalizationPlan is not None
+    assert HarnessTraceNormalizationResult is not None
+    assert HarnessTraceAdapterCoverageReport is not None
+    assert HarnessTraceAdapterFinding is not None
+    assert HarnessTraceAdapterResult is not None
+    assert CrossHarnessTraceAdapterService is not None
+    assert observation_sources_to_history_entries is not None
+    assert observed_runs_to_history_entries is not None
+    assert behavior_inferences_to_history_entries is not None
+    assert process_narratives_to_history_entries is not None
+    assert external_skill_profiles_to_history_entries is not None
+    assert external_skill_assimilation_candidates_to_history_entries is not None
+    assert external_skill_adapter_candidates_to_history_entries is not None
+    assert observation_digestion_findings_to_history_entries is not None
+    assert observation_digestion_results_to_history_entries is not None
+    assert external_skill_resource_inventories_to_history_entries is not None
+    assert external_skill_manifest_profiles_to_history_entries is not None
+    assert external_skill_instruction_profiles_to_history_entries is not None
+    assert external_skill_declared_capabilities_to_history_entries is not None
+    assert external_skill_static_risk_profiles_to_history_entries is not None
+    assert external_skill_static_digestion_reports_to_history_entries is not None
+    assert external_skill_static_digestion_findings_to_history_entries is not None
+    assert agent_instances_to_history_entries is not None
+    assert agent_runtime_descriptors_to_history_entries is not None
+    assert environment_snapshots_to_history_entries is not None
+    assert movement_ontology_terms_to_history_entries is not None
+    assert normalized_events_v2_to_history_entries is not None
+    assert observed_objects_to_history_entries is not None
+    assert observed_relations_to_history_entries is not None
+    assert behavior_inferences_v2_to_history_entries is not None
+    assert observation_reviews_to_history_entries is not None
+    assert observation_corrections_to_history_entries is not None
+    assert redaction_policies_to_history_entries is not None
+    assert export_policies_to_history_entries is not None
+    assert fleet_snapshots_to_history_entries is not None
+    assert observation_spine_findings_to_history_entries is not None
+    assert observation_spine_results_to_history_entries is not None
+    assert cross_harness_adapter_policies_to_history_entries is not None
+    assert harness_trace_adapter_contracts_to_history_entries is not None
+    assert harness_trace_source_inspections_to_history_entries is not None
+    assert harness_trace_mapping_rules_to_history_entries is not None
+    assert harness_trace_normalization_results_to_history_entries is not None
+    assert harness_trace_adapter_coverage_reports_to_history_entries is not None
+    assert harness_trace_adapter_findings_to_history_entries is not None
+    assert harness_trace_adapter_results_to_history_entries is not None
     assert OCPXLoader is not None
     assert OCPXEngine is not None
     assert OCPXProcessView is not None

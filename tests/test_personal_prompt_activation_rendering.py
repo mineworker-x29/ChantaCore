@@ -46,3 +46,47 @@ def test_render_activation_blocks_has_boundary_header(monkeypatch, tmp_path) -> 
     assert "Activation scope: prompt_context_only" in rendered
     assert "does not grant capabilities or execute tools" in rendered
     assert "Capability truth must win." in rendered
+
+
+def test_render_activation_diagnostics_reports_selection_and_status(monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("CHANTA_PERSONAL_DIRECTORY_ROOT", raising=False)
+    store = OCELStore(tmp_path / "activation.sqlite")
+    loadouts = PersonalModeLoadoutService(ocel_store=store)
+    core = loadouts.register_core_profile(
+        profile_name="public_safe_profile",
+        profile_type="test",
+        identity_statement="Public-safe identity.",
+    )
+    mode = loadouts.register_mode_profile(
+        core_profile_id=core.core_profile_id,
+        mode_name="public_safe_mode",
+        mode_type="test",
+        role_statement="Public-safe role.",
+    )
+    boundary = loadouts.register_mode_boundary(
+        mode_profile_id=mode.mode_profile_id,
+        boundary_type="capability_boundary",
+        boundary_text="Capability truth must win.",
+    )
+    loadout = loadouts.create_mode_loadout(
+        core_profile=core,
+        mode_profile=mode,
+        boundaries=[boundary],
+    )
+    service = PersonalPromptActivationService(ocel_store=store)
+
+    result = service.activate_for_prompt_context(
+        selected_mode_name="public_safe_mode",
+        explicit_loadout=loadout,
+        max_chars=80,
+    )
+    diagnostics = service.render_activation_diagnostics(result=result)
+
+    assert "selected_mode=public_safe_mode" in diagnostics
+    assert f"matched_loadout={loadout.loadout_id}" in diagnostics
+    assert "activation_attached=true" in diagnostics
+    assert "activation_skipped=false" in diagnostics
+    assert "activation_denied=false" in diagnostics
+    assert "total_activation_chars=" in diagnostics
+    assert "truncated=true" in diagnostics
+    assert "capability_grants_created=false" in diagnostics

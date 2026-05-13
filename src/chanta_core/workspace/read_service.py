@@ -621,6 +621,8 @@ def _deterministic_markdown_summary(
 def _violation_type(error: Exception) -> str:
     if isinstance(error, WorkspacePathViolationError):
         message = str(error).casefold()
+        if "absolute" in message:
+            return "absolute_path_not_allowed"
         if "traversal" in message:
             return "path_traversal"
         return "outside_workspace"

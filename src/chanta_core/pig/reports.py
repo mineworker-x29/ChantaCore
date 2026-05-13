@@ -185,6 +185,11 @@ class PIGReportService:
             event_activity_counts,
             view,
         )
+        personal_runtime_workbench_summary = self._personal_runtime_workbench_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         tool_registry_summary = self._tool_registry_summary(
             object_type_counts,
             event_activity_counts,
@@ -240,6 +245,46 @@ class PIGReportService:
             event_activity_counts,
             view,
         )
+        observation_digest_summary = self._observation_digest_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        skill_registry_summary = self._skill_registry_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        observation_digest_proposal_summary = self._observation_digest_proposal_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        observation_digest_invocation_summary = self._observation_digest_invocation_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        observation_digest_conformance_summary = self._observation_digest_conformance_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        external_skill_static_digestion_summary = self._external_skill_static_digestion_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        agent_observation_spine_summary = self._agent_observation_spine_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        cross_harness_trace_adapter_summary = self._cross_harness_trace_adapter_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -269,6 +314,7 @@ class PIGReportService:
             session_context_projection_summary=session_context_projection_summary,
             capability_decision_summary=capability_decision_summary,
             persona_summary=persona_summary,
+            personal_runtime_workbench_summary=personal_runtime_workbench_summary,
             tool_registry_summary=tool_registry_summary,
             verification_summary=verification_summary,
             outcome_summary=outcome_summary,
@@ -280,6 +326,14 @@ class PIGReportService:
             sidechain_summary=sidechain_summary,
             delegation_conformance_summary=delegation_conformance_summary,
             external_capability_summary=external_capability_summary,
+            observation_digest_summary=observation_digest_summary,
+            skill_registry_summary=skill_registry_summary,
+            observation_digest_proposal_summary=observation_digest_proposal_summary,
+            observation_digest_invocation_summary=observation_digest_invocation_summary,
+            observation_digest_conformance_summary=observation_digest_conformance_summary,
+            external_skill_static_digestion_summary=external_skill_static_digestion_summary,
+            agent_observation_spine_summary=agent_observation_spine_summary,
+            cross_harness_trace_adapter_summary=cross_harness_trace_adapter_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -318,6 +372,7 @@ class PIGReportService:
                 "session_context_projection_summary": session_context_projection_summary,
                 "capability_decision_summary": capability_decision_summary,
                 "persona_summary": persona_summary,
+                "personal_runtime_workbench_summary": personal_runtime_workbench_summary,
                 "tool_registry_summary": tool_registry_summary,
                 "verification_summary": verification_summary,
                 "process_outcome_summary": outcome_summary,
@@ -329,6 +384,14 @@ class PIGReportService:
                 "sidechain_summary": sidechain_summary,
                 "delegation_conformance_summary": delegation_conformance_summary,
                 "external_capability_summary": external_capability_summary,
+                "observation_digest_summary": observation_digest_summary,
+                "skill_registry_summary": skill_registry_summary,
+                "observation_digest_proposal_summary": observation_digest_proposal_summary,
+                "observation_digest_invocation_summary": observation_digest_invocation_summary,
+                "observation_digest_conformance_summary": observation_digest_conformance_summary,
+                "external_skill_static_digestion_summary": external_skill_static_digestion_summary,
+                "agent_observation_spine_summary": agent_observation_spine_summary,
+                "cross_harness_trace_adapter_summary": cross_harness_trace_adapter_summary,
             },
         )
 
@@ -396,8 +459,15 @@ class PIGReportService:
         explicit_violation_by_type: dict[str, int] = {}
         proposal_by_skill_id: dict[str, int] = {}
         proposal_by_requested_operation: dict[str, int] = {}
+        review_by_skill_id: dict[str, int] = {}
+        review_by_decision: dict[str, int] = {}
+        bridge_by_skill_id: dict[str, int] = {}
+        bridge_violation_by_type: dict[str, int] = {}
         gate_by_skill_id: dict[str, int] = {}
         gate_finding_by_type: dict[str, int] = {}
+        onboarding_by_capability_category: dict[str, int] = {}
+        onboarding_by_risk_class: dict[str, int] = {}
+        onboarding_finding_by_type: dict[str, int] = {}
         execution_by_kind: dict[str, int] = {}
         execution_by_skill_id: dict[str, int] = {}
         failed_skill_execution_count = 0
@@ -409,12 +479,27 @@ class PIGReportService:
         proposal_incomplete_count = 0
         proposal_unsupported_count = 0
         proposal_needs_review_count = 0
+        review_approved_count = 0
+        review_rejected_count = 0
+        review_no_action_count = 0
+        review_needs_more_input_count = 0
+        review_bridge_candidate_count = 0
+        bridge_allowed_count = 0
+        bridge_denied_count = 0
+        bridge_executed_count = 0
+        bridge_blocked_count = 0
+        bridge_needs_more_input_count = 0
+        bridge_unsupported_count = 0
         gate_allowed_count = 0
         gate_denied_count = 0
         gate_needs_review_count = 0
         gate_unsupported_count = 0
         gate_executed_count = 0
         gate_blocked_count = 0
+        onboarding_accepted_count = 0
+        onboarding_rejected_count = 0
+        onboarding_needs_fix_count = 0
+        onboarding_blocked_count = 0
         execution_completed_count = 0
         execution_blocked_count = 0
         execution_failed_count = 0
@@ -423,6 +508,17 @@ class PIGReportService:
         execution_without_gate_count = 0
         execution_full_input_stored_count = 0
         execution_full_output_stored_count = 0
+        execution_audit_not_found_count = 0
+        execution_audit_empty_count = 0
+        execution_audit_blocked_view_count = 0
+        execution_audit_failed_view_count = 0
+        execution_audit_by_query_type: dict[str, int] = {}
+        promotion_pending_review_count = 0
+        promotion_approved_for_later_count = 0
+        promotion_rejected_count = 0
+        promotion_no_action_count = 0
+        promotion_private_risk_count = 0
+        promotion_by_target_kind: dict[str, int] = {}
         object_type_counts: dict[str, int] = {}
         for item in view.objects:
             object_type_counts[item.object_type] = object_type_counts.get(item.object_type, 0) + 1
@@ -461,6 +557,47 @@ class PIGReportService:
                     proposal_unsupported_count += 1
                 if status == "needs_review":
                     proposal_needs_review_count += 1
+            if item.object_type == "skill_proposal_review_request":
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                review_by_skill_id[skill_id] = review_by_skill_id.get(skill_id, 0) + 1
+            if item.object_type == "skill_proposal_review_decision":
+                decision = str(item.object_attrs.get("decision") or "unknown")
+                review_by_decision[decision] = review_by_decision.get(decision, 0) + 1
+            if item.object_type == "skill_proposal_review_result":
+                status = str(item.object_attrs.get("status") or "")
+                if status == "approved":
+                    review_approved_count += 1
+                if status == "rejected":
+                    review_rejected_count += 1
+                if status == "no_action":
+                    review_no_action_count += 1
+                if status == "needs_more_input":
+                    review_needs_more_input_count += 1
+                if bool(item.object_attrs.get("bridge_candidate")):
+                    review_bridge_candidate_count += 1
+            if item.object_type == "reviewed_execution_bridge_request":
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                bridge_by_skill_id[skill_id] = bridge_by_skill_id.get(skill_id, 0) + 1
+            if item.object_type == "reviewed_execution_bridge_decision":
+                decision = str(item.object_attrs.get("decision") or "")
+                if decision == "allow":
+                    bridge_allowed_count += 1
+                if decision == "deny":
+                    bridge_denied_count += 1
+                if decision == "needs_more_input":
+                    bridge_needs_more_input_count += 1
+                if decision == "unsupported":
+                    bridge_unsupported_count += 1
+            if item.object_type == "reviewed_execution_bridge_result":
+                if bool(item.object_attrs.get("executed")):
+                    bridge_executed_count += 1
+                if bool(item.object_attrs.get("blocked")):
+                    bridge_blocked_count += 1
+            if item.object_type == "reviewed_execution_bridge_violation":
+                violation_type = str(item.object_attrs.get("violation_type") or "unknown")
+                bridge_violation_by_type[violation_type] = (
+                    bridge_violation_by_type.get(violation_type, 0) + 1
+                )
             if item.object_type == "skill_execution_gate_request":
                 skill_id = str(item.object_attrs.get("skill_id") or "unknown")
                 gate_by_skill_id[skill_id] = gate_by_skill_id.get(skill_id, 0) + 1
@@ -482,6 +619,28 @@ class PIGReportService:
             if item.object_type == "skill_execution_gate_finding":
                 finding_type = str(item.object_attrs.get("finding_type") or "unknown")
                 gate_finding_by_type[finding_type] = gate_finding_by_type.get(finding_type, 0) + 1
+            if item.object_type == "internal_skill_descriptor":
+                category = str(item.object_attrs.get("capability_category") or "unknown")
+                risk_class = str(item.object_attrs.get("risk_class") or "unknown")
+                onboarding_by_capability_category[category] = (
+                    onboarding_by_capability_category.get(category, 0) + 1
+                )
+                onboarding_by_risk_class[risk_class] = onboarding_by_risk_class.get(risk_class, 0) + 1
+            if item.object_type == "internal_skill_onboarding_finding":
+                finding_type = str(item.object_attrs.get("finding_type") or "unknown")
+                onboarding_finding_by_type[finding_type] = (
+                    onboarding_finding_by_type.get(finding_type, 0) + 1
+                )
+            if item.object_type == "internal_skill_onboarding_result":
+                status = str(item.object_attrs.get("status") or "")
+                if status == "accepted":
+                    onboarding_accepted_count += 1
+                if status == "rejected":
+                    onboarding_rejected_count += 1
+                if status == "needs_fix":
+                    onboarding_needs_fix_count += 1
+                if status == "blocked":
+                    onboarding_blocked_count += 1
             if item.object_type == "execution_envelope":
                 kind = str(item.object_attrs.get("execution_kind") or "unknown")
                 skill_id = str(item.object_attrs.get("skill_id") or "unknown")
@@ -509,6 +668,40 @@ class PIGReportService:
                 item.object_attrs.get("full_output_stored")
             ):
                 execution_full_output_stored_count += 1
+            if item.object_type == "execution_audit_query":
+                query_type = str(item.object_attrs.get("query_type") or "unknown")
+                execution_audit_by_query_type[query_type] = (
+                    execution_audit_by_query_type.get(query_type, 0) + 1
+                )
+            if item.object_type == "execution_audit_record_view":
+                if bool(item.object_attrs.get("blocked")):
+                    execution_audit_blocked_view_count += 1
+                if str(item.object_attrs.get("status") or "") in {"failed", "error"}:
+                    execution_audit_failed_view_count += 1
+            if item.object_type == "execution_audit_result":
+                status = str(item.object_attrs.get("status") or "")
+                if status == "not_found":
+                    execution_audit_not_found_count += 1
+                if status == "empty":
+                    execution_audit_empty_count += 1
+            if item.object_type == "execution_result_promotion_candidate":
+                target_kind = str(item.object_attrs.get("target_kind") or "unknown")
+                promotion_by_target_kind[target_kind] = (
+                    promotion_by_target_kind.get(target_kind, 0) + 1
+                )
+                if str(item.object_attrs.get("review_status") or "") == "pending_review":
+                    promotion_pending_review_count += 1
+            if item.object_type == "execution_result_promotion_decision":
+                decision = str(item.object_attrs.get("decision") or "")
+                if decision == "approved_for_later_promotion":
+                    promotion_approved_for_later_count += 1
+                if decision == "rejected":
+                    promotion_rejected_count += 1
+                if decision == "no_action":
+                    promotion_no_action_count += 1
+            if item.object_type == "execution_result_promotion_finding":
+                if str(item.object_attrs.get("finding_type") or "") == "private_content_risk":
+                    promotion_private_risk_count += 1
         for event in view.events:
             if event.event_activity == "fail_skill_execution":
                 failed_skill_execution_count += 1
@@ -574,6 +767,48 @@ class PIGReportService:
             "skill_proposal_needs_review_count": proposal_needs_review_count,
             "skill_proposal_by_skill_id": proposal_by_skill_id,
             "skill_proposal_by_requested_operation": proposal_by_requested_operation,
+            "skill_proposal_review_contract_count": object_type_counts.get(
+                "skill_proposal_review_contract", 0
+            ),
+            "skill_proposal_review_request_count": object_type_counts.get(
+                "skill_proposal_review_request", 0
+            ),
+            "skill_proposal_review_decision_count": object_type_counts.get(
+                "skill_proposal_review_decision", 0
+            ),
+            "skill_proposal_review_finding_count": object_type_counts.get(
+                "skill_proposal_review_finding", 0
+            ),
+            "skill_proposal_review_result_count": object_type_counts.get(
+                "skill_proposal_review_result", 0
+            ),
+            "skill_proposal_review_approved_count": review_approved_count,
+            "skill_proposal_review_rejected_count": review_rejected_count,
+            "skill_proposal_review_no_action_count": review_no_action_count,
+            "skill_proposal_review_needs_more_input_count": review_needs_more_input_count,
+            "skill_proposal_review_bridge_candidate_count": review_bridge_candidate_count,
+            "skill_proposal_review_by_skill_id": review_by_skill_id,
+            "skill_proposal_review_by_decision": review_by_decision,
+            "reviewed_execution_bridge_request_count": object_type_counts.get(
+                "reviewed_execution_bridge_request", 0
+            ),
+            "reviewed_execution_bridge_decision_count": object_type_counts.get(
+                "reviewed_execution_bridge_decision", 0
+            ),
+            "reviewed_execution_bridge_result_count": object_type_counts.get(
+                "reviewed_execution_bridge_result", 0
+            ),
+            "reviewed_execution_bridge_violation_count": object_type_counts.get(
+                "reviewed_execution_bridge_violation", 0
+            ),
+            "reviewed_execution_bridge_allowed_count": bridge_allowed_count,
+            "reviewed_execution_bridge_denied_count": bridge_denied_count,
+            "reviewed_execution_bridge_executed_count": bridge_executed_count,
+            "reviewed_execution_bridge_blocked_count": bridge_blocked_count,
+            "reviewed_execution_bridge_needs_more_input_count": bridge_needs_more_input_count,
+            "reviewed_execution_bridge_unsupported_count": bridge_unsupported_count,
+            "reviewed_execution_bridge_by_skill_id": bridge_by_skill_id,
+            "reviewed_execution_bridge_violation_by_type": bridge_violation_by_type,
             "skill_execution_gate_request_count": object_type_counts.get(
                 "skill_execution_gate_request", 0
             ),
@@ -594,6 +829,38 @@ class PIGReportService:
             "skill_execution_gate_blocked_count": gate_blocked_count,
             "skill_execution_gate_by_skill_id": gate_by_skill_id,
             "skill_execution_gate_finding_by_type": gate_finding_by_type,
+            "internal_skill_descriptor_count": object_type_counts.get("internal_skill_descriptor", 0),
+            "internal_skill_input_contract_count": object_type_counts.get(
+                "internal_skill_input_contract", 0
+            ),
+            "internal_skill_output_contract_count": object_type_counts.get(
+                "internal_skill_output_contract", 0
+            ),
+            "internal_skill_risk_profile_count": object_type_counts.get(
+                "internal_skill_risk_profile", 0
+            ),
+            "internal_skill_gate_contract_count": object_type_counts.get(
+                "internal_skill_gate_contract", 0
+            ),
+            "internal_skill_observability_contract_count": object_type_counts.get(
+                "internal_skill_observability_contract", 0
+            ),
+            "internal_skill_onboarding_review_count": object_type_counts.get(
+                "internal_skill_onboarding_review", 0
+            ),
+            "internal_skill_onboarding_finding_count": object_type_counts.get(
+                "internal_skill_onboarding_finding", 0
+            ),
+            "internal_skill_onboarding_result_count": object_type_counts.get(
+                "internal_skill_onboarding_result", 0
+            ),
+            "internal_skill_onboarding_accepted_count": onboarding_accepted_count,
+            "internal_skill_onboarding_rejected_count": onboarding_rejected_count,
+            "internal_skill_onboarding_needs_fix_count": onboarding_needs_fix_count,
+            "internal_skill_onboarding_blocked_count": onboarding_blocked_count,
+            "internal_skill_onboarding_by_capability_category": onboarding_by_capability_category,
+            "internal_skill_onboarding_by_risk_class": onboarding_by_risk_class,
+            "internal_skill_onboarding_finding_by_type": onboarding_finding_by_type,
             "execution_envelope_count": object_type_counts.get("execution_envelope", 0),
             "execution_provenance_record_count": object_type_counts.get(
                 "execution_provenance_record", 0
@@ -612,6 +879,42 @@ class PIGReportService:
             "execution_without_gate_count": execution_without_gate_count,
             "execution_full_input_stored_count": execution_full_input_stored_count,
             "execution_full_output_stored_count": execution_full_output_stored_count,
+            "execution_audit_query_count": object_type_counts.get("execution_audit_query", 0),
+            "execution_audit_filter_count": object_type_counts.get("execution_audit_filter", 0),
+            "execution_audit_record_view_count": object_type_counts.get(
+                "execution_audit_record_view", 0
+            ),
+            "execution_audit_result_count": object_type_counts.get("execution_audit_result", 0),
+            "execution_audit_finding_count": object_type_counts.get("execution_audit_finding", 0),
+            "execution_audit_not_found_count": execution_audit_not_found_count,
+            "execution_audit_empty_count": execution_audit_empty_count,
+            "execution_audit_blocked_view_count": execution_audit_blocked_view_count,
+            "execution_audit_failed_view_count": execution_audit_failed_view_count,
+            "execution_audit_by_query_type": execution_audit_by_query_type,
+            "execution_result_promotion_policy_count": object_type_counts.get(
+                "execution_result_promotion_policy", 0
+            ),
+            "execution_result_promotion_candidate_count": object_type_counts.get(
+                "execution_result_promotion_candidate", 0
+            ),
+            "execution_result_promotion_review_request_count": object_type_counts.get(
+                "execution_result_promotion_review_request", 0
+            ),
+            "execution_result_promotion_decision_count": object_type_counts.get(
+                "execution_result_promotion_decision", 0
+            ),
+            "execution_result_promotion_finding_count": object_type_counts.get(
+                "execution_result_promotion_finding", 0
+            ),
+            "execution_result_promotion_result_count": object_type_counts.get(
+                "execution_result_promotion_result", 0
+            ),
+            "execution_result_promotion_pending_review_count": promotion_pending_review_count,
+            "execution_result_promotion_approved_for_later_count": promotion_approved_for_later_count,
+            "execution_result_promotion_rejected_count": promotion_rejected_count,
+            "execution_result_promotion_no_action_count": promotion_no_action_count,
+            "execution_result_promotion_private_risk_count": promotion_private_risk_count,
+            "execution_result_promotion_by_target_kind": promotion_by_target_kind,
         }
 
     @staticmethod
@@ -679,6 +982,7 @@ class PIGReportService:
         session_context_projection_summary: dict[str, Any] | None,
         capability_decision_summary: dict[str, Any] | None,
         persona_summary: dict[str, Any] | None,
+        personal_runtime_workbench_summary: dict[str, Any] | None,
         tool_registry_summary: dict[str, Any] | None,
         verification_summary: dict[str, Any] | None,
         outcome_summary: dict[str, Any] | None,
@@ -690,6 +994,14 @@ class PIGReportService:
         sidechain_summary: dict[str, Any] | None,
         delegation_conformance_summary: dict[str, Any] | None,
         external_capability_summary: dict[str, Any] | None,
+        observation_digest_summary: dict[str, Any] | None,
+        skill_registry_summary: dict[str, Any] | None,
+        observation_digest_proposal_summary: dict[str, Any] | None,
+        observation_digest_invocation_summary: dict[str, Any] | None,
+        observation_digest_conformance_summary: dict[str, Any] | None,
+        external_skill_static_digestion_summary: dict[str, Any] | None,
+        agent_observation_spine_summary: dict[str, Any] | None,
+        cross_harness_trace_adapter_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -775,17 +1087,44 @@ class PIGReportService:
                 f"- Skill Proposal status: available/incomplete/unsupported/needs_review {(skill_usage_summary or {}).get('skill_proposal_available_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_incomplete_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_unsupported_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_needs_review_count', 0)}",
                 f"- Skill Proposal by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_proposal_by_skill_id') or {})}",
                 f"- Skill Proposal by operation: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_proposal_by_requested_operation') or {})}",
+                f"- Skill Proposal Review objects: {(skill_usage_summary or {}).get('skill_proposal_review_contract_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_review_request_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_review_decision_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_review_finding_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_review_result_count', 0)}",
+                f"- Skill Proposal Review status: approved/rejected/no_action/needs_more_input {(skill_usage_summary or {}).get('skill_proposal_review_approved_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_review_rejected_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_review_no_action_count', 0)}/{(skill_usage_summary or {}).get('skill_proposal_review_needs_more_input_count', 0)}",
+                f"- Skill Proposal Review bridge candidates: {(skill_usage_summary or {}).get('skill_proposal_review_bridge_candidate_count', 0)}",
+                f"- Skill Proposal Review by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_proposal_review_by_skill_id') or {})}",
+                f"- Skill Proposal Review by decision: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_proposal_review_by_decision') or {})}",
+                f"- Reviewed Execution Bridge objects: {(skill_usage_summary or {}).get('reviewed_execution_bridge_request_count', 0)}/{(skill_usage_summary or {}).get('reviewed_execution_bridge_decision_count', 0)}/{(skill_usage_summary or {}).get('reviewed_execution_bridge_result_count', 0)}/{(skill_usage_summary or {}).get('reviewed_execution_bridge_violation_count', 0)}",
+                f"- Reviewed Execution Bridge decision: allowed/denied/needs_more_input/unsupported {(skill_usage_summary or {}).get('reviewed_execution_bridge_allowed_count', 0)}/{(skill_usage_summary or {}).get('reviewed_execution_bridge_denied_count', 0)}/{(skill_usage_summary or {}).get('reviewed_execution_bridge_needs_more_input_count', 0)}/{(skill_usage_summary or {}).get('reviewed_execution_bridge_unsupported_count', 0)}",
+                f"- Reviewed Execution Bridge result: executed/blocked {(skill_usage_summary or {}).get('reviewed_execution_bridge_executed_count', 0)}/{(skill_usage_summary or {}).get('reviewed_execution_bridge_blocked_count', 0)}",
+                f"- Reviewed Execution Bridge by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('reviewed_execution_bridge_by_skill_id') or {})}",
+                f"- Reviewed Execution Bridge violations: {PIGReportService._inline_counts((skill_usage_summary or {}).get('reviewed_execution_bridge_violation_by_type') or {})}",
                 f"- Skill Execution Gate objects: {(skill_usage_summary or {}).get('skill_execution_gate_request_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_decision_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_finding_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_result_count', 0)}",
                 f"- Skill Execution Gate status: allowed/denied/needs_review/unsupported {(skill_usage_summary or {}).get('skill_execution_gate_allowed_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_denied_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_needs_review_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_unsupported_count', 0)}",
                 f"- Skill Execution Gate result: executed/blocked {(skill_usage_summary or {}).get('skill_execution_gate_executed_count', 0)}/{(skill_usage_summary or {}).get('skill_execution_gate_blocked_count', 0)}",
                 f"- Skill Execution Gate by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_execution_gate_by_skill_id') or {})}",
                 f"- Skill Execution Gate findings: {PIGReportService._inline_counts((skill_usage_summary or {}).get('skill_execution_gate_finding_by_type') or {})}",
+                f"- Internal Skill Onboarding objects: {(skill_usage_summary or {}).get('internal_skill_descriptor_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_input_contract_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_output_contract_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_risk_profile_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_gate_contract_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_observability_contract_count', 0)}",
+                f"- Internal Skill Onboarding review/findings/results: {(skill_usage_summary or {}).get('internal_skill_onboarding_review_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_onboarding_finding_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_onboarding_result_count', 0)}",
+                f"- Internal Skill Onboarding status: accepted/rejected/needs_fix/blocked {(skill_usage_summary or {}).get('internal_skill_onboarding_accepted_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_onboarding_rejected_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_onboarding_needs_fix_count', 0)}/{(skill_usage_summary or {}).get('internal_skill_onboarding_blocked_count', 0)}",
+                f"- Internal Skill Onboarding by category: {PIGReportService._inline_counts((skill_usage_summary or {}).get('internal_skill_onboarding_by_capability_category') or {})}",
+                f"- Internal Skill Onboarding by risk: {PIGReportService._inline_counts((skill_usage_summary or {}).get('internal_skill_onboarding_by_risk_class') or {})}",
+                f"- Internal Skill Onboarding findings: {PIGReportService._inline_counts((skill_usage_summary or {}).get('internal_skill_onboarding_finding_by_type') or {})}",
                 f"- Execution Envelope objects: {(skill_usage_summary or {}).get('execution_envelope_count', 0)}/{(skill_usage_summary or {}).get('execution_provenance_record_count', 0)}/{(skill_usage_summary or {}).get('execution_input_snapshot_count', 0)}/{(skill_usage_summary or {}).get('execution_output_snapshot_count', 0)}/{(skill_usage_summary or {}).get('execution_outcome_summary_count', 0)}",
                 f"- Execution Envelope status: completed/blocked/failed/skipped {(skill_usage_summary or {}).get('execution_completed_count', 0)}/{(skill_usage_summary or {}).get('execution_blocked_count', 0)}/{(skill_usage_summary or {}).get('execution_failed_count', 0)}/{(skill_usage_summary or {}).get('execution_skipped_count', 0)}",
                 f"- Execution Envelope by kind: {PIGReportService._inline_counts((skill_usage_summary or {}).get('execution_by_kind') or {})}",
                 f"- Execution Envelope by skill: {PIGReportService._inline_counts((skill_usage_summary or {}).get('execution_by_skill_id') or {})}",
                 f"- Execution Envelope gate refs: with/without {(skill_usage_summary or {}).get('execution_with_gate_count', 0)}/{(skill_usage_summary or {}).get('execution_without_gate_count', 0)}",
                 f"- Execution Envelope full snapshots: input/output {(skill_usage_summary or {}).get('execution_full_input_stored_count', 0)}/{(skill_usage_summary or {}).get('execution_full_output_stored_count', 0)}",
+                f"- Execution Audit objects: {(skill_usage_summary or {}).get('execution_audit_query_count', 0)}/{(skill_usage_summary or {}).get('execution_audit_filter_count', 0)}/{(skill_usage_summary or {}).get('execution_audit_record_view_count', 0)}/{(skill_usage_summary or {}).get('execution_audit_result_count', 0)}/{(skill_usage_summary or {}).get('execution_audit_finding_count', 0)}",
+                f"- Execution Audit status: not_found/empty {(skill_usage_summary or {}).get('execution_audit_not_found_count', 0)}/{(skill_usage_summary or {}).get('execution_audit_empty_count', 0)}",
+                f"- Execution Audit views: blocked/failed {(skill_usage_summary or {}).get('execution_audit_blocked_view_count', 0)}/{(skill_usage_summary or {}).get('execution_audit_failed_view_count', 0)}",
+                f"- Execution Audit by query: {PIGReportService._inline_counts((skill_usage_summary or {}).get('execution_audit_by_query_type') or {})}",
+                f"- Execution Result Promotion objects: {(skill_usage_summary or {}).get('execution_result_promotion_policy_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_candidate_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_review_request_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_decision_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_finding_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_result_count', 0)}",
+                f"- Execution Result Promotion status: pending/approved_later/rejected/no_action {(skill_usage_summary or {}).get('execution_result_promotion_pending_review_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_approved_for_later_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_rejected_count', 0)}/{(skill_usage_summary or {}).get('execution_result_promotion_no_action_count', 0)}",
+                f"- Execution Result Promotion private risk: {(skill_usage_summary or {}).get('execution_result_promotion_private_risk_count', 0)}",
+                f"- Execution Result Promotion by target: {PIGReportService._inline_counts((skill_usage_summary or {}).get('execution_result_promotion_by_target_kind') or {})}",
+                f"- Personal Runtime Workbench objects: {(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_snapshot_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_panel_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_pending_item_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_recent_activity_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_finding_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_result_count', 0)}",
+                f"- Personal Runtime Workbench status: pending_review/blocked/failed/candidates {(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_pending_review_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_blocked_activity_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_failed_activity_count', 0)}/{(personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_candidate_count', 0)}",
+                f"- Personal Runtime Workbench by command: {PIGReportService._inline_counts((personal_runtime_workbench_summary or {}).get('personal_runtime_workbench_by_command') or {})}",
                 "",
                 "Tool Usage:",
                 tool_lines,
@@ -962,6 +1301,11 @@ class PIGReportService:
                 f"- Markdown summary requests/results: {(workspace_read_summary or {}).get('workspace_markdown_summary_request_count', 0)}/{(workspace_read_summary or {}).get('workspace_markdown_summary_result_count', 0)}",
                 f"- Violations/denied/binary/oversize: {(workspace_read_summary or {}).get('workspace_read_violation_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_denied_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_binary_rejected_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_oversize_rejected_count', 0)}",
                 f"- Outside/path traversal violations: {(workspace_read_summary or {}).get('workspace_read_outside_workspace_violation_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_path_traversal_violation_count', 0)}",
+                f"- Workspace Read Summary objects: {(workspace_read_summary or {}).get('workspace_read_summary_policy_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_summary_request_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_summary_section_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_summary_result_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_summary_candidate_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_summary_finding_count', 0)}",
+                f"- Workspace Read Summary status: completed/failed/unsupported {(workspace_read_summary or {}).get('workspace_read_summary_completed_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_summary_failed_count', 0)}/{(workspace_read_summary or {}).get('workspace_read_summary_unsupported_count', 0)}",
+                f"- Workspace Read Summary candidates pending: {(workspace_read_summary or {}).get('workspace_read_summary_candidate_pending_count', 0)}",
+                f"- Workspace Read Summary by kind: {PIGReportService._inline_counts((workspace_read_summary or {}).get('workspace_read_summary_by_input_kind') or {})}",
+                f"- Workspace Read Summary findings: {PIGReportService._inline_counts((workspace_read_summary or {}).get('workspace_read_summary_finding_by_type') or {})}",
                 "",
                 "Shell / Network Risk Pre-Sandbox:",
                 f"- Shell intents: {(shell_network_pre_sandbox_summary or {}).get('shell_command_intent_count', 0)}",
@@ -1041,6 +1385,67 @@ class PIGReportService:
                 f"- External OCEL preview events/objects/relations: {(external_capability_summary or {}).get('external_ocel_total_preview_event_count', 0)}/{(external_capability_summary or {}).get('external_ocel_total_preview_object_count', 0)}/{(external_capability_summary or {}).get('external_ocel_total_preview_relation_count', 0)}",
                 f"- External OCEL schema status: {PIGReportService._inline_counts((external_capability_summary or {}).get('external_ocel_by_schema_status') or {})}",
                 f"- External OCEL risk levels: {PIGReportService._inline_counts((external_capability_summary or {}).get('external_ocel_by_risk_level') or {})}",
+                "",
+                "Observation and Digestion:",
+                f"- Observation sources/batches/events/runs: {(observation_digest_summary or {}).get('agent_observation_source_count', 0)}/{(observation_digest_summary or {}).get('agent_observation_batch_count', 0)}/{(observation_digest_summary or {}).get('agent_observation_normalized_event_count', 0)}/{(observation_digest_summary or {}).get('observed_agent_run_count', 0)}",
+                f"- Inferences/narratives: {(observation_digest_summary or {}).get('agent_behavior_inference_count', 0)}/{(observation_digest_summary or {}).get('agent_process_narrative_count', 0)}",
+                f"- External source/profile/fingerprint/candidate/adapter: {(observation_digest_summary or {}).get('external_skill_source_descriptor_count', 0)}/{(observation_digest_summary or {}).get('external_skill_static_profile_count', 0)}/{(observation_digest_summary or {}).get('external_skill_behavior_fingerprint_count', 0)}/{(observation_digest_summary or {}).get('external_skill_assimilation_candidate_count', 0)}/{(observation_digest_summary or {}).get('external_skill_adapter_candidate_count', 0)}",
+                f"- Findings/results: {(observation_digest_summary or {}).get('observation_digestion_finding_count', 0)}/{(observation_digest_summary or {}).get('observation_digestion_result_count', 0)}",
+                f"- Observed activity: {PIGReportService._inline_counts((observation_digest_summary or {}).get('observed_event_by_activity') or {})}",
+                f"- Candidate risks: {PIGReportService._inline_counts((observation_digest_summary or {}).get('external_candidate_by_risk_class') or {})}",
+                "",
+                "Skill Registry View:",
+                f"- Views/entries/filters/findings/results: {(skill_registry_summary or {}).get('skill_registry_view_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_entry_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_filter_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_finding_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_result_count', 0)}",
+                f"- Observation/digestion/external candidates: {(skill_registry_summary or {}).get('skill_registry_observation_skill_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_digestion_skill_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_external_candidate_count', 0)}",
+                f"- Enabled/disabled/blocked: {(skill_registry_summary or {}).get('skill_registry_enabled_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_disabled_count', 0)}/{(skill_registry_summary or {}).get('skill_registry_blocked_count', 0)}",
+                f"- Missing contract findings: {(skill_registry_summary or {}).get('skill_registry_missing_contract_finding_count', 0)}",
+                f"- Registry by layer: {PIGReportService._inline_counts((skill_registry_summary or {}).get('skill_registry_by_layer') or {})}",
+                f"- Registry by risk: {PIGReportService._inline_counts((skill_registry_summary or {}).get('skill_registry_by_risk_class') or {})}",
+                "",
+                "Observation/Digestion Proposals:",
+                f"- Policies/intents/bindings/sets/findings/results: {(observation_digest_proposal_summary or {}).get('observation_digest_proposal_policy_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_intent_candidate_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_proposal_binding_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_proposal_set_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_proposal_finding_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_proposal_result_count', 0)}",
+                f"- Observation/digestion/mixed: {(observation_digest_proposal_summary or {}).get('observation_digest_proposal_observation_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_proposal_digestion_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_proposal_mixed_count', 0)}",
+                f"- Needs input/no match: {(observation_digest_proposal_summary or {}).get('observation_digest_proposal_needs_more_input_count', 0)}/{(observation_digest_proposal_summary or {}).get('observation_digest_proposal_no_matching_skill_count', 0)}",
+                f"- Proposal by family: {PIGReportService._inline_counts((observation_digest_proposal_summary or {}).get('observation_digest_proposal_by_intent_family') or {})}",
+                f"- Proposal by skill: {PIGReportService._inline_counts((observation_digest_proposal_summary or {}).get('observation_digest_proposal_by_skill_id') or {})}",
+                "",
+                "Observation/Digestion Invocations:",
+                f"- Bindings/policies/results/findings: {(observation_digest_invocation_summary or {}).get('observation_digest_runtime_binding_count', 0)}/{(observation_digest_invocation_summary or {}).get('observation_digest_invocation_policy_count', 0)}/{(observation_digest_invocation_summary or {}).get('observation_digest_invocation_result_count', 0)}/{(observation_digest_invocation_summary or {}).get('observation_digest_invocation_finding_count', 0)}",
+                f"- Completed/blocked/failed/enveloped: {(observation_digest_invocation_summary or {}).get('observation_digest_invocation_completed_count', 0)}/{(observation_digest_invocation_summary or {}).get('observation_digest_invocation_blocked_count', 0)}/{(observation_digest_invocation_summary or {}).get('observation_digest_invocation_failed_count', 0)}/{(observation_digest_invocation_summary or {}).get('observation_digest_invocation_envelope_count', 0)}",
+                f"- Invocation by skill: {PIGReportService._inline_counts((observation_digest_invocation_summary or {}).get('observation_digest_invocation_by_skill_id') or {})}",
+                f"- Invocation by family: {PIGReportService._inline_counts((observation_digest_invocation_summary or {}).get('observation_digest_invocation_by_family') or {})}",
+                f"- Invocation findings: {PIGReportService._inline_counts((observation_digest_invocation_summary or {}).get('observation_digest_invocation_finding_by_type') or {})}",
+                "",
+                "Observation/Digestion Conformance:",
+                f"- Policies/checks/smoke cases/smoke results/findings/reports: {(observation_digest_conformance_summary or {}).get('observation_digest_conformance_policy_count', 0)}/{(observation_digest_conformance_summary or {}).get('observation_digest_conformance_check_count', 0)}/{(observation_digest_conformance_summary or {}).get('observation_digest_smoke_case_count', 0)}/{(observation_digest_conformance_summary or {}).get('observation_digest_smoke_result_count', 0)}/{(observation_digest_conformance_summary or {}).get('observation_digest_conformance_finding_count', 0)}/{(observation_digest_conformance_summary or {}).get('observation_digest_conformance_report_count', 0)}",
+                f"- Passed/failed skills: {(observation_digest_conformance_summary or {}).get('observation_digest_conformance_passed_skill_count', 0)}/{(observation_digest_conformance_summary or {}).get('observation_digest_conformance_failed_skill_count', 0)}",
+                f"- Smoke passed/failed: {(observation_digest_conformance_summary or {}).get('observation_digest_smoke_passed_count', 0)}/{(observation_digest_conformance_summary or {}).get('observation_digest_smoke_failed_count', 0)}",
+                f"- Conformance findings: {PIGReportService._inline_counts((observation_digest_conformance_summary or {}).get('observation_digest_conformance_finding_by_type') or {})}",
+                f"- Conformance checks: {PIGReportService._inline_counts((observation_digest_conformance_summary or {}).get('observation_digest_conformance_check_by_type') or {})}",
+                "",
+                "External Skill Static Digestion:",
+                f"- Inventories/manifests/instructions/capabilities/risks/reports/findings: {(external_skill_static_digestion_summary or {}).get('external_skill_resource_inventory_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_manifest_profile_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_instruction_profile_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_declared_capability_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_risk_profile_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_digestion_report_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_digestion_finding_count', 0)}",
+                f"- Manifest kinds: {PIGReportService._inline_counts((external_skill_static_digestion_summary or {}).get('external_skill_static_digest_by_manifest_kind') or {})}",
+                f"- Capability categories: {PIGReportService._inline_counts((external_skill_static_digestion_summary or {}).get('external_skill_static_digest_by_capability_category') or {})}",
+                f"- Risk classes: {PIGReportService._inline_counts((external_skill_static_digestion_summary or {}).get('external_skill_static_digest_by_risk_class') or {})}",
+                f"- Scripts/shell/network/write/mcp/plugin: {(external_skill_static_digestion_summary or {}).get('external_skill_static_digest_script_detected_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_digest_shell_declared_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_digest_network_declared_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_digest_write_declared_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_digest_mcp_declared_count', 0)}/{(external_skill_static_digestion_summary or {}).get('external_skill_static_digest_plugin_declared_count', 0)}",
+                "",
+                "Agent Observation Spine:",
+                f"- Agents/runtimes/environments/collectors/adapters/ontology: {(agent_observation_spine_summary or {}).get('agent_instance_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_runtime_descriptor_count', 0)}/{(agent_observation_spine_summary or {}).get('runtime_environment_snapshot_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_observation_collector_contract_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_observation_adapter_profile_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_movement_ontology_term_count', 0)}",
+                f"- Events/objects/relations/inferences/reviews/corrections: {(agent_observation_spine_summary or {}).get('agent_observation_normalized_event_v2_count', 0)}/{(agent_observation_spine_summary or {}).get('observed_agent_object_count', 0)}/{(agent_observation_spine_summary or {}).get('observed_agent_relation_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_behavior_inference_v2_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_observation_review_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_observation_correction_count', 0)}",
+                f"- Redaction/export/fleet/findings: {(agent_observation_spine_summary or {}).get('observation_redaction_policy_count', 0)}/{(agent_observation_spine_summary or {}).get('observation_export_policy_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_fleet_observation_snapshot_count', 0)}/{(agent_observation_spine_summary or {}).get('agent_observation_spine_finding_count', 0)}",
+                f"- Action types: {PIGReportService._inline_counts((agent_observation_spine_summary or {}).get('observed_event_v2_by_action_type') or {})}",
+                f"- Object types: {PIGReportService._inline_counts((agent_observation_spine_summary or {}).get('observed_object_by_type') or {})}",
+                f"- Relation types: {PIGReportService._inline_counts((agent_observation_spine_summary or {}).get('observed_relation_by_type') or {})}",
+                f"- Inference confidence: {PIGReportService._inline_counts((agent_observation_spine_summary or {}).get('behavior_inference_by_confidence_class') or {})}",
+                "",
+                "Cross-Harness Trace Adapters:",
+                f"- Policies/contracts/inspections/rules/plans/results/coverage/findings: {(cross_harness_trace_adapter_summary or {}).get('cross_harness_trace_adapter_policy_count', 0)}/{(cross_harness_trace_adapter_summary or {}).get('harness_trace_adapter_contract_count', 0)}/{(cross_harness_trace_adapter_summary or {}).get('harness_trace_source_inspection_count', 0)}/{(cross_harness_trace_adapter_summary or {}).get('harness_trace_mapping_rule_count', 0)}/{(cross_harness_trace_adapter_summary or {}).get('harness_trace_normalization_plan_count', 0)}/{(cross_harness_trace_adapter_summary or {}).get('harness_trace_normalization_result_count', 0)}/{(cross_harness_trace_adapter_summary or {}).get('harness_trace_adapter_coverage_report_count', 0)}/{(cross_harness_trace_adapter_summary or {}).get('harness_trace_adapter_finding_count', 0)}",
+                f"- Normalized events: {(cross_harness_trace_adapter_summary or {}).get('harness_trace_normalized_event_count', 0)}",
+                f"- By runtime: {PIGReportService._inline_counts((cross_harness_trace_adapter_summary or {}).get('harness_trace_normalization_by_runtime') or {})}",
+                f"- By adapter: {PIGReportService._inline_counts((cross_harness_trace_adapter_summary or {}).get('harness_trace_normalization_by_adapter') or {})}",
+                f"- Adapter implemented: {PIGReportService._inline_counts((cross_harness_trace_adapter_summary or {}).get('harness_trace_adapter_by_implemented') or {})}",
+                f"- Findings: {PIGReportService._inline_counts((cross_harness_trace_adapter_summary or {}).get('harness_trace_adapter_finding_by_type') or {})}",
             ]
         )
 
@@ -2107,27 +2512,50 @@ class PIGReportService:
             "binary_rejected": 0,
             "file_too_large": 0,
         }
+        summary_completed_count = 0
+        summary_failed_count = 0
+        summary_unsupported_count = 0
+        summary_candidate_pending_count = 0
+        summary_by_input_kind: dict[str, int] = {}
+        summary_finding_by_type: dict[str, int] = {}
+        local_object_type_counts = dict(object_type_counts)
         for item in view.objects:
-            if item.object_type != "workspace_read_violation":
-                continue
-            violation_type = str(item.object_attrs.get("violation_type") or "unknown")
-            if violation_type in violation_counts:
-                violation_counts[violation_type] += 1
+            local_object_type_counts[item.object_type] = local_object_type_counts.get(item.object_type, 0) + 1
+            if item.object_type == "workspace_read_violation":
+                violation_type = str(item.object_attrs.get("violation_type") or "unknown")
+                if violation_type in violation_counts:
+                    violation_counts[violation_type] += 1
+            if item.object_type == "workspace_read_summary_result":
+                status = str(item.object_attrs.get("status") or "")
+                input_kind = str(item.object_attrs.get("input_kind") or "unknown")
+                summary_by_input_kind[input_kind] = summary_by_input_kind.get(input_kind, 0) + 1
+                if status == "completed":
+                    summary_completed_count += 1
+                if status in {"failed", "error"}:
+                    summary_failed_count += 1
+                if status == "unsupported":
+                    summary_unsupported_count += 1
+            if item.object_type == "workspace_read_summary_candidate":
+                if str(item.object_attrs.get("review_status") or "") == "pending_review":
+                    summary_candidate_pending_count += 1
+            if item.object_type == "workspace_read_summary_finding":
+                finding_type = str(item.object_attrs.get("finding_type") or "unknown")
+                summary_finding_by_type[finding_type] = summary_finding_by_type.get(finding_type, 0) + 1
         denied_count = (
             event_activity_counts.get("workspace_file_list_denied", 0)
             + event_activity_counts.get("workspace_text_file_read_denied", 0)
             + event_activity_counts.get("workspace_markdown_summary_denied", 0)
         )
         return {
-            "workspace_read_root_count": object_type_counts.get("workspace_read_root", 0),
-            "workspace_read_boundary_count": object_type_counts.get("workspace_read_boundary", 0),
-            "workspace_file_list_request_count": object_type_counts.get("workspace_file_list_request", 0),
-            "workspace_file_list_result_count": object_type_counts.get("workspace_file_list_result", 0),
-            "workspace_text_file_read_request_count": object_type_counts.get("workspace_text_file_read_request", 0),
-            "workspace_text_file_read_result_count": object_type_counts.get("workspace_text_file_read_result", 0),
-            "workspace_markdown_summary_request_count": object_type_counts.get("workspace_markdown_summary_request", 0),
-            "workspace_markdown_summary_result_count": object_type_counts.get("workspace_markdown_summary_result", 0),
-            "workspace_read_violation_count": object_type_counts.get("workspace_read_violation", 0),
+            "workspace_read_root_count": local_object_type_counts.get("workspace_read_root", 0),
+            "workspace_read_boundary_count": local_object_type_counts.get("workspace_read_boundary", 0),
+            "workspace_file_list_request_count": local_object_type_counts.get("workspace_file_list_request", 0),
+            "workspace_file_list_result_count": local_object_type_counts.get("workspace_file_list_result", 0),
+            "workspace_text_file_read_request_count": local_object_type_counts.get("workspace_text_file_read_request", 0),
+            "workspace_text_file_read_result_count": local_object_type_counts.get("workspace_text_file_read_result", 0),
+            "workspace_markdown_summary_request_count": local_object_type_counts.get("workspace_markdown_summary_request", 0),
+            "workspace_markdown_summary_result_count": local_object_type_counts.get("workspace_markdown_summary_result", 0),
+            "workspace_read_violation_count": local_object_type_counts.get("workspace_read_violation", 0),
             "workspace_read_denied_count": denied_count,
             "workspace_read_binary_rejected_count": violation_counts["binary_rejected"],
             "workspace_read_oversize_rejected_count": violation_counts["file_too_large"],
@@ -2145,6 +2573,63 @@ class PIGReportService:
             "workspace_markdown_summary_completed_count": event_activity_counts.get("workspace_markdown_summary_completed", 0),
             "workspace_markdown_summary_denied_count": event_activity_counts.get("workspace_markdown_summary_denied", 0),
             "workspace_read_violation_recorded_count": event_activity_counts.get("workspace_read_violation_recorded", 0),
+            "workspace_read_summary_policy_count": local_object_type_counts.get("workspace_read_summary_policy", 0),
+            "workspace_read_summary_request_count": local_object_type_counts.get("workspace_read_summary_request", 0),
+            "workspace_read_summary_section_count": local_object_type_counts.get("workspace_read_summary_section", 0),
+            "workspace_read_summary_result_count": local_object_type_counts.get("workspace_read_summary_result", 0),
+            "workspace_read_summary_candidate_count": local_object_type_counts.get("workspace_read_summary_candidate", 0),
+            "workspace_read_summary_finding_count": local_object_type_counts.get("workspace_read_summary_finding", 0),
+            "workspace_read_summary_completed_count": summary_completed_count,
+            "workspace_read_summary_failed_count": summary_failed_count,
+            "workspace_read_summary_unsupported_count": summary_unsupported_count,
+            "workspace_read_summary_candidate_pending_count": summary_candidate_pending_count,
+            "workspace_read_summary_by_input_kind": summary_by_input_kind,
+            "workspace_read_summary_finding_by_type": summary_finding_by_type,
+        }
+
+    @staticmethod
+    def _personal_runtime_workbench_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        local_object_type_counts = dict(object_type_counts)
+        for item in view.objects:
+            local_object_type_counts[item.object_type] = local_object_type_counts.get(item.object_type, 0) + 1
+        pending_review_count = 0
+        blocked_activity_count = 0
+        failed_activity_count = 0
+        candidate_count = 0
+        by_command: dict[str, int] = {}
+        for item in view.objects:
+            attrs = item.object_attrs
+            if item.object_type == "personal_runtime_workbench_pending_item":
+                if attrs.get("status") in {"pending_review", "needs_review", "open"}:
+                    pending_review_count += 1
+                if attrs.get("item_type") in {"promotion_candidate", "workspace_summary_candidate"}:
+                    candidate_count += 1
+            if item.object_type == "personal_runtime_workbench_recent_activity":
+                if attrs.get("blocked") is True:
+                    blocked_activity_count += 1
+                if attrs.get("failed") is True:
+                    failed_activity_count += 1
+            if item.object_type == "personal_runtime_workbench_result":
+                command = str(attrs.get("command_name") or "unknown")
+                by_command[command] = by_command.get(command, 0) + 1
+        return {
+            "personal_runtime_workbench_snapshot_count": local_object_type_counts.get("personal_runtime_workbench_snapshot", 0),
+            "personal_runtime_workbench_panel_count": local_object_type_counts.get("personal_runtime_workbench_panel", 0),
+            "personal_runtime_workbench_pending_item_count": local_object_type_counts.get("personal_runtime_workbench_pending_item", 0),
+            "personal_runtime_workbench_recent_activity_count": local_object_type_counts.get("personal_runtime_workbench_recent_activity", 0),
+            "personal_runtime_workbench_finding_count": local_object_type_counts.get("personal_runtime_workbench_finding", 0),
+            "personal_runtime_workbench_result_count": local_object_type_counts.get("personal_runtime_workbench_result", 0),
+            "personal_runtime_workbench_pending_review_count": pending_review_count,
+            "personal_runtime_workbench_blocked_activity_count": blocked_activity_count,
+            "personal_runtime_workbench_failed_activity_count": failed_activity_count,
+            "personal_runtime_workbench_candidate_count": candidate_count,
+            "personal_runtime_workbench_by_command": by_command,
+            "personal_runtime_workbench_snapshot_created_count": event_activity_counts.get("personal_runtime_workbench_snapshot_created", 0),
+            "personal_runtime_workbench_result_recorded_count": event_activity_counts.get("personal_runtime_workbench_result_recorded", 0),
         }
 
     @staticmethod
@@ -2744,6 +3229,516 @@ class PIGReportService:
             "external_ocel_preview_created_count": event_activity_counts.get("external_ocel_preview_created", 0),
             "external_ocel_risk_note_recorded_count": event_activity_counts.get(
                 "external_ocel_risk_note_recorded",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _observation_digest_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        observed_event_by_activity: dict[str, int] = {}
+        observed_run_by_source_runtime: dict[str, int] = {}
+        external_candidate_by_risk_class: dict[str, int] = {}
+        external_candidate_pending_review_count = 0
+        adapter_candidate_pending_review_count = 0
+        for item in view.objects:
+            if item.object_type == "agent_observation_normalized_event":
+                activity = str(item.object_attrs.get("observed_activity") or "unknown_event_observed")
+                observed_event_by_activity[activity] = observed_event_by_activity.get(activity, 0) + 1
+            if item.object_type == "observed_agent_run":
+                runtime = str(item.object_attrs.get("inferred_runtime") or "unknown")
+                observed_run_by_source_runtime[runtime] = observed_run_by_source_runtime.get(runtime, 0) + 1
+            if item.object_type == "external_skill_assimilation_candidate":
+                risk_class = str(item.object_attrs.get("risk_class") or "unknown")
+                external_candidate_by_risk_class[risk_class] = external_candidate_by_risk_class.get(risk_class, 0) + 1
+                if item.object_attrs.get("review_status") == "pending_review":
+                    external_candidate_pending_review_count += 1
+            if item.object_type == "external_skill_adapter_candidate":
+                if item.object_attrs.get("requires_review") is True:
+                    adapter_candidate_pending_review_count += 1
+        return {
+            "agent_observation_source_count": object_type_counts.get("agent_observation_source", 0),
+            "agent_observation_batch_count": object_type_counts.get("agent_observation_batch", 0),
+            "agent_observation_normalized_event_count": object_type_counts.get(
+                "agent_observation_normalized_event",
+                0,
+            ),
+            "observed_agent_run_count": object_type_counts.get("observed_agent_run", 0),
+            "agent_behavior_inference_count": object_type_counts.get("agent_behavior_inference", 0),
+            "agent_process_narrative_count": object_type_counts.get("agent_process_narrative", 0),
+            "external_skill_source_descriptor_count": object_type_counts.get(
+                "external_skill_source_descriptor",
+                0,
+            ),
+            "external_skill_static_profile_count": object_type_counts.get("external_skill_static_profile", 0),
+            "external_skill_behavior_fingerprint_count": object_type_counts.get(
+                "external_skill_behavior_fingerprint",
+                0,
+            ),
+            "external_skill_assimilation_candidate_count": object_type_counts.get(
+                "external_skill_assimilation_candidate",
+                0,
+            ),
+            "external_skill_adapter_candidate_count": object_type_counts.get(
+                "external_skill_adapter_candidate",
+                0,
+            ),
+            "observation_digestion_finding_count": object_type_counts.get("observation_digestion_finding", 0),
+            "observation_digestion_result_count": object_type_counts.get("observation_digestion_result", 0),
+            "observed_event_by_activity": observed_event_by_activity,
+            "observed_run_by_source_runtime": observed_run_by_source_runtime,
+            "external_candidate_by_risk_class": external_candidate_by_risk_class,
+            "external_candidate_pending_review_count": external_candidate_pending_review_count,
+            "adapter_candidate_pending_review_count": adapter_candidate_pending_review_count,
+            "agent_observation_source_inspected_count": event_activity_counts.get(
+                "agent_observation_source_inspected",
+                0,
+            ),
+            "external_skill_assimilation_candidate_created_count": event_activity_counts.get(
+                "external_skill_assimilation_candidate_created",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _skill_registry_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_layer: dict[str, int] = {}
+        by_origin: dict[str, int] = {}
+        by_risk_class: dict[str, int] = {}
+        by_status: dict[str, int] = {}
+        observation_count = 0
+        digestion_count = 0
+        external_candidate_count = 0
+        enabled_count = 0
+        disabled_count = 0
+        blocked_count = 0
+        missing_contract_count = 0
+        for item in view.objects:
+            if item.object_type == "skill_registry_entry":
+                layer = str(item.object_attrs.get("skill_layer") or "unknown")
+                origin = str(item.object_attrs.get("skill_origin") or "unknown")
+                risk_class = str(item.object_attrs.get("risk_class") or "unknown")
+                status = str(item.object_attrs.get("status") or "unknown")
+                by_layer[layer] = by_layer.get(layer, 0) + 1
+                by_origin[origin] = by_origin.get(origin, 0) + 1
+                by_risk_class[risk_class] = by_risk_class.get(risk_class, 0) + 1
+                by_status[status] = by_status.get(status, 0) + 1
+                if layer == "internal_observation":
+                    observation_count += 1
+                if layer == "internal_digestion":
+                    digestion_count += 1
+                if layer in {"external_candidate", "external_adapted"}:
+                    external_candidate_count += 1
+                if item.object_attrs.get("enabled") is True:
+                    enabled_count += 1
+                else:
+                    disabled_count += 1
+                if status == "blocked" or layer == "blocked":
+                    blocked_count += 1
+            if item.object_type == "skill_registry_finding":
+                if item.object_attrs.get("finding_type") == "missing_contract":
+                    missing_contract_count += 1
+        return {
+            "skill_registry_view_count": object_type_counts.get("skill_registry_view", 0),
+            "skill_registry_entry_count": object_type_counts.get("skill_registry_entry", 0),
+            "skill_registry_filter_count": object_type_counts.get("skill_registry_filter", 0),
+            "skill_registry_finding_count": object_type_counts.get("skill_registry_finding", 0),
+            "skill_registry_result_count": object_type_counts.get("skill_registry_result", 0),
+            "skill_registry_observation_skill_count": observation_count,
+            "skill_registry_digestion_skill_count": digestion_count,
+            "skill_registry_external_candidate_count": external_candidate_count,
+            "skill_registry_enabled_count": enabled_count,
+            "skill_registry_disabled_count": disabled_count,
+            "skill_registry_blocked_count": blocked_count,
+            "skill_registry_missing_contract_finding_count": missing_contract_count,
+            "skill_registry_by_layer": by_layer,
+            "skill_registry_by_origin": by_origin,
+            "skill_registry_by_risk_class": by_risk_class,
+            "skill_registry_by_status": by_status,
+            "skill_registry_view_created_count": event_activity_counts.get("skill_registry_view_created", 0),
+            "skill_registry_rendered_count": event_activity_counts.get("skill_registry_rendered", 0),
+        }
+
+    @staticmethod
+    def _observation_digest_proposal_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_skill_id: dict[str, int] = {}
+        by_intent_family: dict[str, int] = {}
+        finding_by_type: dict[str, int] = {}
+        observation_count = 0
+        digestion_count = 0
+        mixed_count = 0
+        needs_more_input_count = 0
+        no_matching_skill_count = 0
+        for item in view.objects:
+            if item.object_type == "observation_digest_intent_candidate":
+                family = str(item.object_attrs.get("intent_family") or "unknown")
+                by_intent_family[family] = by_intent_family.get(family, 0) + 1
+                if family == "observation":
+                    observation_count += 1
+                elif family == "digestion":
+                    digestion_count += 1
+                elif family == "mixed_observation_digestion":
+                    mixed_count += 1
+            if item.object_type == "observation_digest_proposal_binding":
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                by_skill_id[skill_id] = by_skill_id.get(skill_id, 0) + 1
+            if item.object_type == "observation_digest_proposal_set":
+                if item.object_attrs.get("status") == "needs_more_input":
+                    needs_more_input_count += 1
+                if item.object_attrs.get("status") == "no_matching_skill":
+                    no_matching_skill_count += 1
+            if item.object_type == "observation_digest_proposal_finding":
+                finding_type = str(item.object_attrs.get("finding_type") or "unknown")
+                finding_by_type[finding_type] = finding_by_type.get(finding_type, 0) + 1
+        return {
+            "observation_digest_proposal_policy_count": object_type_counts.get("observation_digest_proposal_policy", 0),
+            "observation_digest_intent_candidate_count": object_type_counts.get("observation_digest_intent_candidate", 0),
+            "observation_digest_proposal_binding_count": object_type_counts.get("observation_digest_proposal_binding", 0),
+            "observation_digest_proposal_set_count": object_type_counts.get("observation_digest_proposal_set", 0),
+            "observation_digest_proposal_finding_count": object_type_counts.get("observation_digest_proposal_finding", 0),
+            "observation_digest_proposal_result_count": object_type_counts.get("observation_digest_proposal_result", 0),
+            "observation_digest_proposal_observation_count": observation_count,
+            "observation_digest_proposal_digestion_count": digestion_count,
+            "observation_digest_proposal_mixed_count": mixed_count,
+            "observation_digest_proposal_needs_more_input_count": needs_more_input_count,
+            "observation_digest_proposal_no_matching_skill_count": no_matching_skill_count,
+            "observation_digest_proposal_by_skill_id": by_skill_id,
+            "observation_digest_proposal_by_intent_family": by_intent_family,
+            "observation_digest_proposal_finding_by_type": finding_by_type,
+            "observation_digest_proposal_needs_more_input_event_count": event_activity_counts.get(
+                "observation_digest_proposal_needs_more_input",
+                0,
+            ),
+            "observation_digest_proposal_no_matching_skill_event_count": event_activity_counts.get(
+                "observation_digest_proposal_no_matching_skill",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _observation_digest_invocation_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_skill_id: dict[str, int] = {}
+        by_family: dict[str, int] = {}
+        finding_by_type: dict[str, int] = {}
+        completed_count = 0
+        blocked_count = 0
+        failed_count = 0
+        envelope_count = 0
+        for item in view.objects:
+            if item.object_type == "observation_digest_skill_runtime_binding":
+                family = str(item.object_attrs.get("skill_family") or "unknown")
+                by_family[family] = by_family.get(family, 0) + 1
+            if item.object_type == "observation_digest_invocation_result":
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                by_skill_id[skill_id] = by_skill_id.get(skill_id, 0) + 1
+                status = str(item.object_attrs.get("status") or "unknown")
+                if bool(item.object_attrs.get("blocked")):
+                    blocked_count += 1
+                elif status == "failed":
+                    failed_count += 1
+                else:
+                    completed_count += 1
+                if item.object_attrs.get("envelope_id"):
+                    envelope_count += 1
+            if item.object_type == "observation_digest_invocation_finding":
+                finding_type = str(item.object_attrs.get("finding_type") or "unknown")
+                finding_by_type[finding_type] = finding_by_type.get(finding_type, 0) + 1
+        return {
+            "observation_digest_runtime_binding_count": object_type_counts.get(
+                "observation_digest_skill_runtime_binding",
+                0,
+            ),
+            "observation_digest_invocation_policy_count": object_type_counts.get(
+                "observation_digest_invocation_policy",
+                0,
+            ),
+            "observation_digest_invocation_result_count": object_type_counts.get(
+                "observation_digest_invocation_result",
+                0,
+            ),
+            "observation_digest_invocation_finding_count": object_type_counts.get(
+                "observation_digest_invocation_finding",
+                0,
+            ),
+            "observation_digest_invocation_completed_count": completed_count,
+            "observation_digest_invocation_blocked_count": blocked_count,
+            "observation_digest_invocation_failed_count": failed_count,
+            "observation_digest_invocation_by_skill_id": by_skill_id,
+            "observation_digest_invocation_by_family": by_family,
+            "observation_digest_invocation_finding_by_type": finding_by_type,
+            "observation_digest_invocation_envelope_count": envelope_count,
+            "observation_digest_invocation_completed_event_count": event_activity_counts.get(
+                "observation_digest_skill_invocation_completed",
+                0,
+            ),
+            "observation_digest_invocation_blocked_event_count": event_activity_counts.get(
+                "observation_digest_skill_invocation_blocked",
+                0,
+            ),
+            "observation_digest_invocation_failed_event_count": event_activity_counts.get(
+                "observation_digest_skill_invocation_failed",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _observation_digest_conformance_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        finding_by_type: dict[str, int] = {}
+        check_by_type: dict[str, int] = {}
+        by_skill_id: dict[str, int] = {}
+        passed_skill_count = 0
+        failed_skill_count = 0
+        smoke_passed_count = 0
+        smoke_failed_count = 0
+        for item in view.objects:
+            if item.object_type == "observation_digest_conformance_check":
+                check_type = str(item.object_attrs.get("check_type") or "unknown")
+                skill_id = str(item.object_attrs.get("skill_id") or "unknown")
+                check_by_type[check_type] = check_by_type.get(check_type, 0) + 1
+                by_skill_id[skill_id] = by_skill_id.get(skill_id, 0) + 1
+            if item.object_type == "observation_digest_conformance_finding":
+                finding_type = str(item.object_attrs.get("finding_type") or "unknown")
+                finding_by_type[finding_type] = finding_by_type.get(finding_type, 0) + 1
+            if item.object_type == "observation_digest_smoke_result":
+                if bool(item.object_attrs.get("passed")):
+                    smoke_passed_count += 1
+                else:
+                    smoke_failed_count += 1
+            if item.object_type == "observation_digest_conformance_report":
+                passed_skill_count = max(
+                    passed_skill_count,
+                    int(item.object_attrs.get("passed_skill_count") or 0),
+                )
+                failed_skill_count = max(
+                    failed_skill_count,
+                    int(item.object_attrs.get("failed_skill_count") or 0),
+                )
+        return {
+            "observation_digest_conformance_policy_count": object_type_counts.get(
+                "observation_digest_conformance_policy",
+                0,
+            ),
+            "observation_digest_conformance_check_count": object_type_counts.get(
+                "observation_digest_conformance_check",
+                0,
+            ),
+            "observation_digest_smoke_case_count": object_type_counts.get("observation_digest_smoke_case", 0),
+            "observation_digest_smoke_result_count": object_type_counts.get("observation_digest_smoke_result", 0),
+            "observation_digest_conformance_finding_count": object_type_counts.get(
+                "observation_digest_conformance_finding",
+                0,
+            ),
+            "observation_digest_conformance_report_count": object_type_counts.get(
+                "observation_digest_conformance_report",
+                0,
+            ),
+            "observation_digest_conformance_passed_skill_count": passed_skill_count,
+            "observation_digest_conformance_failed_skill_count": failed_skill_count,
+            "observation_digest_smoke_passed_count": smoke_passed_count,
+            "observation_digest_smoke_failed_count": smoke_failed_count,
+            "observation_digest_conformance_finding_by_type": finding_by_type,
+            "observation_digest_conformance_check_by_type": check_by_type,
+            "observation_digest_conformance_by_skill_id": by_skill_id,
+            "observation_digest_conformance_report_recorded_count": event_activity_counts.get(
+                "observation_digest_conformance_report_recorded",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _external_skill_static_digestion_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        manifest_kind: dict[str, int] = {}
+        capability_category: dict[str, int] = {}
+        risk_class: dict[str, int] = {}
+        script_detected_count = 0
+        shell_declared_count = 0
+        network_declared_count = 0
+        write_declared_count = 0
+        mcp_declared_count = 0
+        plugin_declared_count = 0
+        for item in view.objects:
+            attrs = item.object_attrs
+            if item.object_type == "external_skill_resource_inventory":
+                script_detected_count += len(attrs.get("script_files") or [])
+            if item.object_type == "external_skill_manifest_profile":
+                key = str(attrs.get("manifest_kind") or "unknown")
+                manifest_kind[key] = manifest_kind.get(key, 0) + 1
+            if item.object_type == "external_skill_declared_capability":
+                key = str(attrs.get("capability_category") or "unknown")
+                capability_category[key] = capability_category.get(key, 0) + 1
+            if item.object_type == "external_skill_static_risk_profile":
+                key = str(attrs.get("risk_class") or "unknown")
+                risk_class[key] = risk_class.get(key, 0) + 1
+                shell_declared_count += 1 if attrs.get("declared_shell") else 0
+                network_declared_count += 1 if attrs.get("declared_network") else 0
+                write_declared_count += 1 if attrs.get("declared_write") else 0
+                mcp_declared_count += 1 if attrs.get("declared_mcp") else 0
+                plugin_declared_count += 1 if attrs.get("declared_plugin") else 0
+        return {
+            "external_skill_resource_inventory_count": object_type_counts.get("external_skill_resource_inventory", 0),
+            "external_skill_manifest_profile_count": object_type_counts.get("external_skill_manifest_profile", 0),
+            "external_skill_instruction_profile_count": object_type_counts.get("external_skill_instruction_profile", 0),
+            "external_skill_declared_capability_count": object_type_counts.get("external_skill_declared_capability", 0),
+            "external_skill_static_risk_profile_count": object_type_counts.get("external_skill_static_risk_profile", 0),
+            "external_skill_static_digestion_report_count": object_type_counts.get(
+                "external_skill_static_digestion_report",
+                0,
+            ),
+            "external_skill_static_digestion_finding_count": object_type_counts.get(
+                "external_skill_static_digestion_finding",
+                0,
+            ),
+            "external_skill_static_digest_by_manifest_kind": manifest_kind,
+            "external_skill_static_digest_by_capability_category": capability_category,
+            "external_skill_static_digest_by_risk_class": risk_class,
+            "external_skill_static_digest_script_detected_count": script_detected_count,
+            "external_skill_static_digest_shell_declared_count": shell_declared_count,
+            "external_skill_static_digest_network_declared_count": network_declared_count,
+            "external_skill_static_digest_write_declared_count": write_declared_count,
+            "external_skill_static_digest_mcp_declared_count": mcp_declared_count,
+            "external_skill_static_digest_plugin_declared_count": plugin_declared_count,
+            "external_skill_static_digestion_report_created_count": event_activity_counts.get(
+                "external_skill_static_digestion_report_created",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _agent_observation_spine_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        action_type: dict[str, int] = {}
+        object_type: dict[str, int] = {}
+        relation_type: dict[str, int] = {}
+        confidence_class: dict[str, int] = {}
+        adapter_by_runtime: dict[str, int] = {}
+        collector_by_kind: dict[str, int] = {}
+        for item in view.objects:
+            attrs = item.object_attrs
+            if item.object_type == "agent_observation_normalized_event_v2":
+                key = str(attrs.get("canonical_action_type") or "unknown_action")
+                action_type[key] = action_type.get(key, 0) + 1
+            if item.object_type == "observed_agent_object":
+                key = str(attrs.get("object_type") or "unknown_object")
+                object_type[key] = object_type.get(key, 0) + 1
+            if item.object_type == "observed_agent_relation":
+                key = str(attrs.get("relation_type") or "unknown_relation")
+                relation_type[key] = relation_type.get(key, 0) + 1
+            if item.object_type == "agent_behavior_inference_v2":
+                attrs_dict = attrs.get("inference_attrs") or {}
+                key = str(attrs_dict.get("confidence_class") or "behavior_inference")
+                confidence_class[key] = confidence_class.get(key, 0) + 1
+            if item.object_type == "agent_observation_adapter_profile":
+                key = str(attrs.get("source_runtime") or "unknown")
+                adapter_by_runtime[key] = adapter_by_runtime.get(key, 0) + 1
+            if item.object_type == "agent_observation_collector_contract":
+                key = str(attrs.get("collector_kind") or "unknown")
+                collector_by_kind[key] = collector_by_kind.get(key, 0) + 1
+        return {
+            "agent_instance_count": object_type_counts.get("agent_instance", 0),
+            "agent_runtime_descriptor_count": object_type_counts.get("agent_runtime_descriptor", 0),
+            "runtime_environment_snapshot_count": object_type_counts.get("runtime_environment_snapshot", 0),
+            "agent_observation_collector_contract_count": object_type_counts.get("agent_observation_collector_contract", 0),
+            "agent_observation_adapter_profile_count": object_type_counts.get("agent_observation_adapter_profile", 0),
+            "agent_movement_ontology_term_count": object_type_counts.get("agent_movement_ontology_term", 0),
+            "agent_observation_normalized_event_v2_count": object_type_counts.get("agent_observation_normalized_event_v2", 0),
+            "observed_agent_object_count": object_type_counts.get("observed_agent_object", 0),
+            "observed_agent_relation_count": object_type_counts.get("observed_agent_relation", 0),
+            "agent_behavior_inference_v2_count": object_type_counts.get("agent_behavior_inference_v2", 0),
+            "agent_observation_review_count": object_type_counts.get("agent_observation_review", 0),
+            "agent_observation_correction_count": object_type_counts.get("agent_observation_correction", 0),
+            "observation_redaction_policy_count": object_type_counts.get("observation_redaction_policy", 0),
+            "observation_export_policy_count": object_type_counts.get("observation_export_policy", 0),
+            "agent_fleet_observation_snapshot_count": object_type_counts.get("agent_fleet_observation_snapshot", 0),
+            "agent_observation_spine_finding_count": object_type_counts.get("agent_observation_spine_finding", 0),
+            "observed_event_v2_by_action_type": action_type,
+            "observed_object_by_type": object_type,
+            "observed_relation_by_type": relation_type,
+            "behavior_inference_by_confidence_class": confidence_class,
+            "adapter_profile_by_runtime": adapter_by_runtime,
+            "collector_contract_by_kind": collector_by_kind,
+            "agent_observation_event_v2_normalized_count": event_activity_counts.get(
+                "agent_observation_event_v2_normalized",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _cross_harness_trace_adapter_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_runtime: dict[str, int] = {}
+        by_adapter: dict[str, int] = {}
+        by_implemented: dict[str, int] = {}
+        finding_by_type: dict[str, int] = {}
+        rule_by_action: dict[str, int] = {}
+        normalized_event_count = 0
+        for item in view.objects:
+            attrs = item.object_attrs
+            if item.object_type == "harness_trace_adapter_contract":
+                key = "implemented" if bool(attrs.get("implemented")) else "stub"
+                by_implemented[key] = by_implemented.get(key, 0) + 1
+            if item.object_type == "harness_trace_normalization_plan":
+                runtime = str(attrs.get("source_runtime") or "unknown")
+                by_runtime[runtime] = by_runtime.get(runtime, 0) + 1
+                plan_attrs = attrs.get("plan_attrs") or {}
+                adapter = str(plan_attrs.get("adapter_name") or "unknown")
+                by_adapter[adapter] = by_adapter.get(adapter, 0) + 1
+            if item.object_type == "harness_trace_adapter_finding":
+                key = str(attrs.get("finding_type") or "unknown")
+                finding_by_type[key] = finding_by_type.get(key, 0) + 1
+            if item.object_type == "harness_trace_mapping_rule":
+                key = str(attrs.get("target_action_type") or "unknown_action")
+                rule_by_action[key] = rule_by_action.get(key, 0) + 1
+            if item.object_type == "agent_observation_normalized_event_v2":
+                event_attrs = attrs.get("event_attrs") or {}
+                if str(event_attrs.get("adapter_name") or "").endswith("Adapter"):
+                    normalized_event_count += 1
+        return {
+            "cross_harness_trace_adapter_policy_count": object_type_counts.get("cross_harness_trace_adapter_policy", 0),
+            "harness_trace_adapter_contract_count": object_type_counts.get("harness_trace_adapter_contract", 0),
+            "harness_trace_source_inspection_count": object_type_counts.get("harness_trace_source_inspection", 0),
+            "harness_trace_mapping_rule_count": object_type_counts.get("harness_trace_mapping_rule", 0),
+            "harness_trace_normalization_plan_count": object_type_counts.get("harness_trace_normalization_plan", 0),
+            "harness_trace_normalization_result_count": object_type_counts.get("harness_trace_normalization_result", 0),
+            "harness_trace_adapter_coverage_report_count": object_type_counts.get("harness_trace_adapter_coverage_report", 0),
+            "harness_trace_adapter_finding_count": object_type_counts.get("harness_trace_adapter_finding", 0),
+            "harness_trace_adapter_result_count": object_type_counts.get("harness_trace_adapter_result", 0),
+            "harness_trace_normalized_event_count": normalized_event_count,
+            "harness_trace_normalization_by_runtime": by_runtime,
+            "harness_trace_normalization_by_adapter": by_adapter,
+            "harness_trace_adapter_by_implemented": by_implemented,
+            "harness_trace_adapter_finding_by_type": finding_by_type,
+            "harness_trace_mapping_rule_by_action_type": rule_by_action,
+            "harness_trace_normalization_completed_count": event_activity_counts.get(
+                "harness_trace_normalization_completed",
                 0,
             ),
         }

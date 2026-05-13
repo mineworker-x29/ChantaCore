@@ -70,3 +70,34 @@ def test_outside_root_read_is_denied_by_workspace_service(tmp_path) -> None:
     assert result.status == "failed"
     assert result.error_message == "Workspace text file read denied"
     assert result.output_payload["success"] is False
+
+
+def test_explicit_workspace_text_read_rejects_absolute_relative_path(tmp_path) -> None:
+    service = ExplicitSkillInvocationService(
+        ocel_store=OCELStore(tmp_path / "invocation.sqlite")
+    )
+
+    result = service.invoke_explicit_skill(
+        skill_id="skill:read_workspace_text_file",
+        input_payload={"root_path": str(tmp_path), "relative_path": str(tmp_path / "secret.txt")},
+        invocation_mode="test",
+    )
+
+    assert result.status == "denied"
+    assert result.output_payload == {}
+    assert result.violation_ids
+
+
+def test_explicit_workspace_file_list_traversal_is_not_completed_success(tmp_path) -> None:
+    service = ExplicitSkillInvocationService(
+        ocel_store=OCELStore(tmp_path / "invocation.sqlite")
+    )
+
+    result = service.invoke_explicit_skill(
+        skill_id="skill:list_workspace_files",
+        input_payload={"root_path": str(tmp_path), "relative_path": "..\\outside"},
+        invocation_mode="test",
+    )
+
+    assert result.status == "failed"
+    assert result.output_payload["success"] is False

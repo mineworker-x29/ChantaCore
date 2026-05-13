@@ -14,7 +14,9 @@ from chanta_core.skills.builtin.workspace_read import (
     execute_read_workspace_text_file_skill,
     execute_summarize_workspace_markdown_skill,
 )
+from chanta_core.skills.builtin.observation_digest import execute_observation_digest_skill
 from chanta_core.skills.context import SkillExecutionContext
+from chanta_core.observation_digest import OBSERVATION_DIGESTION_SKILL_IDS
 from chanta_core.skills.ids import (
     new_explicit_skill_invocation_decision_id,
     new_explicit_skill_invocation_input_id,
@@ -32,6 +34,7 @@ SUPPORTED_EXPLICIT_SKILL_IDS = {
     "skill:list_workspace_files",
     "skill:read_workspace_text_file",
     "skill:summarize_workspace_markdown",
+    *OBSERVATION_DIGESTION_SKILL_IDS,
 }
 
 
@@ -311,10 +314,22 @@ class ExplicitSkillInvocationService:
             messages.append("skill_id is not supported for explicit invocation")
         if request.skill_id in SUPPORTED_EXPLICIT_SKILL_IDS:
             if not str(payload.get("root_path") or "").strip():
-                messages.append("root_path is required")
+                if request.skill_id not in {
+                    "skill:agent_observation_normalize",
+                    "skill:agent_behavior_infer",
+                    "skill:agent_process_narrative",
+                    "skill:external_behavior_fingerprint",
+                    "skill:external_skill_assimilate",
+                    "skill:external_skill_adapter_candidate",
+                }:
+                    messages.append("root_path is required")
             if request.skill_id in {
                 "skill:read_workspace_text_file",
                 "skill:summarize_workspace_markdown",
+                "skill:agent_observation_source_inspect",
+                "skill:agent_trace_observe",
+                "skill:external_skill_source_inspect",
+                "skill:external_skill_static_digest",
             } and not str(payload.get("relative_path") or "").strip():
                 messages.append("relative_path is required")
             relative_path = str(payload.get("relative_path") or ".")
@@ -642,7 +657,7 @@ class ExplicitSkillInvocationService:
             "skill:read_workspace_text_file": execute_read_workspace_text_file_skill,
             "skill:summarize_workspace_markdown": execute_summarize_workspace_markdown_skill,
         }
-        executor = executor_by_id[request.skill_id]
+        executor = executor_by_id.get(request.skill_id, execute_observation_digest_skill)
         return executor(
             skill=skill,
             context=context,

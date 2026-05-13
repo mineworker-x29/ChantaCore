@@ -50,9 +50,19 @@ def test_registry_registers_all_builtin_skills() -> None:
     assert PIGContext is not None
     assert PIGFeedbackService is not None
     assert [skill.skill_id for skill in registry.list_skills()] == [
+        "skill:agent_behavior_infer",
+        "skill:agent_observation_normalize",
+        "skill:agent_observation_source_inspect",
+        "skill:agent_process_narrative",
+        "skill:agent_trace_observe",
         "skill:apply_approved_patch",
         "skill:check_self_conformance",
         "skill:echo",
+        "skill:external_behavior_fingerprint",
+        "skill:external_skill_adapter_candidate",
+        "skill:external_skill_assimilate",
+        "skill:external_skill_source_inspect",
+        "skill:external_skill_static_digest",
         "skill:ingest_human_pi",
         "skill:inspect_ocel_recent",
         "skill:list_workspace_files",

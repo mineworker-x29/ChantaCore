@@ -7,10 +7,34 @@ from chanta_core.execution.envelope_service import (
     redact_sensitive_fields,
     summarize_status,
 )
+from chanta_core.execution.audit import (
+    ExecutionAuditFilter,
+    ExecutionAuditFinding,
+    ExecutionAuditQuery,
+    ExecutionAuditRecordView,
+    ExecutionAuditResult,
+    ExecutionAuditService,
+)
+from chanta_core.execution.promotion import (
+    ExecutionResultPromotionCandidate,
+    ExecutionResultPromotionDecision,
+    ExecutionResultPromotionFinding,
+    ExecutionResultPromotionPolicy,
+    ExecutionResultPromotionResult,
+    ExecutionResultPromotionReviewRequest,
+    ExecutionResultPromotionService,
+)
 from chanta_core.execution.history_adapter import (
+    execution_audit_findings_to_history_entries,
+    execution_audit_queries_to_history_entries,
+    execution_audit_results_to_history_entries,
     execution_envelopes_to_history_entries,
     execution_outcome_summaries_to_history_entries,
     execution_provenance_records_to_history_entries,
+    execution_result_promotion_candidates_to_history_entries,
+    execution_result_promotion_decisions_to_history_entries,
+    execution_result_promotion_findings_to_history_entries,
+    execution_result_promotion_results_to_history_entries,
 )
 from chanta_core.execution.models import (
     ExecutionArtifactRef,
@@ -22,6 +46,12 @@ from chanta_core.execution.models import (
 )
 
 __all__ = [
+    "ExecutionAuditFilter",
+    "ExecutionAuditFinding",
+    "ExecutionAuditQuery",
+    "ExecutionAuditRecordView",
+    "ExecutionAuditResult",
+    "ExecutionAuditService",
     "ExecutionArtifactRef",
     "ExecutionEnvelope",
     "ExecutionEnvelopeService",
@@ -29,9 +59,23 @@ __all__ = [
     "ExecutionOutcomeSummary",
     "ExecutionOutputSnapshot",
     "ExecutionProvenanceRecord",
+    "ExecutionResultPromotionCandidate",
+    "ExecutionResultPromotionDecision",
+    "ExecutionResultPromotionFinding",
+    "ExecutionResultPromotionPolicy",
+    "ExecutionResultPromotionResult",
+    "ExecutionResultPromotionReviewRequest",
+    "ExecutionResultPromotionService",
+    "execution_audit_findings_to_history_entries",
+    "execution_audit_queries_to_history_entries",
+    "execution_audit_results_to_history_entries",
     "execution_envelopes_to_history_entries",
     "execution_outcome_summaries_to_history_entries",
     "execution_provenance_records_to_history_entries",
+    "execution_result_promotion_candidates_to_history_entries",
+    "execution_result_promotion_decisions_to_history_entries",
+    "execution_result_promotion_findings_to_history_entries",
+    "execution_result_promotion_results_to_history_entries",
     "hash_payload",
     "preview_payload",
     "redact_sensitive_fields",

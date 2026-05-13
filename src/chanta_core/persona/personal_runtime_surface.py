@@ -259,8 +259,15 @@ class PersonalRuntimeSurfaceService:
         self,
         config_view: PersonalRuntimeConfigView,
         manifest: PersonalDirectoryManifest | None = None,
+        projection_refs: list[PersonalProjectionRef] | None = None,
+        show_paths: bool = False,
     ) -> PersonalRuntimeStatusSnapshot:
         manifest_attrs = manifest.manifest_attrs if manifest is not None else {}
+        loadout_ref_details = _mode_loadout_ref_details(
+            projection_refs or [],
+            manifest=manifest,
+            show_paths=show_paths,
+        )
         status = PersonalRuntimeStatusSnapshot(
             status_id=new_personal_runtime_status_snapshot_id(),
             config_view_id=config_view.config_view_id,
@@ -288,6 +295,7 @@ class PersonalRuntimeSurfaceService:
                 "letters_read_as_source": False,
                 "messages_read_as_source": False,
                 "archive_read_as_source": False,
+                "mode_loadout_refs": loadout_ref_details,
                 "mode_activation_enabled": False,
                 "capability_grants_created": False,
             },
@@ -415,7 +423,7 @@ class PersonalRuntimeSurfaceService:
         self._record_command_started(command_name)
         config_view = self.load_config_view(show_paths=show_paths)
         if not config_view.personal_directory_configured:
-            snapshot = self.build_status_snapshot(config_view)
+            snapshot = self.build_status_snapshot(config_view, show_paths=show_paths)
             diagnostic = self._diagnostic(
                 command_name,
                 status="failed",
@@ -436,7 +444,12 @@ class PersonalRuntimeSurfaceService:
             command_name=command_name,
             show_paths=show_paths,
         )
-        snapshot = self.build_status_snapshot(config_view, manifest=manifest)
+        snapshot = self.build_status_snapshot(
+            config_view,
+            manifest=manifest,
+            projection_refs=projection_refs,
+            show_paths=show_paths,
+        )
         if manifest is None:
             return self._command_result(
                 command_name,
@@ -474,7 +487,7 @@ class PersonalRuntimeSurfaceService:
         self._record_command_started(command_name)
         config_view = self.load_config_view(show_paths=show_paths)
         if not config_view.personal_directory_configured:
-            snapshot = self.build_status_snapshot(config_view)
+            snapshot = self.build_status_snapshot(config_view, show_paths=show_paths)
             diagnostic = self._diagnostic(
                 command_name,
                 status="failed",
@@ -490,12 +503,17 @@ class PersonalRuntimeSurfaceService:
                 diagnostics=[diagnostic],
                 status_snapshot=snapshot,
             )
-        manifest, _, _, diagnostics = self._load_runtime_inputs(
+        manifest, projection_refs, _, diagnostics = self._load_runtime_inputs(
             config_view,
             command_name=command_name,
             show_paths=show_paths,
         )
-        snapshot = self.build_status_snapshot(config_view, manifest=manifest)
+        snapshot = self.build_status_snapshot(
+            config_view,
+            manifest=manifest,
+            projection_refs=projection_refs,
+            show_paths=show_paths,
+        )
         if manifest is None:
             return self._command_result(
                 command_name,
@@ -570,6 +588,20 @@ class PersonalRuntimeSurfaceService:
                 f"{check.check_type}:{check.status}" for check in health_checks
             )
             lines.append(f"health_checks={rendered_checks}")
+        if result.command_name == "personal modes" and snapshot is not None:
+            for index, loadout_ref in enumerate(snapshot.status_attrs.get("mode_loadout_refs") or [], start=1):
+                lines.append(
+                    "mode_loadout="
+                    f"{index};"
+                    f"mode={loadout_ref.get('mode_name')};"
+                    f"file={loadout_ref.get('file_basename')};"
+                    f"projection_kind={loadout_ref.get('projection_kind')};"
+                    f"size_chars={loadout_ref.get('size_chars')};"
+                    f"preview_chars={loadout_ref.get('preview_chars')};"
+                    f"safe_for_prompt={loadout_ref.get('safe_for_prompt')}"
+                )
+                if loadout_ref.get("path_ref"):
+                    lines.append(f"mode_loadout_path_ref={loadout_ref.get('path_ref')}")
         lines.append("source_bodies_printed=false")
         lines.append("mode_activation_enabled=false")
         lines.append("capability_grants_created=false")
@@ -580,13 +612,19 @@ class PersonalRuntimeSurfaceService:
         config_view = self.load_config_view(show_paths=show_paths)
         manifest = None
         diagnostics: list[PersonalRuntimeDiagnostic] = []
+        projection_refs: list[PersonalProjectionRef] = []
         if config_view.personal_directory_configured:
-            manifest, _, _, diagnostics = self._load_runtime_inputs(
+            manifest, projection_refs, _, diagnostics = self._load_runtime_inputs(
                 config_view,
                 command_name=command_name,
                 show_paths=show_paths,
             )
-        snapshot = self.build_status_snapshot(config_view, manifest=manifest)
+        snapshot = self.build_status_snapshot(
+            config_view,
+            manifest=manifest,
+            projection_refs=projection_refs,
+            show_paths=show_paths,
+        )
         checks = self.run_health_checks(snapshot)
         status = "noop" if not config_view.personal_directory_configured else _summary_status(checks)
         summary = (
@@ -884,6 +922,51 @@ def _summary_status(checks: list[PersonalRuntimeHealthCheck]) -> str:
     failed = any(check.status in {"failed", "error"} for check in checks)
     warnings = any(check.status == "warning" for check in checks)
     return "failed" if failed else "needs_review" if warnings else "passed"
+
+
+def _mode_loadout_ref_details(
+    projection_refs: list[PersonalProjectionRef],
+    *,
+    manifest: PersonalDirectoryManifest | None,
+    show_paths: bool,
+) -> list[dict[str, Any]]:
+    details: list[dict[str, Any]] = []
+    loadout_refs = [ref for ref in projection_refs if ref.projection_kind == "mode_loadout"]
+    for ref in sorted(loadout_refs, key=lambda item: item.projection_name):
+        detail = {
+            "mode_name": _infer_mode_name(ref.projection_name),
+            "file_basename": str(ref.ref_attrs.get("path_basename") or Path(ref.projection_path).name),
+            "projection_kind": ref.projection_kind,
+            "size_chars": ref.total_chars or 0,
+            "preview_chars": len(ref.content_preview or ""),
+            "safe_for_prompt": ref.safe_for_prompt,
+            "source_bodies_printed": False,
+        }
+        if show_paths:
+            detail["path_ref"] = ref.projection_path
+        details.append(detail)
+    if details or manifest is None:
+        return details
+    for item in manifest.available_loadout_refs:
+        detail = {
+            "mode_name": _infer_mode_name(str(item.get("name") or "")),
+            "file_basename": str(item.get("path_basename") or ""),
+            "projection_kind": str(item.get("kind") or "mode_loadout"),
+            "size_chars": None,
+            "preview_chars": 0,
+            "safe_for_prompt": True,
+            "source_bodies_printed": False,
+        }
+        details.append(detail)
+    return details
+
+
+def _infer_mode_name(name: str) -> str:
+    cleaned = name.strip()
+    for suffix in ["_mode_loadout", "_loadout", "-mode-loadout", "-loadout"]:
+        if cleaned.casefold().endswith(suffix):
+            return cleaned[: -len(suffix)]
+    return cleaned
 
 
 def _display_path(path: Path, *, show_paths: bool) -> str:

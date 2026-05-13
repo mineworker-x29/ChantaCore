@@ -5,6 +5,11 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
+from chanta_core.workspace import (
+    WorkspacePathViolationError,
+    WorkspaceReadRootError,
+    resolve_workspace_path,
+)
 from chanta_core.ocel.models import OCELEvent, OCELObject, OCELRecord, OCELRelation
 from chanta_core.ocel.store import OCELStore
 from chanta_core.skills.ids import (
@@ -15,6 +20,7 @@ from chanta_core.skills.ids import (
     new_skill_execution_gate_result_id,
 )
 from chanta_core.skills.invocation import ExplicitSkillInvocationService, SUPPORTED_EXPLICIT_SKILL_IDS
+from chanta_core.observation_digest import OBSERVATION_DIGESTION_SKILL_IDS
 from chanta_core.traces.trace_service import TraceService
 from chanta_core.utility.time import utc_now_iso
 
@@ -531,6 +537,17 @@ class SkillExecutionGateService:
                 findings=findings,
                 reason="Unsupported skill.",
             )
+        workspace_boundary_finding = self._validate_workspace_read_boundary(request)
+        if workspace_boundary_finding is not None:
+            findings.append(workspace_boundary_finding)
+            return self.record_decision(
+                request=request,
+                decision="deny",
+                decision_basis=workspace_boundary_finding.finding_type,
+                can_execute=False,
+                findings=findings,
+                reason=workspace_boundary_finding.message,
+            )
         if active_policy.require_capability_available and _metadata_denies(request, "capability"):
             findings.append(
                 self.record_finding(
@@ -683,14 +700,16 @@ class SkillExecutionGateService:
             shell_network_decision_id=shell_network_decision_id,
         )
         invocation_result_id = getattr(invocation_result, "result_id", None)
+        invocation_status = str(getattr(invocation_result, "status", "unknown"))
+        invocation_succeeded = invocation_status == "completed"
         return self.record_result(
             request=request,
             decision=decision,
             explicit_invocation_result_id=invocation_result_id,
-            executed=True,
-            blocked=False,
+            executed=invocation_succeeded,
+            blocked=not invocation_succeeded,
             findings=findings,
-            status="executed",
+            status="executed" if invocation_succeeded else f"invocation_{invocation_status}",
         )
 
     def render_gate_summary(self, result: SkillExecutionGateResult) -> str:
@@ -705,9 +724,93 @@ class SkillExecutionGateService:
             "enforcement_scope=read_only_explicit_skills",
             "permission_grants_created=false",
         ]
+        if self.last_decision is not None:
+            lines.append(f"gate_decision={self.last_decision.decision}")
+            lines.append(f"gate_decision_basis={self.last_decision.decision_basis}")
+        if self.last_findings:
+            lines.append(f"first_finding_type={self.last_findings[0].finding_type}")
         if result.explicit_invocation_result_id:
             lines.append(f"explicit_invocation_result_id={result.explicit_invocation_result_id}")
         return "\n".join(lines)
+
+    def _validate_workspace_read_boundary(
+        self,
+        request: SkillExecutionGateRequest,
+    ) -> SkillExecutionGateFinding | None:
+        payload = request.request_attrs.get("input_payload")
+        if not isinstance(payload, dict):
+            return self.record_finding(
+                request=request,
+                finding_type="invalid_input",
+                status="failed",
+                severity="high",
+                message="Workspace read input payload is missing or invalid.",
+                subject_ref=request.skill_id,
+            )
+        root_path = str(payload.get("root_path") or "").strip()
+        path_required_skill_ids = {
+            "skill:read_workspace_text_file",
+            "skill:summarize_workspace_markdown",
+            "skill:agent_observation_source_inspect",
+            "skill:agent_trace_observe",
+            "skill:external_skill_source_inspect",
+            "skill:external_skill_static_digest",
+        }
+        if (
+            request.skill_id in OBSERVATION_DIGESTION_SKILL_IDS
+            and request.skill_id not in path_required_skill_ids
+            and not root_path
+        ):
+            return None
+        if not root_path:
+            return self.record_finding(
+                request=request,
+                finding_type="invalid_input",
+                status="failed",
+                severity="high",
+                message="root_path is required for workspace read gate evaluation.",
+                subject_ref=request.skill_id,
+            )
+        relative_path = str(payload.get("relative_path") or ".")
+        if request.skill_id in path_required_skill_ids and not str(payload.get("relative_path") or "").strip():
+            return self.record_finding(
+                request=request,
+                finding_type="invalid_input",
+                status="failed",
+                severity="high",
+                message="relative_path is required for this workspace read skill.",
+                subject_ref=request.skill_id,
+            )
+        try:
+            resolve_workspace_path(root_path, relative_path)
+        except WorkspaceReadRootError as error:
+            return self.record_finding(
+                request=request,
+                finding_type="workspace_root_invalid",
+                status="failed",
+                severity="high",
+                message=str(error),
+                subject_ref=request.skill_id,
+            )
+        except WorkspacePathViolationError as error:
+            message = str(error)
+            finding_type = "workspace_boundary_violation"
+            folded = message.casefold()
+            if "absolute" in folded:
+                finding_type = "absolute_path_not_allowed"
+            elif "traversal" in folded:
+                finding_type = "path_traversal"
+            elif "outside" in folded:
+                finding_type = "outside_workspace"
+            return self.record_finding(
+                request=request,
+                finding_type=finding_type,
+                status="failed",
+                severity="high",
+                message=message,
+                subject_ref=request.skill_id,
+            )
+        return None
 
     def _record(
         self,
@@ -750,6 +853,8 @@ class SkillExecutionGateService:
 
 def _skill_category(skill_id: str) -> str:
     normalized = skill_id.lower()
+    if skill_id in OBSERVATION_DIGESTION_SKILL_IDS:
+        return "read_only"
     if any(token in normalized for token in ["write", "edit", "delete", "patch", "chmod", "mkdir", "rmdir"]):
         return "write"
     if any(token in normalized for token in ["shell", "bash", "powershell", "cmd"]):

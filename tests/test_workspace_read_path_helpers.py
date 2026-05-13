@@ -30,6 +30,12 @@ def test_absolute_and_traversal_paths_are_rejected(tmp_path) -> None:
     with pytest.raises(WorkspacePathViolationError):
         resolve_workspace_path(tmp_path, "../outside.md")
 
+    with pytest.raises(WorkspacePathViolationError):
+        resolve_workspace_path(tmp_path, "..\\..\\secret.md")
+
+    with pytest.raises(WorkspacePathViolationError):
+        resolve_workspace_path(tmp_path, str(tmp_path.parent / "secret.md"))
+
 
 def test_text_helpers_are_deterministic() -> None:
     text = "# Title\n\n## Section\nBody"

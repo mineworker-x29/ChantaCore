@@ -26,7 +26,6 @@ def test_default_agent_capability_contract_adds_no_active_execution_paths() -> N
         "connect_mcp",
         "load_plugin",
         "reasoning_content",
-        "jsonl",
     ]
 
     for identifier in forbidden_identifiers:

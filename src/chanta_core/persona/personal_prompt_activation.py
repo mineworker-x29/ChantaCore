@@ -713,6 +713,33 @@ class PersonalPromptActivationService:
             f"{body}"
         )
 
+    def render_activation_diagnostics(
+        self,
+        *,
+        result: PersonalPromptActivationResult | None = None,
+    ) -> str:
+        active_result = result or self.last_result
+        request = self.last_request
+        if active_result is None:
+            return "Personal Prompt Activation Diagnostics: unavailable"
+        attrs = active_result.result_attrs
+        lines = [
+            "Personal Prompt Activation Diagnostics",
+            f"selected_mode={attrs.get('selected_mode') or (request.selected_mode_name if request else 'unspecified') or 'unspecified'}",
+            f"matched_loadout={attrs.get('matched_loadout') or 'none'}",
+            f"activation_status={active_result.status}",
+            f"activation_scope={active_result.activation_scope}",
+            f"activation_attached={str(bool(attrs.get('activation_attached'))).lower()}",
+            f"activation_skipped={str(bool(attrs.get('activation_skipped'))).lower()}",
+            f"activation_denied={str(bool(attrs.get('activation_denied'))).lower()}",
+            f"total_activation_chars={active_result.total_chars}",
+            f"truncated={str(active_result.truncated).lower()}",
+            "capability_grants_created=false",
+            "tool_execution_used=false",
+            "source_bodies_loaded=false",
+        ]
+        return "\n".join(lines)
+
     def _block(
         self,
         *,
@@ -814,6 +841,13 @@ class PersonalPromptActivationService:
             finding_ids=[finding.finding_id for finding in findings],
             created_at=utc_now_iso(),
             result_attrs={
+                "selected_mode": request.selected_mode_name,
+                "matched_loadout": _matched_loadout_ref(blocks),
+                "activation_attached": activation_scope == "prompt_context_only" and not denied,
+                "activation_skipped": activation_scope == "none" and not denied,
+                "activation_denied": denied,
+                "total_activation_chars": sum(block.total_chars for block in blocks),
+                "truncation_status": "truncated" if truncated else "not_truncated",
                 "runtime_capability_activation": False,
                 "capability_grants_created": False,
                 "tool_execution_used": False,
@@ -925,6 +959,13 @@ def _clean_env(value: str | None) -> str | None:
         return None
     stripped = value.strip()
     return stripped or None
+
+
+def _matched_loadout_ref(blocks: list[PersonalPromptActivationBlock]) -> str | None:
+    for block in blocks:
+        if block.block_type == "personal_mode_loadout":
+            return block.source_ref
+    return None
 
 
 def _object(object_type: str, object_id: str, attrs: dict[str, Any]) -> OCELObject:

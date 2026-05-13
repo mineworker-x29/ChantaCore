@@ -35,11 +35,27 @@ from chanta_core.workspace.read_service import (
     resolve_workspace_path,
     validate_relative_workspace_path,
 )
+from chanta_core.workspace.summary import (
+    WorkspaceReadSummarizationService,
+    WorkspaceReadSummaryCandidate,
+    WorkspaceReadSummaryFinding,
+    WorkspaceReadSummaryPolicy,
+    WorkspaceReadSummaryRequest,
+    WorkspaceReadSummaryResult,
+    WorkspaceReadSummarySection,
+    summarize_file_via_workspace_read,
+)
 from chanta_core.workspace.history_adapter import (
     workspace_file_list_results_to_history_entries,
     workspace_markdown_summary_results_to_history_entries,
     workspace_read_violations_to_history_entries,
     workspace_text_file_read_results_to_history_entries,
+)
+from chanta_core.workspace.summary_history_adapter import (
+    workspace_read_summary_candidates_to_history_entries,
+    workspace_read_summary_findings_to_history_entries,
+    workspace_read_summary_requests_to_history_entries,
+    workspace_read_summary_results_to_history_entries,
 )
 
 __all__ = [
@@ -61,6 +77,13 @@ __all__ = [
     "WorkspaceReadRoot",
     "WorkspaceReadRootError",
     "WorkspaceReadService",
+    "WorkspaceReadSummarizationService",
+    "WorkspaceReadSummaryCandidate",
+    "WorkspaceReadSummaryFinding",
+    "WorkspaceReadSummaryPolicy",
+    "WorkspaceReadSummaryRequest",
+    "WorkspaceReadSummaryResult",
+    "WorkspaceReadSummarySection",
     "WorkspaceReadViolation",
     "WorkspaceTextFileReadRequest",
     "WorkspaceTextFileReadResult",
@@ -73,7 +96,12 @@ __all__ = [
     "normalize_workspace_root",
     "preview_text",
     "resolve_workspace_path",
+    "summarize_file_via_workspace_read",
     "validate_relative_workspace_path",
+    "workspace_read_summary_candidates_to_history_entries",
+    "workspace_read_summary_findings_to_history_entries",
+    "workspace_read_summary_requests_to_history_entries",
+    "workspace_read_summary_results_to_history_entries",
     "workspace_file_list_results_to_history_entries",
     "workspace_markdown_summary_results_to_history_entries",
     "workspace_read_violations_to_history_entries",

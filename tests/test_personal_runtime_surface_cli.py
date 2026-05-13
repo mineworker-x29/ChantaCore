@@ -56,3 +56,38 @@ def test_cli_personal_subcommands_are_public_safe(monkeypatch, tmp_path, capsys)
         assert "source_bodies_printed=false" in captured.out
         assert "mode_activation_enabled=false" in captured.out
         assert "capability_grants_created=false" in captured.out
+
+
+def test_cli_personal_modes_lists_dummy_loadouts_without_private_content(monkeypatch, tmp_path, capsys) -> None:
+    personal_root = tmp_path / "personal"
+    _dummy_personal_directory(personal_root)
+    for name in [
+        "research_mode_loadout.md",
+        "coding_mode_loadout.md",
+        "runtime_mode_loadout.md",
+    ]:
+        (personal_root / "mode_loadouts" / name).write_text(
+            f"# {name}\n\nprivate-mode-body-should-not-print",
+            encoding="utf-8",
+        )
+    (personal_root / "mode_loadouts" / "mode.md").unlink()
+    monkeypatch.setenv("CHANTA_PERSONAL_DIRECTORY_ROOT", str(personal_root))
+
+    exit_code = main(["personal", "modes"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "loadout_count=3" in captured.out
+    assert "mode_loadout=1;" in captured.out
+    assert "mode=research" in captured.out
+    assert "mode=coding" in captured.out
+    assert "mode=runtime" in captured.out
+    assert "file=research_mode_loadout.md" in captured.out
+    assert "projection_kind=mode_loadout" in captured.out
+    assert "size_chars=" in captured.out
+    assert "preview_chars=" in captured.out
+    assert "safe_for_prompt=True" in captured.out
+    assert str(personal_root) not in captured.out
+    assert "private-mode-body-should-not-print" not in captured.out
+    assert "hidden-local-letter-body" not in captured.out
+    assert "source_bodies_printed=false" in captured.out
