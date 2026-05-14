@@ -285,6 +285,16 @@ class PIGReportService:
             event_activity_counts,
             view,
         )
+        observation_to_digestion_adapter_summary = self._observation_to_digestion_adapter_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
+        observation_digestion_ecosystem_summary = self._observation_digestion_ecosystem_summary(
+            object_type_counts,
+            event_activity_counts,
+            view,
+        )
         generated_at = utc_now_iso()
         report_text = self._render_report_text(
             report_id="pending",
@@ -334,6 +344,8 @@ class PIGReportService:
             external_skill_static_digestion_summary=external_skill_static_digestion_summary,
             agent_observation_spine_summary=agent_observation_spine_summary,
             cross_harness_trace_adapter_summary=cross_harness_trace_adapter_summary,
+            observation_to_digestion_adapter_summary=observation_to_digestion_adapter_summary,
+            observation_digestion_ecosystem_summary=observation_digestion_ecosystem_summary,
         )
         report_id = f"pig_report:{uuid4()}"
         report_text = report_text.replace("Report ID: pending", f"Report ID: {report_id}")
@@ -392,6 +404,8 @@ class PIGReportService:
                 "external_skill_static_digestion_summary": external_skill_static_digestion_summary,
                 "agent_observation_spine_summary": agent_observation_spine_summary,
                 "cross_harness_trace_adapter_summary": cross_harness_trace_adapter_summary,
+                "observation_to_digestion_adapter_summary": observation_to_digestion_adapter_summary,
+                "observation_digestion_ecosystem_summary": observation_digestion_ecosystem_summary,
             },
         )
 
@@ -1002,6 +1016,8 @@ class PIGReportService:
         external_skill_static_digestion_summary: dict[str, Any] | None,
         agent_observation_spine_summary: dict[str, Any] | None,
         cross_harness_trace_adapter_summary: dict[str, Any] | None,
+        observation_to_digestion_adapter_summary: dict[str, Any] | None,
+        observation_digestion_ecosystem_summary: dict[str, Any] | None,
     ) -> str:
         conformance_issues = (
             len(conformance_report.get("issues") or []) if conformance_report else 0
@@ -1446,6 +1462,26 @@ class PIGReportService:
                 f"- By adapter: {PIGReportService._inline_counts((cross_harness_trace_adapter_summary or {}).get('harness_trace_normalization_by_adapter') or {})}",
                 f"- Adapter implemented: {PIGReportService._inline_counts((cross_harness_trace_adapter_summary or {}).get('harness_trace_adapter_by_implemented') or {})}",
                 f"- Findings: {PIGReportService._inline_counts((cross_harness_trace_adapter_summary or {}).get('harness_trace_adapter_finding_by_type') or {})}",
+                "",
+                "Observation-to-Digestion Adapter Builder:",
+                f"- Policies/capabilities/targets/input maps/output maps: {(observation_to_digestion_adapter_summary or {}).get('observation_to_digestion_adapter_policy_count', 0)}/{(observation_to_digestion_adapter_summary or {}).get('observed_capability_candidate_count', 0)}/{(observation_to_digestion_adapter_summary or {}).get('chantacore_target_skill_candidate_count', 0)}/{(observation_to_digestion_adapter_summary or {}).get('adapter_input_mapping_spec_count', 0)}/{(observation_to_digestion_adapter_summary or {}).get('adapter_output_mapping_spec_count', 0)}",
+                f"- Unsupported/reviews/findings/results: {(observation_to_digestion_adapter_summary or {}).get('adapter_unsupported_feature_count', 0)}/{(observation_to_digestion_adapter_summary or {}).get('observation_digestion_adapter_review_request_count', 0)}/{(observation_to_digestion_adapter_summary or {}).get('observation_digestion_adapter_finding_count', 0)}/{(observation_to_digestion_adapter_summary or {}).get('observation_digestion_adapter_build_result_count', 0)}",
+                f"- Adapter candidates: {(observation_to_digestion_adapter_summary or {}).get('observation_digestion_adapter_candidate_count', 0)}",
+                f"- Candidate risk: {PIGReportService._inline_counts((observation_to_digestion_adapter_summary or {}).get('adapter_candidate_by_risk_class') or {})}",
+                f"- Candidate target skill: {PIGReportService._inline_counts((observation_to_digestion_adapter_summary or {}).get('adapter_candidate_by_target_skill_id') or {})}",
+                f"- Candidate mapping type: {PIGReportService._inline_counts((observation_to_digestion_adapter_summary or {}).get('adapter_candidate_by_mapping_type') or {})}",
+                f"- Unsupported feature type: {PIGReportService._inline_counts((observation_to_digestion_adapter_summary or {}).get('unsupported_feature_by_type') or {})}",
+                f"- Observed capability category: {PIGReportService._inline_counts((observation_to_digestion_adapter_summary or {}).get('observed_capability_by_category') or {})}",
+                "",
+                "Observation/Digestion Ecosystem Consolidation:",
+                f"- Snapshots/components/capabilities/safety/gaps/manifests/findings/reports: {(observation_digestion_ecosystem_summary or {}).get('observation_digestion_ecosystem_snapshot_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_ecosystem_component_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_capability_map_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_safety_boundary_report_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_gap_register_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_release_manifest_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_consolidation_finding_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_consolidation_report_count', 0)}",
+                f"- Ready/partial/contract-only/blocked: {(observation_digestion_ecosystem_summary or {}).get('observation_digestion_ready_component_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_partial_component_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_contract_only_component_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_blocked_component_count', 0)}",
+                f"- Future gaps/executable external candidates: {(observation_digestion_ecosystem_summary or {}).get('observation_digestion_future_track_gap_count', 0)}/{(observation_digestion_ecosystem_summary or {}).get('observation_digestion_executable_external_candidate_count', 0)}",
+                f"- Component kinds: {PIGReportService._inline_counts((observation_digestion_ecosystem_summary or {}).get('observation_digestion_by_component_kind') or {})}",
+                f"- Readiness levels: {PIGReportService._inline_counts((observation_digestion_ecosystem_summary or {}).get('observation_digestion_by_readiness_level') or {})}",
+                f"- Capability families: {PIGReportService._inline_counts((observation_digestion_ecosystem_summary or {}).get('observation_digestion_by_capability_family') or {})}",
+                f"- Gap types: {PIGReportService._inline_counts((observation_digestion_ecosystem_summary or {}).get('observation_digestion_gap_by_type') or {})}",
+                f"- Finding types: {PIGReportService._inline_counts((observation_digestion_ecosystem_summary or {}).get('observation_digestion_finding_by_type') or {})}",
             ]
         )
 
@@ -3739,6 +3775,156 @@ class PIGReportService:
             "harness_trace_mapping_rule_by_action_type": rule_by_action,
             "harness_trace_normalization_completed_count": event_activity_counts.get(
                 "harness_trace_normalization_completed",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _observation_to_digestion_adapter_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_risk: dict[str, int] = {}
+        by_target_skill: dict[str, int] = {}
+        by_mapping_type: dict[str, int] = {}
+        unsupported_by_type: dict[str, int] = {}
+        capability_by_category: dict[str, int] = {}
+        for item in view.objects:
+            attrs = item.object_attrs
+            if item.object_type == "observation_digestion_adapter_candidate":
+                risk = str(attrs.get("risk_class") or "unknown")
+                by_risk[risk] = by_risk.get(risk, 0) + 1
+                target_skill = str(attrs.get("target_skill_id") or "unknown")
+                by_target_skill[target_skill] = by_target_skill.get(target_skill, 0) + 1
+                mapping_type = str(attrs.get("mapping_type") or "unknown")
+                by_mapping_type[mapping_type] = by_mapping_type.get(mapping_type, 0) + 1
+            if item.object_type == "adapter_unsupported_feature":
+                feature_type = str(attrs.get("feature_type") or "unknown")
+                unsupported_by_type[feature_type] = unsupported_by_type.get(feature_type, 0) + 1
+            if item.object_type == "observed_capability_candidate":
+                category = str(attrs.get("capability_category") or "unknown")
+                capability_by_category[category] = capability_by_category.get(category, 0) + 1
+        return {
+            "observation_to_digestion_adapter_policy_count": object_type_counts.get(
+                "observation_to_digestion_adapter_policy",
+                0,
+            ),
+            "observed_capability_candidate_count": object_type_counts.get("observed_capability_candidate", 0),
+            "chantacore_target_skill_candidate_count": object_type_counts.get(
+                "chantacore_target_skill_candidate",
+                0,
+            ),
+            "adapter_input_mapping_spec_count": object_type_counts.get("adapter_input_mapping_spec", 0),
+            "adapter_output_mapping_spec_count": object_type_counts.get("adapter_output_mapping_spec", 0),
+            "adapter_unsupported_feature_count": object_type_counts.get("adapter_unsupported_feature", 0),
+            "observation_digestion_adapter_candidate_count": object_type_counts.get(
+                "observation_digestion_adapter_candidate",
+                0,
+            ),
+            "observation_digestion_adapter_review_request_count": object_type_counts.get(
+                "observation_digestion_adapter_review_request",
+                0,
+            ),
+            "observation_digestion_adapter_finding_count": object_type_counts.get(
+                "observation_digestion_adapter_finding",
+                0,
+            ),
+            "observation_digestion_adapter_build_result_count": object_type_counts.get(
+                "observation_digestion_adapter_build_result",
+                0,
+            ),
+            "adapter_candidate_by_risk_class": by_risk,
+            "adapter_candidate_by_target_skill_id": by_target_skill,
+            "adapter_candidate_by_mapping_type": by_mapping_type,
+            "unsupported_feature_by_type": unsupported_by_type,
+            "observed_capability_by_category": capability_by_category,
+            "observation_to_digestion_adapter_candidate_created_count": event_activity_counts.get(
+                "observation_digestion_adapter_candidate_created",
+                0,
+            ),
+        }
+
+    @staticmethod
+    def _observation_digestion_ecosystem_summary(
+        object_type_counts: dict[str, int],
+        event_activity_counts: dict[str, int],
+        view: OCPXProcessView,
+    ) -> dict[str, Any]:
+        by_component_kind: dict[str, int] = {}
+        by_readiness: dict[str, int] = {}
+        by_capability_family: dict[str, int] = {}
+        gap_by_type: dict[str, int] = {}
+        finding_by_type: dict[str, int] = {}
+        future_track_gap_count = 0
+        executable_external_candidate_count = 0
+        for item in view.objects:
+            attrs = item.object_attrs
+            if item.object_type == "observation_digestion_ecosystem_component":
+                kind = str(attrs.get("component_kind") or "unknown")
+                by_component_kind[kind] = by_component_kind.get(kind, 0) + 1
+                readiness = str(attrs.get("readiness_level") or "unknown")
+                by_readiness[readiness] = by_readiness.get(readiness, 0) + 1
+            if item.object_type == "observation_digestion_capability_map":
+                family = str(attrs.get("capability_family") or "unknown")
+                by_capability_family[family] = by_capability_family.get(family, 0) + 1
+            if item.object_type == "observation_digestion_gap_register":
+                gap_type = str(attrs.get("gap_type") or "unknown")
+                gap_by_type[gap_type] = gap_by_type.get(gap_type, 0) + 1
+                gap_attrs = attrs.get("gap_attrs") or {}
+                if bool(gap_attrs.get("future_track")):
+                    future_track_gap_count += 1
+            if item.object_type == "observation_digestion_consolidation_finding":
+                finding_type = str(attrs.get("finding_type") or "unknown")
+                finding_by_type[finding_type] = finding_by_type.get(finding_type, 0) + 1
+            if item.object_type == "observation_digestion_ecosystem_snapshot":
+                executable_external_candidate_count += int(attrs.get("executable_external_candidate_count") or 0)
+        return {
+            "observation_digestion_ecosystem_snapshot_count": object_type_counts.get(
+                "observation_digestion_ecosystem_snapshot",
+                0,
+            ),
+            "observation_digestion_ecosystem_component_count": object_type_counts.get(
+                "observation_digestion_ecosystem_component",
+                0,
+            ),
+            "observation_digestion_capability_map_count": object_type_counts.get(
+                "observation_digestion_capability_map",
+                0,
+            ),
+            "observation_digestion_safety_boundary_report_count": object_type_counts.get(
+                "observation_digestion_safety_boundary_report",
+                0,
+            ),
+            "observation_digestion_gap_register_count": object_type_counts.get(
+                "observation_digestion_gap_register",
+                0,
+            ),
+            "observation_digestion_release_manifest_count": object_type_counts.get(
+                "observation_digestion_release_manifest",
+                0,
+            ),
+            "observation_digestion_consolidation_finding_count": object_type_counts.get(
+                "observation_digestion_consolidation_finding",
+                0,
+            ),
+            "observation_digestion_consolidation_report_count": object_type_counts.get(
+                "observation_digestion_consolidation_report",
+                0,
+            ),
+            "observation_digestion_ready_component_count": by_readiness.get("ready", 0),
+            "observation_digestion_partial_component_count": by_readiness.get("partial", 0),
+            "observation_digestion_contract_only_component_count": by_readiness.get("contract_only", 0),
+            "observation_digestion_blocked_component_count": by_readiness.get("blocked", 0),
+            "observation_digestion_future_track_gap_count": future_track_gap_count,
+            "observation_digestion_executable_external_candidate_count": executable_external_candidate_count,
+            "observation_digestion_by_component_kind": by_component_kind,
+            "observation_digestion_by_readiness_level": by_readiness,
+            "observation_digestion_by_capability_family": by_capability_family,
+            "observation_digestion_gap_by_type": gap_by_type,
+            "observation_digestion_finding_by_type": finding_by_type,
+            "observation_digestion_ecosystem_snapshot_created_count": event_activity_counts.get(
+                "observation_digestion_ecosystem_snapshot_created",
                 0,
             ),
         }

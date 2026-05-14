@@ -357,3 +357,75 @@ def new_harness_trace_adapter_finding_id() -> str:
 
 def new_harness_trace_adapter_result_id() -> str:
     return f"harness_trace_adapter_result:{uuid4()}"
+
+
+def new_observation_to_digestion_adapter_policy_id() -> str:
+    return f"observation_to_digestion_adapter_policy:{uuid4()}"
+
+
+def new_observed_capability_candidate_id() -> str:
+    return f"observed_capability_candidate:{uuid4()}"
+
+
+def new_chantacore_target_skill_candidate_id() -> str:
+    return f"chantacore_target_skill_candidate:{uuid4()}"
+
+
+def new_adapter_input_mapping_spec_id() -> str:
+    return f"adapter_input_mapping_spec:{uuid4()}"
+
+
+def new_adapter_output_mapping_spec_id() -> str:
+    return f"adapter_output_mapping_spec:{uuid4()}"
+
+
+def new_adapter_unsupported_feature_id() -> str:
+    return f"adapter_unsupported_feature:{uuid4()}"
+
+
+def new_observation_digestion_adapter_candidate_id() -> str:
+    return f"observation_digestion_adapter_candidate:{uuid4()}"
+
+
+def new_observation_digestion_adapter_review_request_id() -> str:
+    return f"observation_digestion_adapter_review_request:{uuid4()}"
+
+
+def new_observation_digestion_adapter_finding_id() -> str:
+    return f"observation_digestion_adapter_finding:{uuid4()}"
+
+
+def new_observation_digestion_adapter_build_result_id() -> str:
+    return f"observation_digestion_adapter_build_result:{uuid4()}"
+
+
+def new_observation_digestion_ecosystem_snapshot_id() -> str:
+    return f"observation_digestion_ecosystem_snapshot:{uuid4()}"
+
+
+def new_observation_digestion_ecosystem_component_id() -> str:
+    return f"observation_digestion_ecosystem_component:{uuid4()}"
+
+
+def new_observation_digestion_capability_map_id() -> str:
+    return f"observation_digestion_capability_map:{uuid4()}"
+
+
+def new_observation_digestion_safety_boundary_report_id() -> str:
+    return f"observation_digestion_safety_boundary_report:{uuid4()}"
+
+
+def new_observation_digestion_gap_register_id() -> str:
+    return f"observation_digestion_gap_register:{uuid4()}"
+
+
+def new_observation_digestion_release_manifest_id() -> str:
+    return f"observation_digestion_release_manifest:{uuid4()}"
+
+
+def new_observation_digestion_consolidation_finding_id() -> str:
+    return f"observation_digestion_consolidation_finding:{uuid4()}"
+
+
+def new_observation_digestion_consolidation_report_id() -> str:
+    return f"observation_digestion_consolidation_report:{uuid4()}"

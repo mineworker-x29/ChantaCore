@@ -240,21 +240,42 @@ from chanta_core.observation_digest import (
     ExternalSkillBehaviorFingerprint,
     ExternalSkillSourceDescriptor,
     ExternalSkillStaticProfile,
+    ObservationDigestionCapabilityMap,
+    ObservationDigestionConsolidationFinding,
+    ObservationDigestionConsolidationReport,
+    ObservationDigestionEcosystemComponent,
+    ObservationDigestionEcosystemConsolidationService,
+    ObservationDigestionEcosystemSnapshot,
     ObservationDigestionFinding,
+    ObservationDigestionGapRegister,
+    ObservationDigestionReleaseManifest,
     ObservationDigestionResult,
+    ObservationDigestionSafetyBoundaryReport,
     ObservationService,
     ObservedAgentRun,
     behavior_inferences_to_history_entries,
+    capability_maps_to_history_entries,
     external_skill_adapter_candidates_to_history_entries,
     external_skill_assimilation_candidates_to_history_entries,
     external_skill_profiles_to_history_entries,
+    consolidation_findings_to_history_entries,
+    consolidation_reports_to_history_entries,
+    ecosystem_components_to_history_entries,
+    ecosystem_snapshots_to_history_entries,
     observed_runs_to_history_entries,
     observation_digestion_findings_to_history_entries,
     observation_digestion_results_to_history_entries,
     observation_sources_to_history_entries,
+    gap_registers_to_history_entries,
     process_narratives_to_history_entries,
+    release_manifests_to_history_entries,
+    safety_boundary_reports_to_history_entries,
 )
 from chanta_core.digestion import (
+    AdapterInputMappingSpec,
+    AdapterOutputMappingSpec,
+    AdapterUnsupportedFeature,
+    ChantaCoreTargetSkillCandidate,
     ExternalSkillDeclaredCapability,
     ExternalSkillInstructionProfile,
     ExternalSkillManifestProfile,
@@ -263,6 +284,19 @@ from chanta_core.digestion import (
     ExternalSkillStaticDigestionReport,
     ExternalSkillStaticDigestionService,
     ExternalSkillStaticRiskProfile,
+    ObservationDigestionAdapterBuildResult,
+    ObservationDigestionAdapterCandidate,
+    ObservationDigestionAdapterFinding,
+    ObservationDigestionAdapterReviewRequest,
+    ObservationToDigestionAdapterBuilderService,
+    ObservationToDigestionAdapterPolicy,
+    ObservedCapabilityCandidate,
+    adapter_build_results_to_history_entries,
+    adapter_candidates_to_history_entries,
+    adapter_findings_to_history_entries,
+    observed_capability_candidates_to_history_entries,
+    target_skill_candidates_to_history_entries,
+    unsupported_features_to_history_entries,
 )
 from chanta_core.observation import (
     AgentBehaviorInferenceV2,
@@ -1453,6 +1487,15 @@ def test_required_imports() -> None:
     assert ExternalSkillAdapterCandidate is not None
     assert ObservationDigestionFinding is not None
     assert ObservationDigestionResult is not None
+    assert ObservationDigestionEcosystemSnapshot is not None
+    assert ObservationDigestionEcosystemComponent is not None
+    assert ObservationDigestionCapabilityMap is not None
+    assert ObservationDigestionSafetyBoundaryReport is not None
+    assert ObservationDigestionGapRegister is not None
+    assert ObservationDigestionReleaseManifest is not None
+    assert ObservationDigestionConsolidationFinding is not None
+    assert ObservationDigestionConsolidationReport is not None
+    assert ObservationDigestionEcosystemConsolidationService is not None
     assert ObservationService is not None
     assert DigestionService is not None
     assert ExternalSkillResourceInventory is not None
@@ -1463,6 +1506,23 @@ def test_required_imports() -> None:
     assert ExternalSkillStaticDigestionReport is not None
     assert ExternalSkillStaticDigestionFinding is not None
     assert ExternalSkillStaticDigestionService is not None
+    assert ObservationToDigestionAdapterPolicy is not None
+    assert ObservedCapabilityCandidate is not None
+    assert ChantaCoreTargetSkillCandidate is not None
+    assert AdapterInputMappingSpec is not None
+    assert AdapterOutputMappingSpec is not None
+    assert AdapterUnsupportedFeature is not None
+    assert ObservationDigestionAdapterCandidate is not None
+    assert ObservationDigestionAdapterReviewRequest is not None
+    assert ObservationDigestionAdapterFinding is not None
+    assert ObservationDigestionAdapterBuildResult is not None
+    assert ObservationToDigestionAdapterBuilderService is not None
+    assert observed_capability_candidates_to_history_entries is not None
+    assert target_skill_candidates_to_history_entries is not None
+    assert adapter_candidates_to_history_entries is not None
+    assert unsupported_features_to_history_entries is not None
+    assert adapter_build_results_to_history_entries is not None
+    assert adapter_findings_to_history_entries is not None
     assert AgentInstance is not None
     assert AgentRuntimeDescriptor is not None
     assert RuntimeEnvironmentSnapshot is not None
@@ -1501,6 +1561,14 @@ def test_required_imports() -> None:
     assert external_skill_adapter_candidates_to_history_entries is not None
     assert observation_digestion_findings_to_history_entries is not None
     assert observation_digestion_results_to_history_entries is not None
+    assert ecosystem_snapshots_to_history_entries is not None
+    assert ecosystem_components_to_history_entries is not None
+    assert capability_maps_to_history_entries is not None
+    assert safety_boundary_reports_to_history_entries is not None
+    assert gap_registers_to_history_entries is not None
+    assert release_manifests_to_history_entries is not None
+    assert consolidation_findings_to_history_entries is not None
+    assert consolidation_reports_to_history_entries is not None
     assert external_skill_resource_inventories_to_history_entries is not None
     assert external_skill_manifest_profiles_to_history_entries is not None
     assert external_skill_instruction_profiles_to_history_entries is not None

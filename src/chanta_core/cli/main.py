@@ -18,6 +18,7 @@ from chanta_core.execution.promotion import (
 from chanta_core.ocel.store import OCELStore
 from chanta_core.observation_digest import (
     DigestionService,
+    ObservationDigestionEcosystemConsolidationService,
     ObservationService,
     candidate_from_dict,
     fingerprint_from_dict,
@@ -27,7 +28,11 @@ from chanta_core.observation_digest import (
 )
 from chanta_core.observation import AgentObservationSpineService, CrossHarnessTraceAdapterService
 from chanta_core.observation_digest.ids import new_agent_observation_batch_id
-from chanta_core.digestion import ExternalSkillStaticDigestionService
+from chanta_core.digestion import (
+    ExternalSkillStaticDigestionService,
+    ObservationToDigestionAdapterBuilderService,
+    behavior_inference_v2_from_dict,
+)
 from chanta_core.workspace import resolve_workspace_path
 from chanta_core.persona.personal_runtime_surface import PersonalRuntimeSurfaceService
 from chanta_core.runtime.workbench import PersonalRuntimeWorkbenchService
@@ -448,6 +453,40 @@ def build_parser() -> argparse.ArgumentParser:
     digest_adapter = digest_subparsers.add_parser("adapter-candidate", help="Create non-executable adapter candidate.")
     digest_adapter.add_argument("--candidate-json-file", required=True, help="ExternalSkillAssimilationCandidate JSON file.")
     digest_adapter.add_argument("--json", action="store_true", help="Print result as JSON.")
+    digest_adapter_build = digest_subparsers.add_parser(
+        "adapter-build",
+        help="Build review-only adapter candidates from observed behavior.",
+    )
+    digest_adapter_build_subparsers = digest_adapter_build.add_subparsers(dest="adapter_build_command")
+    adapter_from_inference = digest_adapter_build_subparsers.add_parser(
+        "from-inference",
+        help="Build adapter candidates from AgentBehaviorInferenceV2 JSON.",
+    )
+    adapter_from_inference.add_argument("--inference-json-file", required=True, help="AgentBehaviorInferenceV2 JSON file.")
+    adapter_from_inference.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_from_fingerprint = digest_adapter_build_subparsers.add_parser(
+        "from-fingerprint",
+        help="Build adapter candidates from ExternalSkillBehaviorFingerprint JSON.",
+    )
+    adapter_from_fingerprint.add_argument(
+        "--fingerprint-json-file",
+        required=True,
+        help="ExternalSkillBehaviorFingerprint JSON file.",
+    )
+    adapter_from_fingerprint.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_from_run = digest_adapter_build_subparsers.add_parser(
+        "from-observed-run",
+        help="Build adapter candidates from ObservedAgentRun JSON.",
+    )
+    adapter_from_run.add_argument("--observed-run-json-file", required=True, help="ObservedAgentRun JSON file.")
+    adapter_from_run.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_show = digest_adapter_build_subparsers.add_parser("show", help="Show a local adapter candidate id.")
+    adapter_show.add_argument("adapter_candidate_id", help="Adapter candidate id.")
+    adapter_unsupported = digest_adapter_build_subparsers.add_parser(
+        "unsupported",
+        help="Show unsupported features for a local adapter candidate id.",
+    )
+    adapter_unsupported.add_argument("adapter_candidate_id", help="Adapter candidate id.")
     digest_propose = digest_subparsers.add_parser("propose", help="Create a review-only digestion proposal.")
     digest_propose.add_argument("text", help="Prompt text to analyze.")
     digest_propose.add_argument("--root", dest="root_path", help="Workspace read root for proposal payload.")
@@ -504,6 +543,18 @@ def build_parser() -> argparse.ArgumentParser:
     od_conf_findings = od_conf_subparsers.add_parser("findings", help="Render conformance findings.")
     od_conf_findings.add_argument("--limit", type=int, default=20, help="Maximum findings to show.")
     od_conf_findings.add_argument("--json", action="store_true", help="Print result as JSON.")
+    od_ecosystem = observe_digest_subparsers.add_parser(
+        "ecosystem",
+        help="Summarize the Observation/Digestion ecosystem.",
+    )
+    od_ecosystem_subparsers = od_ecosystem.add_subparsers(dest="ecosystem_command")
+    for command_name in ["snapshot", "components", "capabilities", "safety", "gaps", "manifest", "report"]:
+        command_parser = od_ecosystem_subparsers.add_parser(
+            command_name,
+            help=f"Render ecosystem {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+        command_parser.add_argument("--limit", type=int, default=20, help="Maximum rows to show.")
 
     workbench_parser = subparsers.add_parser(
         "workbench",
@@ -1425,6 +1476,8 @@ def run_digest(args: argparse.Namespace) -> int:
         else:
             print(service.render_proposal_summary(result))
         return 0 if result.status in {"proposal_created", "partial", "needs_more_input"} else 1
+    if args.digest_command == "adapter-build":
+        return _run_digest_adapter_build(args)
     service = DigestionService()
     if args.digest_command == "source-inspect":
         descriptor = service.inspect_external_skill_source(
@@ -1538,6 +1591,90 @@ def run_digest(args: argparse.Namespace) -> int:
             print(service.render_digestion_cli(adapter))
         return 0
     print("unsupported digest command", file=sys.stderr)
+    return 1
+
+
+def _run_digest_adapter_build(args: argparse.Namespace) -> int:
+    if not args.adapter_build_command:
+        print("digest adapter-build command is required", file=sys.stderr)
+        return 1
+    service = ObservationToDigestionAdapterBuilderService()
+    if args.adapter_build_command == "from-inference":
+        inference = behavior_inference_v2_from_dict(_load_json_object(args.inference_json_file))
+        result = service.build_from_behavior_inference(inference)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "result": result.to_dict(),
+                        "observed_capabilities": [item.to_dict() for item in service.last_observed_capabilities],
+                        "target_skill_candidates": [item.to_dict() for item in service.last_target_candidates],
+                        "adapter_candidates": [item.to_dict() for item in service.last_adapter_candidates],
+                        "unsupported_features": [item.to_dict() for item in service.last_unsupported_features],
+                        "findings": [item.to_dict() for item in service.last_findings],
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(service.render_adapter_build_cli(result))
+        return 0
+    if args.adapter_build_command == "from-fingerprint":
+        fingerprint = fingerprint_from_dict(_load_json_object(args.fingerprint_json_file))
+        result = service.build_from_behavior_fingerprint(fingerprint)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "result": result.to_dict(),
+                        "observed_capabilities": [item.to_dict() for item in service.last_observed_capabilities],
+                        "target_skill_candidates": [item.to_dict() for item in service.last_target_candidates],
+                        "adapter_candidates": [item.to_dict() for item in service.last_adapter_candidates],
+                        "unsupported_features": [item.to_dict() for item in service.last_unsupported_features],
+                        "findings": [item.to_dict() for item in service.last_findings],
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(service.render_adapter_build_cli(result))
+        return 0
+    if args.adapter_build_command == "from-observed-run":
+        observed_run = observed_run_from_dict(_load_json_object(args.observed_run_json_file))
+        result = service.build_from_observed_run(observed_run)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "result": result.to_dict(),
+                        "observed_capabilities": [item.to_dict() for item in service.last_observed_capabilities],
+                        "target_skill_candidates": [item.to_dict() for item in service.last_target_candidates],
+                        "adapter_candidates": [item.to_dict() for item in service.last_adapter_candidates],
+                        "unsupported_features": [item.to_dict() for item in service.last_unsupported_features],
+                        "findings": [item.to_dict() for item in service.last_findings],
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(service.render_adapter_build_cli(result))
+        return 0
+    if args.adapter_build_command == "show":
+        print("adapter_candidate_id=" + args.adapter_candidate_id)
+        print("review_status=unknown")
+        print("canonical_import_enabled=false")
+        print("execution_enabled=false")
+        print("note=show is read-only and requires a current build context or OCEL query surface.")
+        return 0
+    if args.adapter_build_command == "unsupported":
+        print("adapter_candidate_id=" + args.adapter_candidate_id)
+        print("unsupported_features=unknown")
+        print("note=unsupported is read-only and requires a current build context or OCEL query surface.")
+        return 0
+    print("unsupported digest adapter-build command", file=sys.stderr)
     return 1
 
 
@@ -1822,6 +1959,8 @@ def _run_digest_invocation(args: argparse.Namespace) -> int:
 
 
 def run_observe_digest(args: argparse.Namespace) -> int:
+    if args.observe_digest_command == "ecosystem":
+        return _run_observe_digest_ecosystem(args)
     if args.observe_digest_command != "conformance" or not args.conformance_command:
         print("observe-digest conformance command is required", file=sys.stderr)
         return 1
@@ -1865,6 +2004,79 @@ def run_observe_digest(args: argparse.Namespace) -> int:
                 print(f"- {finding.skill_id or ''} {finding.finding_type} severity={finding.severity}")
         return 0 if report.status == "passed" else 1
     print("unsupported observe-digest conformance command", file=sys.stderr)
+    return 1
+
+
+def _run_observe_digest_ecosystem(args: argparse.Namespace) -> int:
+    if not args.ecosystem_command:
+        print("observe-digest ecosystem command is required", file=sys.stderr)
+        return 1
+    service = ObservationDigestionEcosystemConsolidationService()
+    report = service.consolidate()
+    command = args.ecosystem_command
+    limit = max(0, int(getattr(args, "limit", 20)))
+    if command == "snapshot":
+        payload = service.last_snapshot
+        if args.json:
+            print(json.dumps(payload.to_dict() if payload else {}, ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_ecosystem_summary())
+        return 0
+    if command == "components":
+        items = service.last_components[:limit]
+        if args.json:
+            print(json.dumps([item.to_dict() for item in items], ensure_ascii=False, sort_keys=True))
+        else:
+            print("Observation/Digestion Ecosystem Components")
+            for item in items:
+                print(f"- {item.component_kind}: {item.component_name} readiness={item.readiness_level}")
+        return 0
+    if command == "capabilities":
+        if args.json:
+            print(json.dumps([item.to_dict() for item in service.last_capability_maps[:limit]], ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_capability_map_cli(limit=limit))
+        return 0
+    if command == "safety":
+        safety = service.last_safety_report
+        if args.json:
+            print(json.dumps(safety.to_dict() if safety else {}, ensure_ascii=False, sort_keys=True))
+        else:
+            assert safety is not None
+            print("Observation/Digestion Safety Boundary")
+            print(f"external_harness_execution_allowed={str(safety.external_harness_execution_allowed).lower()}")
+            print(f"external_script_execution_allowed={str(safety.external_script_execution_allowed).lower()}")
+            print(f"shell_allowed={str(safety.shell_allowed).lower()}")
+            print(f"network_allowed={str(safety.network_allowed).lower()}")
+            print(f"write_allowed={str(safety.write_allowed).lower()}")
+            print(f"mcp_allowed={str(safety.mcp_allowed).lower()}")
+            print(f"plugin_allowed={str(safety.plugin_allowed).lower()}")
+            print(f"memory_mutation_allowed={str(safety.memory_mutation_allowed).lower()}")
+            print(f"persona_mutation_allowed={str(safety.persona_mutation_allowed).lower()}")
+            print(f"overlay_mutation_allowed={str(safety.overlay_mutation_allowed).lower()}")
+        return 0
+    if command == "gaps":
+        if args.json:
+            print(json.dumps([item.to_dict() for item in service.last_gap_registers[:limit]], ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_gap_register_cli(limit=limit))
+        return 0
+    if command == "manifest":
+        manifest = service.last_release_manifest
+        if args.json:
+            print(json.dumps(manifest.to_dict() if manifest else {}, ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_release_manifest_cli())
+        return 0
+    if command == "report":
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_ecosystem_summary())
+            print(f"report_status={report.status}")
+            print(f"future_gap_count={len(service.last_gap_registers)}")
+        return 0
+    print("unsupported observe-digest ecosystem command", file=sys.stderr)
     return 1
 
 

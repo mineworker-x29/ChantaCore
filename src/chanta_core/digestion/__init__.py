@@ -1,3 +1,23 @@
+from chanta_core.digestion.adapter_builder import (
+    AdapterInputMappingSpec,
+    AdapterOutputMappingSpec,
+    AdapterUnsupportedFeature,
+    ChantaCoreTargetSkillCandidate,
+    ObservationDigestionAdapterBuildResult,
+    ObservationDigestionAdapterCandidate,
+    ObservationDigestionAdapterFinding,
+    ObservationDigestionAdapterReviewRequest,
+    ObservationToDigestionAdapterBuilderService,
+    ObservationToDigestionAdapterPolicy,
+    ObservedCapabilityCandidate,
+    adapter_build_results_to_history_entries,
+    adapter_candidates_to_history_entries,
+    adapter_findings_to_history_entries,
+    behavior_inference_v2_from_dict,
+    observed_capability_candidates_to_history_entries,
+    target_skill_candidates_to_history_entries,
+    unsupported_features_to_history_entries,
+)
 from chanta_core.digestion.static_expansion import (
     ExternalSkillDeclaredCapability,
     ExternalSkillInstructionProfile,
@@ -10,6 +30,10 @@ from chanta_core.digestion.static_expansion import (
 )
 
 __all__ = [
+    "AdapterInputMappingSpec",
+    "AdapterOutputMappingSpec",
+    "AdapterUnsupportedFeature",
+    "ChantaCoreTargetSkillCandidate",
     "ExternalSkillDeclaredCapability",
     "ExternalSkillInstructionProfile",
     "ExternalSkillManifestProfile",
@@ -18,4 +42,18 @@ __all__ = [
     "ExternalSkillStaticDigestionReport",
     "ExternalSkillStaticDigestionService",
     "ExternalSkillStaticRiskProfile",
+    "ObservationDigestionAdapterBuildResult",
+    "ObservationDigestionAdapterCandidate",
+    "ObservationDigestionAdapterFinding",
+    "ObservationDigestionAdapterReviewRequest",
+    "ObservationToDigestionAdapterBuilderService",
+    "ObservationToDigestionAdapterPolicy",
+    "ObservedCapabilityCandidate",
+    "adapter_build_results_to_history_entries",
+    "adapter_candidates_to_history_entries",
+    "adapter_findings_to_history_entries",
+    "behavior_inference_v2_from_dict",
+    "observed_capability_candidates_to_history_entries",
+    "target_skill_candidates_to_history_entries",
+    "unsupported_features_to_history_entries",
 ]
