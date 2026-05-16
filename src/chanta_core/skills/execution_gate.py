@@ -751,6 +751,10 @@ class SkillExecutionGateService:
         path_required_skill_ids = {
             "skill:read_workspace_text_file",
             "skill:summarize_workspace_markdown",
+            "skill:self_awareness_path_verify",
+            "skill:self_awareness_text_read",
+            "skill:self_awareness_markdown_structure",
+            "skill:self_awareness_python_symbols",
             "skill:agent_observation_source_inspect",
             "skill:agent_trace_observe",
             "skill:external_skill_source_inspect",
@@ -771,14 +775,29 @@ class SkillExecutionGateService:
                 message="root_path is required for workspace read gate evaluation.",
                 subject_ref=request.skill_id,
             )
-        relative_path = str(payload.get("relative_path") or ".")
-        if request.skill_id in path_required_skill_ids and not str(payload.get("relative_path") or "").strip():
+        relative_path = str(payload.get("relative_path") or payload.get("input_path") or payload.get("path") or ".")
+        required_path_value = (
+            payload.get("input_path")
+            if request.skill_id == "skill:self_awareness_path_verify"
+            else payload.get("path")
+            if request.skill_id == "skill:self_awareness_text_read"
+            else payload.get("path")
+            if request.skill_id
+            in {
+                "skill:self_awareness_markdown_structure",
+                "skill:self_awareness_python_symbols",
+            }
+            else payload.get("relative_path")
+            if request.skill_id == "skill:self_awareness_workspace_search"
+            else payload.get("relative_path")
+        )
+        if request.skill_id in path_required_skill_ids and not str(required_path_value or "").strip():
             return self.record_finding(
                 request=request,
                 finding_type="invalid_input",
                 status="failed",
                 severity="high",
-                message="relative_path is required for this workspace read skill.",
+                message="path input is required for this workspace read skill.",
                 subject_ref=request.skill_id,
             )
         try:

@@ -61,6 +61,24 @@ from chanta_core.skills.registry_view import SkillRegistryViewService
 from chanta_core.skills.observation_digest_proposal import ObservationDigestProposalService
 from chanta_core.skills.observation_digest_invocation import ObservationDigestSkillInvocationService
 from chanta_core.skills.observation_digest_conformance import ObservationDigestConformanceService
+from chanta_core.self_awareness import (
+    READ_ONLY_OBSERVATION_EFFECT,
+    SelfAwarenessConformanceService,
+    SelfAwarenessConsolidationService,
+    SelfAwarenessRegistryService,
+    SelfAwarenessReportService,
+    SelfAwarenessWorkbenchRequest,
+    SelfAwarenessWorkbenchService,
+    SelfDirectedIntentionRequest,
+    SelfWorkspacePathPolicyService,
+)
+from chanta_core.deep_self_introspection import (
+    DeepSelfIntrospectionConformanceService,
+    DeepSelfIntrospectionRegistryService,
+    DeepSelfIntrospectionReportService,
+    SelfCapabilityRegistryAwarenessService,
+    SelfCapabilityRegistryViewRequest,
+)
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.settings.app_settings import load_app_settings
 from chanta_core.workspace.summary import (
@@ -555,6 +573,198 @@ def build_parser() -> argparse.ArgumentParser:
         )
         command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
         command_parser.add_argument("--limit", type=int, default=20, help="Maximum rows to show.")
+
+    self_awareness_parser = subparsers.add_parser(
+        "self-awareness",
+        help="Inspect read-only Self-Awareness Layer contracts.",
+    )
+    self_awareness_subparsers = self_awareness_parser.add_subparsers(dest="self_awareness_command")
+    self_awareness_registry = self_awareness_subparsers.add_parser("registry", help="List self-awareness contracts.")
+    self_awareness_registry.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_show = self_awareness_subparsers.add_parser("show", help="Show one self-awareness contract.")
+    self_awareness_show.add_argument("skill_id", help="Self-awareness skill id.")
+    self_awareness_show.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["conformance", "pig-report", "ocpx-projection"]:
+        command_parser = self_awareness_subparsers.add_parser(
+            command_name,
+            help=f"Render self-awareness {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_workspace = self_awareness_subparsers.add_parser(
+        "workspace",
+        help="Run metadata-only self-workspace awareness commands.",
+    )
+    self_awareness_workspace_subparsers = self_awareness_workspace.add_subparsers(dest="self_awareness_workspace_command")
+    workspace_roots = self_awareness_workspace_subparsers.add_parser("roots", help="List workspace root aliases.")
+    workspace_roots.add_argument("--json", action="store_true", help="Print result as JSON.")
+    workspace_verify = self_awareness_workspace_subparsers.add_parser("verify-path", help="Verify a workspace path.")
+    workspace_verify.add_argument("input_path", help="Workspace-relative path to verify.")
+    workspace_verify.add_argument("--json", action="store_true", help="Print result as JSON.")
+    workspace_inventory = self_awareness_workspace_subparsers.add_parser(
+        "inventory",
+        help="Build a metadata-only workspace inventory.",
+    )
+    workspace_inventory.add_argument("relative_path", nargs="?", default=".", help="Workspace-relative path to inventory.")
+    workspace_inventory.add_argument("--max-depth", type=int, default=3, help="Maximum traversal depth.")
+    workspace_inventory.add_argument("--max-entries", type=int, default=500, help="Maximum returned entries.")
+    workspace_inventory.add_argument("--include-hidden", action="store_true", help="Include hidden paths.")
+    workspace_inventory.add_argument("--include-ignored", action="store_true", help="Include noisy default-excluded paths.")
+    workspace_inventory.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_text = self_awareness_subparsers.add_parser(
+        "text",
+        help="Run bounded redacted self-code/text perception commands.",
+    )
+    self_awareness_text_subparsers = self_awareness_text.add_subparsers(dest="self_awareness_text_command")
+    text_read = self_awareness_text_subparsers.add_parser("read", help="Read a bounded redacted text slice.")
+    text_read.add_argument("path", help="Workspace-relative file path.")
+    text_read.add_argument("--mode", choices=["preview", "line_range", "head", "tail"], default="preview")
+    text_read.add_argument("--start-line", type=int)
+    text_read.add_argument("--end-line", type=int)
+    text_read.add_argument("--max-bytes", type=int, default=16384)
+    text_read.add_argument("--max-lines", type=int, default=300)
+    text_read.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_search = self_awareness_subparsers.add_parser(
+        "search",
+        help="Run bounded redacted literal workspace search.",
+    )
+    self_awareness_search.add_argument("query", help="Literal query to search for.")
+    self_awareness_search.add_argument("--path", dest="relative_path", default=".", help="Workspace-relative search root.")
+    self_awareness_search.add_argument("--include", dest="include_globs", action="append", default=[], help="Include glob.")
+    self_awareness_search.add_argument("--exclude", dest="exclude_globs", action="append", default=[], help="Exclude glob.")
+    self_awareness_search.add_argument("--case-sensitive", action="store_true", help="Use case-sensitive literal matching.")
+    self_awareness_search.add_argument("--context-lines", type=int, default=2, help="Context lines around each match.")
+    self_awareness_search.add_argument("--max-files", type=int, default=200, help="Maximum files to scan.")
+    self_awareness_search.add_argument("--max-matches", type=int, default=200, help="Maximum matches to return.")
+    self_awareness_search.add_argument("--max-matches-per-file", type=int, default=20, help="Maximum matches per file.")
+    self_awareness_search.add_argument("--max-bytes-per-file", type=int, default=65536, help="Maximum bytes per file.")
+    self_awareness_search.add_argument("--max-total-bytes", type=int, default=1048576, help="Maximum bytes across files.")
+    self_awareness_search.add_argument("--include-hidden", action="store_true", help="Include hidden paths.")
+    self_awareness_search.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_summarize = self_awareness_subparsers.add_parser(
+        "summarize",
+        help="Create deterministic self-structure summary candidates.",
+    )
+    self_awareness_summarize.add_argument("summary_mode", choices=["auto", "markdown", "python", "json", "yaml", "toml", "plain_text"])
+    self_awareness_summarize.add_argument("path", help="Workspace-relative file path.")
+    self_awareness_summarize.add_argument("--max-bytes", type=int, default=65536)
+    self_awareness_summarize.add_argument("--max-lines", type=int, default=1000)
+    self_awareness_summarize.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_project = self_awareness_subparsers.add_parser(
+        "project",
+        help="Run metadata-only self-project structure awareness commands.",
+    )
+    self_awareness_project_subparsers = self_awareness_project.add_subparsers(dest="self_awareness_project_command")
+    project_structure = self_awareness_project_subparsers.add_parser(
+        "structure",
+        help="Build a deterministic project surface structure candidate.",
+    )
+    project_structure.add_argument("--path", dest="relative_path", default=".", help="Workspace-relative directory path.")
+    project_structure.add_argument("--max-depth", type=int, default=5)
+    project_structure.add_argument("--max-entries", type=int, default=2000)
+    project_structure.add_argument("--include-hidden", action="store_true")
+    project_structure.add_argument("--include-ignored", action="store_true")
+    project_structure.add_argument("--no-summary-candidates", action="store_true")
+    project_structure.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_verify = self_awareness_subparsers.add_parser(
+        "verify",
+        help="Run deterministic self-surface verification commands.",
+    )
+    self_awareness_verify_subparsers = self_awareness_verify.add_subparsers(dest="self_awareness_verify_command")
+    verify_surface = self_awareness_verify_subparsers.add_parser(
+        "surface",
+        help="Verify a self-awareness output surface.",
+    )
+    verify_surface.add_argument("--target-type")
+    verify_surface.add_argument("--target-id")
+    verify_surface.add_argument("--target-payload", help="JSON object file containing the target payload.")
+    verify_surface.add_argument("--strictness", choices=["lenient", "standard", "strict"], default="standard")
+    verify_surface.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_intention = self_awareness_subparsers.add_parser(
+        "intention",
+        help="Create candidate-only self-directed intention bundles.",
+    )
+    self_awareness_intention_subparsers = self_awareness_intention.add_subparsers(dest="self_awareness_intention_command")
+    intention_candidates = self_awareness_intention_subparsers.add_parser(
+        "candidates",
+        help="Create plan/todo/no-action/needs-more-input intention candidates.",
+    )
+    intention_candidates.add_argument("--goal", dest="goal_text", help="Goal text for the candidate bundle.")
+    intention_candidates.add_argument("--source-candidate", dest="source_candidate_ids", action="append", default=[])
+    intention_candidates.add_argument("--source-report", dest="source_report_ids", action="append", default=[])
+    intention_candidates.add_argument("--include-no-action", action="store_true", help="Include no-action candidate.")
+    intention_candidates.add_argument("--strictness", choices=["lenient", "standard", "strict"], default="standard")
+    intention_candidates.add_argument("--json", action="store_true", help="Print result as JSON.")
+    self_awareness_workbench = self_awareness_subparsers.add_parser(
+        "workbench",
+        help="Render the read-only Self-Awareness operator workbench.",
+    )
+    self_awareness_workbench.add_argument(
+        "--section",
+        choices=["overview", "registry", "coverage", "candidates", "verification", "audit", "risks", "timeline", "pig", "ocpx"],
+        default="overview",
+    )
+    self_awareness_workbench.add_argument("--limit", type=int, default=20, help="Maximum recent refs to show.")
+    self_awareness_workbench.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for alias_name, section_name in [("status", "overview"), ("audit", "audit"), ("coverage", "coverage")]:
+        alias_parser = self_awareness_subparsers.add_parser(
+            alias_name,
+            help=f"Render Self-Awareness Workbench {section_name}.",
+        )
+        alias_parser.set_defaults(self_awareness_workbench_alias_section=section_name)
+        alias_parser.add_argument("--limit", type=int, default=20, help="Maximum recent refs to show.")
+        alias_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "consolidate",
+        "release-manifest",
+        "gap-register",
+        "safety-report",
+        "capability-map",
+        "coverage-matrix",
+    ]:
+        command_parser = self_awareness_subparsers.add_parser(
+            command_name,
+            help=f"Render self-awareness {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    deep_self_parser = subparsers.add_parser(
+        "deep-self",
+        help="Inspect read-only Deep Self-Introspection contracts.",
+    )
+    deep_self_subparsers = deep_self_parser.add_subparsers(dest="deep_self_command")
+    for command_name in ["contract", "subjects", "conformance", "pig-report", "ocpx-projection"]:
+        command_parser = deep_self_subparsers.add_parser(
+            command_name,
+            help=f"Render deep self-introspection {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_show = deep_self_subparsers.add_parser("show", help="Show one deep self-introspection subject.")
+    deep_self_show.add_argument("subject_id", help="Deep self-introspection subject id.")
+    deep_self_show.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_capability = deep_self_subparsers.add_parser(
+        "capability",
+        help="Render read-only self-capability registry awareness views.",
+    )
+    deep_self_capability_subparsers = deep_self_capability.add_subparsers(dest="deep_self_capability_command")
+    capability_registry = deep_self_capability_subparsers.add_parser(
+        "registry",
+        help="Render the self-capability registry snapshot.",
+    )
+    capability_registry.add_argument("--status", dest="status_filter")
+    capability_registry.add_argument("--layer", dest="layer_filter")
+    capability_registry.add_argument("--json", action="store_true", help="Print result as JSON.")
+    capability_truth = deep_self_capability_subparsers.add_parser(
+        "truth-check",
+        help="Run read-only capability truth checks.",
+    )
+    capability_truth.add_argument("--claims", help="JSON file containing claim dictionaries.")
+    capability_truth.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["risks", "observability"]:
+        command_parser = deep_self_capability_subparsers.add_parser(
+            command_name,
+            help=f"Render self-capability {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
 
     workbench_parser = subparsers.add_parser(
         "workbench",
@@ -2080,6 +2290,837 @@ def _run_observe_digest_ecosystem(args: argparse.Namespace) -> int:
     return 1
 
 
+def run_self_awareness(args: argparse.Namespace) -> int:
+    command = getattr(args, "self_awareness_command", None)
+    if not command:
+        print("self-awareness command is required", file=sys.stderr)
+        return 1
+    registry = SelfAwarenessRegistryService()
+    conformance = SelfAwarenessConformanceService(registry)
+    reports = SelfAwarenessReportService(registry_service=registry, conformance_service=conformance)
+    if command == "registry":
+        contracts = registry.list_contracts()
+        summary = registry.summarize_layer()
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "summary": summary,
+                        "contracts": [item.to_dict() for item in contracts],
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print("Self-Awareness Registry")
+            print("layer=self_awareness")
+            print(f"state={summary['state']}")
+            print(f"contract_count={len(contracts)}")
+            print(f"implemented_count={summary['implemented_count']}")
+            print(f"read_only_observation_count={summary['read_only_observation_count']}")
+            print(f"execution_enabled_count={summary['execution_enabled_count']}")
+            print(f"canonical_mutation_enabled_count={summary['canonical_mutation_enabled_count']}")
+            print(f"dangerous_capability_count={summary['dangerous_capability_count']}")
+            print(f"write_mutation_count={summary['write_mutation_count']}")
+            print(f"shell_usage_count={summary['shell_usage_count']}")
+            print(f"network_usage_count={summary['network_usage_count']}")
+            print(f"memory_mutation_count={summary['memory_mutation_count']}")
+            print(f"persona_mutation_count={summary['persona_mutation_count']}")
+            print(f"overlay_mutation_count={summary['overlay_mutation_count']}")
+            for item in contracts:
+                print(
+                    f"- {item.skill_id} layer={item.layer} "
+                    f"implementation_status={item.implementation_status} "
+                    f"effect_type={item.effect_type} "
+                    f"execution_enabled={str(item.execution_enabled).lower()}"
+                )
+        return 0
+    if command == "show":
+        contract = registry.get_contract(args.skill_id)
+        if contract is None:
+            print("Self-Awareness Contract\nstatus=not_found", file=sys.stderr)
+            return 1
+        if args.json:
+            print(json.dumps(contract.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print("Self-Awareness Contract")
+            print(f"skill_id={contract.skill_id}")
+            print(f"layer={contract.layer}")
+            print(f"state={contract.capability.state}")
+            print(f"implementation_status={contract.implementation_status}")
+            print(f"effect_type={contract.effect_type}")
+            print(f"execution_enabled={str(contract.execution_enabled).lower()}")
+            print(f"canonical_mutation_enabled={str(contract.canonical_mutation_enabled).lower()}")
+            print(f"read_only={str(contract.risk_profile.read_only).lower()}")
+            print(f"dangerous_capability={str(contract.risk_profile.dangerous_capability).lower()}")
+        return 0
+    if command == "conformance":
+        report = conformance.run_conformance()
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(conformance.render_conformance_cli(report))
+        return 0 if report.passed else 1
+    if command == "pig-report":
+        report = reports.build_pig_report()
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_pig_report_cli())
+        return 0
+    if command == "ocpx-projection":
+        projection = reports.build_ocpx_projection()
+        if args.json:
+            print(json.dumps(projection, ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_ocpx_projection_cli())
+        return 0
+    if command in {"workbench", "status", "audit", "coverage"}:
+        return _run_self_awareness_workbench(args)
+    if command in {
+        "consolidate",
+        "release-manifest",
+        "gap-register",
+        "safety-report",
+        "capability-map",
+        "coverage-matrix",
+    }:
+        return _run_self_awareness_consolidation(args)
+    if command == "workspace":
+        return _run_self_awareness_workspace(args)
+    if command == "text":
+        return _run_self_awareness_text(args)
+    if command == "search":
+        return _run_self_awareness_search(args)
+    if command == "summarize":
+        return _run_self_awareness_summarize(args)
+    if command == "project":
+        return _run_self_awareness_project(args)
+    if command == "verify":
+        return _run_self_awareness_verify(args)
+    if command == "intention":
+        return _run_self_awareness_intention(args)
+    print("unsupported self-awareness command", file=sys.stderr)
+    return 1
+
+
+def _run_self_awareness_workbench(args: argparse.Namespace) -> int:
+    section = getattr(args, "self_awareness_workbench_alias_section", None) or getattr(args, "section", "overview")
+    request = SelfAwarenessWorkbenchRequest(section=section, max_recent_items=getattr(args, "limit", 20)).normalized()
+    service = SelfAwarenessWorkbenchService()
+    snapshot = service.build_snapshot(request)
+    if args.json:
+        print(json.dumps(snapshot.to_dict(), ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(snapshot, section=section))
+    return 0
+
+
+def _run_self_awareness_consolidation(args: argparse.Namespace) -> int:
+    command = getattr(args, "self_awareness_command", "consolidate")
+    service = SelfAwarenessConsolidationService()
+    report = service.consolidate()
+    if args.json:
+        payload: dict[str, object]
+        if command == "release-manifest":
+            payload = service.last_release_manifest.to_dict() if service.last_release_manifest else {}
+        elif command == "gap-register":
+            payload = service.last_gap_register.to_dict() if service.last_gap_register else {}
+        elif command == "safety-report":
+            payload = service.last_safety_report.to_dict() if service.last_safety_report else {}
+        elif command == "capability-map":
+            payload = service.last_capability_map.to_dict() if service.last_capability_map else {}
+        elif command == "coverage-matrix":
+            payload = service.last_coverage_matrix.to_dict() if service.last_coverage_matrix else {}
+        else:
+            payload = report.to_dict()
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(command))
+    return 0
+
+
+def _run_self_awareness_workspace(args: argparse.Namespace) -> int:
+    command = getattr(args, "self_awareness_workspace_command", None)
+    if not command:
+        print("self-awareness workspace command is required", file=sys.stderr)
+        return 1
+    root_path = str(Path.cwd())
+    path_policy = SelfWorkspacePathPolicyService(workspace_root=root_path)
+    if command == "roots":
+        roots = path_policy.list_workspace_roots()
+        if args.json:
+            print(
+                json.dumps(
+                    [
+                        {
+                            "root_id": item.root_id,
+                            "display_name": item.display_name,
+                            "source": item.source,
+                            "is_primary": item.is_primary,
+                            "is_private_boundary": item.is_private_boundary,
+                            "path_ref": "<workspace-root>",
+                            "effect": READ_ONLY_OBSERVATION_EFFECT,
+                        }
+                        for item in roots
+                    ],
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+        else:
+            print("Self-Workspace Roots")
+            print(f"effect={READ_ONLY_OBSERVATION_EFFECT}")
+            for item in roots:
+                print(
+                    f"- root_id={item.root_id} display_name={item.display_name} "
+                    f"source={item.source} is_primary={str(item.is_primary).lower()} path_ref=<workspace-root>"
+                )
+        return 0
+    invocation = ExplicitSkillInvocationService()
+    gate = SkillExecutionGateService(explicit_skill_invocation_service=invocation)
+    if command == "verify-path":
+        payload = {"root_path": root_path, "input_path": args.input_path}
+        gate_result = gate.gate_explicit_invocation(
+            skill_id="skill:self_awareness_path_verify",
+            input_payload=payload,
+            invocation_mode="self_workspace_awareness_cli",
+        )
+        output = _last_invocation_output(invocation)
+        if args.json:
+            print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+        else:
+            print("Self-Workspace Path Verification")
+            print(f"effect={READ_ONLY_OBSERVATION_EFFECT}")
+            print(f"gate_status={gate_result.status}")
+            print(f"executed={str(gate_result.executed).lower()}")
+            print(f"blocked={str(gate_result.blocked).lower()}")
+            print(f"input_path={args.input_path}")
+            if output:
+                print(f"within_workspace={str(output.get('within_workspace', False)).lower()}")
+                print(f"finding_type={output.get('finding_type')}")
+                print(f"reason={output.get('reason')}")
+            elif gate.last_decision is not None:
+                print(f"finding_type={gate.last_decision.decision_basis}")
+                print(f"reason={gate.last_decision.reason}")
+        return 0 if gate_result.executed else 1
+    if command == "inventory":
+        payload = {
+            "root_path": root_path,
+            "relative_path": args.relative_path,
+            "max_depth": args.max_depth,
+            "max_entries": args.max_entries,
+            "include_hidden": bool(args.include_hidden),
+            "include_ignored": bool(args.include_ignored),
+        }
+        gate_result = gate.gate_explicit_invocation(
+            skill_id="skill:self_awareness_workspace_inventory",
+            input_payload=payload,
+            invocation_mode="self_workspace_awareness_cli",
+        )
+        output = _last_invocation_output(invocation)
+        if args.json:
+            print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+        else:
+            print("Self-Workspace Inventory")
+            print(f"effect={READ_ONLY_OBSERVATION_EFFECT}")
+            print(f"gate_status={gate_result.status}")
+            print(f"executed={str(gate_result.executed).lower()}")
+            print(f"blocked={str(gate_result.blocked).lower()}")
+            print(f"requested_path={args.relative_path}")
+            print(f"truncated={str(output.get('truncated', False)).lower()}")
+            print(f"total_entries_seen={output.get('total_entries_seen', 0)}")
+            print(f"total_entries_returned={output.get('total_entries_returned', 0)}")
+            print(f"excluded_count={output.get('excluded_count', 0)}")
+            for item in list(output.get("entries") or [])[:20]:
+                print(
+                    f"- {item.get('relative_path')} type={item.get('entry_type')} "
+                    f"depth={item.get('depth')} size_bytes={item.get('size_bytes')}"
+                )
+        return 0 if gate_result.executed else 1
+    print("unsupported self-awareness workspace command", file=sys.stderr)
+    return 1
+
+
+def _last_invocation_output(invocation: ExplicitSkillInvocationService) -> dict:
+    result = invocation.last_result
+    if result is None:
+        return {}
+    output_payload = result.output_payload
+    output_attrs = output_payload.get("output_attrs")
+    return dict(output_attrs) if isinstance(output_attrs, dict) else {}
+
+
+def _run_self_awareness_text(args: argparse.Namespace) -> int:
+    command = getattr(args, "self_awareness_text_command", None)
+    if command != "read":
+        print("self-awareness text read command is required", file=sys.stderr)
+        return 1
+    root_path = str(Path.cwd())
+    mode = "line_range" if args.mode == "preview" and (args.start_line or args.end_line) else args.mode
+    payload = {
+        "root_path": root_path,
+        "path": args.path,
+        "mode": mode,
+        "start_line": args.start_line,
+        "end_line": args.end_line,
+        "max_bytes": args.max_bytes,
+        "max_lines": args.max_lines,
+    }
+    invocation = ExplicitSkillInvocationService()
+    gate = SkillExecutionGateService(explicit_skill_invocation_service=invocation)
+    gate_result = gate.gate_explicit_invocation(
+        skill_id="skill:self_awareness_text_read",
+        input_payload=payload,
+        invocation_mode="self_code_text_perception_cli",
+    )
+    output = _last_invocation_output(invocation)
+    if args.json:
+        print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+    else:
+        print("Self-Code/Text Perception")
+        print(f"effect={READ_ONLY_OBSERVATION_EFFECT}")
+        print(f"gate_status={gate_result.status}")
+        print(f"executed={str(gate_result.executed).lower()}")
+        print(f"blocked={str(gate_result.blocked).lower()}")
+        result = output
+        decision = result.get("policy_decision") if isinstance(result.get("policy_decision"), dict) else {}
+        text_slice = result.get("slice") if isinstance(result.get("slice"), dict) else None
+        print(f"path={args.path}")
+        print(f"mode={decision.get('read_mode', args.mode)}")
+        if text_slice:
+            print(f"relative_path={text_slice.get('relative_path')}")
+            print(f"line_range={text_slice.get('start_line')}-{text_slice.get('end_line')}")
+            print(f"bytes_read={text_slice.get('bytes_read')}")
+            print(f"lines_read={text_slice.get('lines_read')}")
+            print(f"truncated={str(text_slice.get('truncated', False)).lower()}")
+            print(f"redacted={str(text_slice.get('redacted', False)).lower()}")
+            print("content:")
+            print(text_slice.get("content", ""))
+        else:
+            print(f"finding_type={decision.get('finding_type', gate.last_decision.decision_basis if gate.last_decision else 'blocked')}")
+            print(f"reason={decision.get('reason', gate.last_decision.reason if gate.last_decision else '')}")
+            print("content_printed=false")
+    return 0 if gate_result.executed else 1
+
+
+def _run_self_awareness_search(args: argparse.Namespace) -> int:
+    root_path = str(Path.cwd())
+    payload = {
+        "root_path": root_path,
+        "query": args.query,
+        "relative_path": args.relative_path,
+        "include_globs": list(args.include_globs or []),
+        "exclude_globs": list(args.exclude_globs or []),
+        "case_sensitive": bool(args.case_sensitive),
+        "match_mode": "literal",
+        "context_lines": args.context_lines,
+        "max_files": args.max_files,
+        "max_matches": args.max_matches,
+        "max_matches_per_file": args.max_matches_per_file,
+        "max_bytes_per_file": args.max_bytes_per_file,
+        "max_total_bytes": args.max_total_bytes,
+        "include_hidden": bool(args.include_hidden),
+    }
+    invocation = ExplicitSkillInvocationService()
+    gate = SkillExecutionGateService(explicit_skill_invocation_service=invocation)
+    gate_result = gate.gate_explicit_invocation(
+        skill_id="skill:self_awareness_workspace_search",
+        input_payload=payload,
+        invocation_mode="self_code_search_awareness_cli",
+    )
+    output = _last_invocation_output(invocation)
+    if args.json:
+        print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+    else:
+        print("Self-Code Search Awareness")
+        print(f"effect={READ_ONLY_OBSERVATION_EFFECT}")
+        print(f"gate_status={gate_result.status}")
+        print(f"executed={str(gate_result.executed).lower()}")
+        print(f"blocked={str(gate_result.blocked).lower()}")
+        print(f"query={args.query}")
+        decision = output.get("policy_decision") if isinstance(output.get("policy_decision"), dict) else {}
+        print(f"mode={decision.get('effective_match_mode', 'literal')}")
+        print(f"path={args.relative_path}")
+        print(f"files_scanned={output.get('files_scanned', 0)}")
+        print(f"files_skipped={output.get('files_skipped', 0)}")
+        print(f"files_blocked={output.get('files_blocked', 0)}")
+        print(f"match_count={len(output.get('matches') or [])}")
+        print(f"truncated={str(output.get('truncated', False)).lower()}")
+        if output.get("truncated_reason"):
+            print(f"truncated_reason={output.get('truncated_reason')}")
+        if gate_result.blocked:
+            print(f"finding_type={decision.get('finding_type', gate.last_decision.decision_basis if gate.last_decision else 'blocked')}")
+            print(f"reason={decision.get('reason', gate.last_decision.reason if gate.last_decision else '')}")
+            print("content_printed=false")
+        elif not output.get("matches"):
+            print("matches=none")
+        else:
+            for match in output.get("matches") or []:
+                snippet = match.get("snippet") if isinstance(match.get("snippet"), dict) else {}
+                print(
+                    f"- {match.get('relative_path')}:{match.get('line_number')} "
+                    f"columns={match.get('column_start')}-{match.get('column_end')} "
+                    f"redacted={str(snippet.get('redacted', False)).lower()}"
+                )
+                for line in snippet.get("before") or []:
+                    print(f"  | {_safe_cli_text(line)}")
+                print(f"  > {_safe_cli_text(snippet.get('line', ''))}")
+                for line in snippet.get("after") or []:
+                    print(f"  | {_safe_cli_text(line)}")
+    return 0 if gate_result.executed else 1
+
+
+def _run_self_awareness_summarize(args: argparse.Namespace) -> int:
+    root_path = str(Path.cwd())
+    mode = args.summary_mode
+    skill_id = (
+        "skill:self_awareness_python_symbols"
+        if mode == "python"
+        else "skill:self_awareness_markdown_structure"
+    )
+    payload = {
+        "root_path": root_path,
+        "path": args.path,
+        "summary_mode": mode,
+        "max_bytes": args.max_bytes,
+        "max_lines": args.max_lines,
+    }
+    invocation = ExplicitSkillInvocationService()
+    gate = SkillExecutionGateService(explicit_skill_invocation_service=invocation)
+    gate_result = gate.gate_explicit_invocation(
+        skill_id=skill_id,
+        input_payload=payload,
+        invocation_mode="self_structure_summarization_cli",
+    )
+    output = _last_invocation_output(invocation)
+    if args.json:
+        print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+    else:
+        print("Self-Structure Summarization")
+        print(f"effect={READ_ONLY_OBSERVATION_EFFECT}+state_candidate_created")
+        print(f"gate_status={gate_result.status}")
+        print(f"executed={str(gate_result.executed).lower()}")
+        print(f"blocked={str(gate_result.blocked).lower()}")
+        print(f"path={args.path}")
+        print(f"candidate_id={output.get('candidate_id', '')}")
+        print(f"summary_kind={output.get('summary_kind', mode)}")
+        print(f"review_status={output.get('review_status', 'candidate_only')}")
+        print(f"canonical_promotion_enabled={str(output.get('canonical_promotion_enabled', False)).lower()}")
+        print(f"promoted={str(output.get('promoted', False)).lower()}")
+        decision = output.get("policy_decision") if isinstance(output.get("policy_decision"), dict) else {}
+        if gate_result.blocked:
+            print(f"finding_type={decision.get('finding_type', gate.last_decision.decision_basis if gate.last_decision else 'blocked')}")
+            print(f"reason={decision.get('reason', gate.last_decision.reason if gate.last_decision else '')}")
+            print("content_printed=false")
+        elif output.get("markdown"):
+            markdown = output["markdown"]
+            print(f"heading_count={markdown.get('heading_count', 0)}")
+            print(f"max_heading_depth={markdown.get('max_heading_depth', 0)}")
+            print(f"frontmatter_keys={','.join(markdown.get('frontmatter_keys') or [])}")
+            for item in markdown.get("headings") or []:
+                print(f"- h{item.get('level')} line={item.get('line_number')} title={_safe_cli_text(item.get('title', ''))}")
+        elif output.get("python"):
+            python = output["python"]
+            print(f"import_count={len(python.get('imports') or [])}")
+            print(f"function_count={len(python.get('top_level_functions') or [])}")
+            print(f"class_count={len(python.get('top_level_classes') or [])}")
+            print(f"assignment_count={len(python.get('top_level_assignments') or [])}")
+            if python.get("parse_error"):
+                print(f"parse_error={_safe_cli_text(python.get('parse_error'))}")
+        elif output.get("shallow_keys"):
+            shallow = output["shallow_keys"]
+            print(f"file_kind={shallow.get('file_kind')}")
+            print(f"top_level_keys={','.join(shallow.get('top_level_keys') or [])}")
+            if shallow.get("parse_error"):
+                print(f"parse_error={_safe_cli_text(shallow.get('parse_error'))}")
+        elif output.get("plain_text"):
+            preview = output["plain_text"]
+            print(f"line_count_seen={preview.get('line_count_seen', 0)}")
+            print(f"truncated={str(preview.get('truncated', False)).lower()}")
+            print(f"redacted={str(preview.get('redacted', False)).lower()}")
+            for line in preview.get("first_non_empty_lines") or []:
+                print(f"- {_safe_cli_text(line)}")
+    return 0 if gate_result.executed else 1
+
+
+def _run_self_awareness_project(args: argparse.Namespace) -> int:
+    command = getattr(args, "self_awareness_project_command", None)
+    if command != "structure":
+        print("self-awareness project structure command is required", file=sys.stderr)
+        return 1
+    root_path = str(Path.cwd())
+    payload = {
+        "root_path": root_path,
+        "relative_path": args.relative_path,
+        "max_depth": args.max_depth,
+        "max_entries": args.max_entries,
+        "include_hidden": bool(args.include_hidden),
+        "include_ignored": bool(args.include_ignored),
+        "include_summary_candidates": not bool(args.no_summary_candidates),
+    }
+    invocation = ExplicitSkillInvocationService()
+    gate = SkillExecutionGateService(explicit_skill_invocation_service=invocation)
+    gate_result = gate.gate_explicit_invocation(
+        skill_id="skill:self_awareness_project_structure",
+        input_payload=payload,
+        invocation_mode="self_project_structure_awareness_cli",
+    )
+    output = _last_invocation_output(invocation)
+    if args.json:
+        print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+    else:
+        print("Self-Project Structure Awareness")
+        print(f"effect={READ_ONLY_OBSERVATION_EFFECT}+state_candidate_created")
+        print(f"gate_status={gate_result.status}")
+        print(f"executed={str(gate_result.executed).lower()}")
+        print(f"blocked={str(gate_result.blocked).lower()}")
+        print(f"path={args.relative_path}")
+        print(f"candidate_id={output.get('candidate_id', '')}")
+        print(f"review_status={output.get('review_status', 'candidate_only')}")
+        print(f"canonical_promotion_enabled={str(output.get('canonical_promotion_enabled', False)).lower()}")
+        print(f"promoted={str(output.get('promoted', False)).lower()}")
+        print(f"truncated={str(output.get('truncated', False)).lower()}")
+        if output.get("truncated_reason"):
+            print(f"truncated_reason={output.get('truncated_reason')}")
+        decision = output.get("policy_decision") if isinstance(output.get("policy_decision"), dict) else {}
+        if gate_result.blocked:
+            print(f"finding_type={decision.get('finding_type', gate.last_decision.decision_basis if gate.last_decision else 'blocked')}")
+            print(f"reason={decision.get('reason', gate.last_decision.reason if gate.last_decision else '')}")
+            print("content_printed=false")
+        else:
+            distribution = output.get("file_distribution") if isinstance(output.get("file_distribution"), dict) else {}
+            surfaces = list(output.get("surface_candidates") or [])
+            nodes = list(output.get("tree_nodes") or [])
+            print(f"tree_node_count={len(nodes)}")
+            print(f"total_files={distribution.get('total_files', 0)}")
+            print(f"total_dirs={distribution.get('total_dirs', 0)}")
+            print(f"surface_candidate_count={len(surfaces)}")
+            print("tree_preview:")
+            for node in nodes[:20]:
+                print(
+                    f"- {node.get('relative_path')} type={node.get('node_type')} "
+                    f"depth={node.get('depth')} kind={node.get('file_kind')}"
+                )
+            print("surface_candidates:")
+            for item in surfaces[:20]:
+                print(
+                    f"- {item.get('candidate_type')} path={item.get('relative_path')} "
+                    f"confidence={item.get('confidence')}"
+                )
+            print("content_printed=false")
+    return 0 if gate_result.executed else 1
+
+
+def _run_self_awareness_verify(args: argparse.Namespace) -> int:
+    command = getattr(args, "self_awareness_verify_command", None)
+    if command != "surface":
+        print("self-awareness verify surface command is required", file=sys.stderr)
+        return 1
+    root_path = str(Path.cwd())
+    payload_data = _load_json_object(args.target_payload) if getattr(args, "target_payload", None) else {}
+    target_type = args.target_type or payload_data.get("target_type") or _infer_self_awareness_target_type(payload_data)
+    target_id = args.target_id or payload_data.get("candidate_id") or payload_data.get("report_id") or payload_data.get("target_id")
+    payload = {
+        "root_path": root_path,
+        "target_type": target_type,
+        "target_id": target_id,
+        "target_payload": payload_data,
+        "strictness": args.strictness,
+    }
+    invocation = ExplicitSkillInvocationService()
+    gate = SkillExecutionGateService(explicit_skill_invocation_service=invocation)
+    gate_result = gate.gate_explicit_invocation(
+        skill_id="skill:self_awareness_surface_verify",
+        input_payload=payload,
+        invocation_mode="self_surface_verification_cli",
+    )
+    output = _last_invocation_output(invocation)
+    if args.json:
+        print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+    else:
+        print("Self-Surface Verification")
+        print(f"effect={READ_ONLY_OBSERVATION_EFFECT}+state_candidate_created")
+        print(f"gate_status={gate_result.status}")
+        print(f"executed={str(gate_result.executed).lower()}")
+        print(f"blocked={str(gate_result.blocked).lower()}")
+        print(f"target_type={target_type}")
+        print(f"target_id={target_id or ''}")
+        print(f"status={output.get('status', 'blocked')}")
+        print(f"report_id={output.get('report_id', '')}")
+        print(f"review_status={output.get('review_status', 'candidate_only')}")
+        print(f"canonical_promotion_enabled={str(output.get('canonical_promotion_enabled', False)).lower()}")
+        print(f"promoted={str(output.get('promoted', False)).lower()}")
+        findings = list(output.get("findings") or [])
+        for severity in ["info", "warning", "error", "critical"]:
+            print(f"{severity}_finding_count={sum(1 for item in findings if item.get('severity') == severity)}")
+        evidence = output.get("evidence_coverage") if isinstance(output.get("evidence_coverage"), dict) else {}
+        boundary = output.get("boundary_status") if isinstance(output.get("boundary_status"), dict) else {}
+        candidate = output.get("candidate_status") if isinstance(output.get("candidate_status"), dict) else {}
+        print(f"evidence_coverage={evidence.get('coverage_status', 'not_applicable')}")
+        print(f"boundary_status={boundary.get('boundary_status', 'warning')}")
+        print(f"candidate_status={candidate.get('candidate_status', 'warning')}")
+        for item in findings[:10]:
+            print(
+                f"- severity={item.get('severity')} type={item.get('finding_type')} "
+                f"message={_safe_cli_text(item.get('message', ''))}"
+            )
+        print("content_printed=false")
+    return 0 if gate_result.executed else 1
+
+
+def _run_self_awareness_intention(args: argparse.Namespace) -> int:
+    command = getattr(args, "self_awareness_intention_command", None)
+    if command != "candidates":
+        print("self-awareness intention candidates command is required", file=sys.stderr)
+        return 1
+    root_path = str(Path.cwd())
+    include_no_action = bool(args.include_no_action) or True
+    request = SelfDirectedIntentionRequest(
+        goal_text=args.goal_text,
+        source_candidate_ids=list(args.source_candidate_ids or []),
+        source_report_ids=list(args.source_report_ids or []),
+        strictness=args.strictness,
+        include_no_action=include_no_action,
+    ).normalized()
+    payload = {
+        "root_path": root_path,
+        **request.to_dict(),
+    }
+    invocation = ExplicitSkillInvocationService()
+    gate = SkillExecutionGateService(explicit_skill_invocation_service=invocation)
+    gate_result = gate.gate_explicit_invocation(
+        skill_id="skill:self_awareness_plan_candidate",
+        input_payload=payload,
+        invocation_mode="self_directed_intention_candidate_cli",
+    )
+    output = _last_invocation_output(invocation)
+    if args.json:
+        print(json.dumps({"gate": gate_result.to_dict(), "output": output}, ensure_ascii=False, sort_keys=True))
+    else:
+        print("Self-Directed Intention Candidate")
+        print(f"effect={READ_ONLY_OBSERVATION_EFFECT}+state_candidate_created")
+        print(f"gate_status={gate_result.status}")
+        print(f"executed={str(gate_result.executed).lower()}")
+        print(f"blocked={str(gate_result.blocked).lower()}")
+        print(f"bundle_id={output.get('bundle_id', '')}")
+        print(f"review_status={output.get('review_status', 'candidate_only')}")
+        print(f"plan_candidate_count={len(output.get('plan_candidates') or [])}")
+        print(f"todo_candidate_count={len(output.get('todo_candidates') or [])}")
+        print(f"no_action_candidate_count={len(output.get('no_action_candidates') or [])}")
+        print(f"needs_more_input_candidate_count={len(output.get('needs_more_input_candidates') or [])}")
+        print(f"execution_enabled={str(output.get('execution_enabled', False)).lower()}")
+        print(f"materialized={str(output.get('materialized', False)).lower()}")
+        print(f"canonical_promotion_enabled={str(output.get('canonical_promotion_enabled', False)).lower()}")
+        print(f"promoted={str(output.get('promoted', False)).lower()}")
+        print("no_actual_execution_occurred=true")
+        print("content_printed=false")
+    return 0 if gate_result.executed else 1
+
+
+def run_deep_self(args: argparse.Namespace) -> int:
+    if not args.deep_self_command:
+        print("deep-self command is required", file=sys.stderr)
+        return 1
+    registry = DeepSelfIntrospectionRegistryService()
+    conformance = DeepSelfIntrospectionConformanceService(registry)
+    reports = DeepSelfIntrospectionReportService(
+        registry_service=registry,
+        conformance_service=conformance,
+    )
+    if args.deep_self_command == "contract":
+        contract = registry.build_contract()
+        if args.json:
+            print(json.dumps(contract.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(_render_deep_self_contract(contract.to_dict()))
+        return 0
+    if args.deep_self_command == "subjects":
+        subjects = registry.list_subjects()
+        if args.json:
+            print(json.dumps([item.to_dict() for item in subjects], ensure_ascii=False, sort_keys=True))
+        else:
+            print(_render_deep_self_subjects([item.to_dict() for item in subjects]))
+        return 0
+    if args.deep_self_command == "show":
+        subject = registry.get_subject(args.subject_id)
+        if subject is None:
+            print("Deep Self-Introspection subject\nstatus=not_found", file=sys.stderr)
+            return 1
+        if args.json:
+            print(json.dumps(subject.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(_render_deep_self_subject(subject.to_dict()))
+        return 0
+    if args.deep_self_command == "conformance":
+        report = conformance.run_conformance()
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(conformance.render_conformance_cli())
+        return 0 if report.passed else 1
+    if args.deep_self_command == "pig-report":
+        report = reports.build_pig_report()
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_pig_report_cli())
+        return 0
+    if args.deep_self_command == "ocpx-projection":
+        projection = reports.build_ocpx_projection()
+        if args.json:
+            print(json.dumps(projection, ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_ocpx_projection_cli())
+        return 0
+    if args.deep_self_command == "capability":
+        return _run_deep_self_capability(args)
+    raise SystemExit(f"unsupported deep-self command: {args.deep_self_command}")
+
+
+def _run_deep_self_capability(args: argparse.Namespace) -> int:
+    if not args.deep_self_capability_command:
+        print("deep-self capability command is required", file=sys.stderr)
+        return 1
+    service = SelfCapabilityRegistryAwarenessService()
+    command = args.deep_self_capability_command
+    if command == "registry":
+        request = SelfCapabilityRegistryViewRequest(
+            layer_filter=getattr(args, "layer_filter", None),
+            status_filter=getattr(args, "status_filter", None),
+        )
+        snapshot = service.view_registry(request)
+        if args.json:
+            print(json.dumps(snapshot.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("capability registry", snapshot=snapshot))
+        return 0
+    if command == "truth-check":
+        claims = _load_claims(getattr(args, "claims", None))
+        report = service.truth_check(optional_claims=claims)
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("capability truth-check", report=report))
+        return 0 if report.status in {"passed", "warning"} else 1
+    snapshot = service.view_registry()
+    if command == "risks":
+        if args.json:
+            print(json.dumps([item.to_dict() for item in snapshot.risk_views], ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("capability risks", snapshot=snapshot))
+        return 0
+    if command == "observability":
+        report = service.truth_check()
+        if args.json:
+            print(json.dumps([item.to_dict() for item in snapshot.observability_views], ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("capability observability", snapshot=snapshot, report=report))
+        return 0
+    raise SystemExit(f"unsupported deep-self capability command: {command}")
+
+
+def _load_claims(path: str | None) -> list[dict[str, object]] | None:
+    if not path:
+        return None
+    loaded = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    if not isinstance(loaded, list) or not all(isinstance(item, dict) for item in loaded):
+        raise SystemExit("claims file must contain a list of objects")
+    return loaded
+
+
+def _render_deep_self_contract(contract: dict[str, object]) -> str:
+    risk = contract["risk_profile"]
+    if not isinstance(risk, dict):
+        risk = {}
+    return "\n".join(
+        [
+            "Deep Self-Introspection Contract",
+            f"version={contract.get('version', 'v0.21.0')}",
+            "layer=deep_self_introspection",
+            f"status={contract.get('status', 'contract_only')}",
+            "read_only=True",
+            "ocel_native=True",
+            f"seed_subjects={','.join(item['subject_id'] for item in contract.get('subjects', []) if isinstance(item, dict))}",
+            f"seed_skill_ids={','.join(str(item) for item in contract.get('seed_skill_ids', []))}",
+            f"mutation_enabled={str(bool(risk.get('mutates_workspace') or risk.get('mutates_memory') or risk.get('mutates_persona') or risk.get('mutates_overlay')))}",
+            f"execution_enabled={str(bool(risk.get('uses_shell') or risk.get('uses_network') or risk.get('uses_mcp') or risk.get('loads_plugin') or risk.get('executes_external_harness')))}",
+            f"permission_escalation_enabled={str(bool(risk.get('grants_permission')))}",
+            f"llm_judge_enabled={str(bool(risk.get('uses_llm_judge')))}",
+            "raw_file_content_printed=False",
+            "private_full_paths_printed=False",
+            "raw_secrets_printed=False",
+        ]
+    )
+
+
+def _render_deep_self_subjects(subjects: list[dict[str, object]]) -> str:
+    lines = [
+        "Deep Self-Introspection Subjects",
+        "layer=deep_self_introspection",
+        "status=contract_only",
+        "read_only=True",
+        "ocel_native=True",
+    ]
+    for subject in subjects:
+        lines.append(f"- subject={subject.get('subject_id')} status={subject.get('status', 'contract_only')}")
+    lines.extend(
+        [
+            "mutation_enabled=False",
+            "execution_enabled=False",
+            "permission_escalation_enabled=False",
+            "raw_file_content_printed=False",
+            "private_full_paths_printed=False",
+            "raw_secrets_printed=False",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _render_deep_self_subject(subject: dict[str, object]) -> str:
+    return "\n".join(
+        [
+            "Deep Self-Introspection Subject",
+            "layer=deep_self_introspection",
+            f"subject_id={subject.get('subject_id')}",
+            f"status={subject.get('status', 'contract_only')}",
+            "read_only=True",
+            "ocel_native=True",
+            f"required_source_objects={','.join(str(item) for item in subject.get('required_source_objects', []))}",
+            f"required_read_models={','.join(str(item) for item in subject.get('required_read_models', []))}",
+            "mutation_enabled=False",
+            "execution_enabled=False",
+            "permission_escalation_enabled=False",
+            "raw_file_content_printed=False",
+            "private_full_paths_printed=False",
+            "raw_secrets_printed=False",
+        ]
+    )
+
+
+def _safe_cli_text(value: object) -> str:
+    text = str(value)
+    encoding = sys.stdout.encoding or "utf-8"
+    return text.encode(encoding, errors="replace").decode(encoding, errors="replace")
+
+
+def _infer_self_awareness_target_type(payload: dict) -> str:
+    if not payload:
+        return "self_awareness_layer"
+    if "matches" in payload:
+        return "workspace_search_result"
+    if "tree_nodes" in payload or "surface_candidates" in payload:
+        return "project_structure_candidate"
+    if "markdown" in payload or "python" in payload or "summary_kind" in payload:
+        return "structure_summary_candidate"
+    if "entries" in payload and "total_entries_returned" in payload:
+        return "workspace_inventory_report"
+    if "slice" in payload or "policy_decision" in payload:
+        return "text_read_result"
+    return "self_awareness_layer"
+
+
 def _load_json_object(path: str) -> dict:
     loaded = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     if not isinstance(loaded, dict):
@@ -2158,6 +3199,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_digest(args)
     if args.command == "observe-digest":
         return run_observe_digest(args)
+    if args.command == "self-awareness":
+        return run_self_awareness(args)
+    if args.command == "deep-self":
+        return run_deep_self(args)
     if args.command == "workbench":
         return run_workbench(args)
     raise SystemExit(f"unsupported command: {args.command}")

@@ -14,6 +14,18 @@ from chanta_core.skills.builtin.workspace_read import (
     execute_read_workspace_text_file_skill,
     execute_summarize_workspace_markdown_skill,
 )
+from chanta_core.skills.builtin.self_workspace_awareness import (
+    execute_self_awareness_path_verify_skill,
+    execute_self_awareness_workspace_inventory_skill,
+)
+from chanta_core.skills.builtin.self_code_text_perception import execute_self_awareness_text_read_skill
+from chanta_core.skills.builtin.self_code_search_awareness import execute_self_awareness_workspace_search_skill
+from chanta_core.skills.builtin.self_structure_summarization import execute_self_awareness_structure_summary_skill
+from chanta_core.skills.builtin.self_project_structure_awareness import (
+    execute_self_awareness_project_structure_skill,
+)
+from chanta_core.skills.builtin.self_surface_verification import execute_self_awareness_surface_verify_skill
+from chanta_core.skills.builtin.self_directed_intention import execute_self_awareness_intention_candidate_skill
 from chanta_core.skills.builtin.observation_digest import execute_observation_digest_skill
 from chanta_core.skills.context import SkillExecutionContext
 from chanta_core.observation_digest import OBSERVATION_DIGESTION_SKILL_IDS
@@ -34,6 +46,16 @@ SUPPORTED_EXPLICIT_SKILL_IDS = {
     "skill:list_workspace_files",
     "skill:read_workspace_text_file",
     "skill:summarize_workspace_markdown",
+    "skill:self_awareness_workspace_inventory",
+    "skill:self_awareness_path_verify",
+    "skill:self_awareness_text_read",
+    "skill:self_awareness_workspace_search",
+    "skill:self_awareness_markdown_structure",
+    "skill:self_awareness_python_symbols",
+    "skill:self_awareness_project_structure",
+    "skill:self_awareness_surface_verify",
+    "skill:self_awareness_plan_candidate",
+    "skill:self_awareness_todo_candidate",
     *OBSERVATION_DIGESTION_SKILL_IDS,
 }
 
@@ -332,8 +354,38 @@ class ExplicitSkillInvocationService:
                 "skill:external_skill_static_digest",
             } and not str(payload.get("relative_path") or "").strip():
                 messages.append("relative_path is required")
+            if request.skill_id == "skill:self_awareness_path_verify" and not str(payload.get("input_path") or "").strip():
+                messages.append("input_path is required")
+            if request.skill_id == "skill:self_awareness_text_read" and not str(payload.get("path") or "").strip():
+                messages.append("path is required")
+            if request.skill_id == "skill:self_awareness_workspace_search" and not str(payload.get("query") or "").strip():
+                messages.append("query is required")
+            if request.skill_id in {
+                "skill:self_awareness_markdown_structure",
+                "skill:self_awareness_python_symbols",
+            } and not str(payload.get("path") or "").strip():
+                messages.append("path is required")
+            if request.skill_id == "skill:self_awareness_project_structure" and not str(
+                payload.get("relative_path") or payload.get("path") or "."
+            ).strip():
+                messages.append("relative_path is required")
+            if request.skill_id == "skill:self_awareness_surface_verify" and not str(payload.get("target_type") or "").strip():
+                messages.append("target_type is required")
             relative_path = str(payload.get("relative_path") or ".")
             if Path(relative_path).is_absolute():
+                messages.append("relative_path must not be absolute")
+            input_path = str(payload.get("input_path") or ".")
+            if request.skill_id == "skill:self_awareness_path_verify" and Path(input_path).is_absolute():
+                messages.append("input_path must not be absolute")
+            path_value = str(payload.get("path") or ".")
+            if request.skill_id == "skill:self_awareness_text_read" and Path(path_value).is_absolute():
+                messages.append("path must not be absolute")
+            if request.skill_id in {
+                "skill:self_awareness_markdown_structure",
+                "skill:self_awareness_python_symbols",
+            } and Path(path_value).is_absolute():
+                messages.append("path must not be absolute")
+            if request.skill_id == "skill:self_awareness_project_structure" and Path(relative_path).is_absolute():
                 messages.append("relative_path must not be absolute")
         status = "invalid" if messages else "valid"
         validated = ExplicitSkillInvocationInput(
@@ -656,6 +708,16 @@ class ExplicitSkillInvocationService:
             "skill:list_workspace_files": execute_list_workspace_files_skill,
             "skill:read_workspace_text_file": execute_read_workspace_text_file_skill,
             "skill:summarize_workspace_markdown": execute_summarize_workspace_markdown_skill,
+            "skill:self_awareness_workspace_inventory": execute_self_awareness_workspace_inventory_skill,
+            "skill:self_awareness_path_verify": execute_self_awareness_path_verify_skill,
+            "skill:self_awareness_text_read": execute_self_awareness_text_read_skill,
+            "skill:self_awareness_workspace_search": execute_self_awareness_workspace_search_skill,
+            "skill:self_awareness_markdown_structure": execute_self_awareness_structure_summary_skill,
+            "skill:self_awareness_python_symbols": execute_self_awareness_structure_summary_skill,
+            "skill:self_awareness_project_structure": execute_self_awareness_project_structure_skill,
+            "skill:self_awareness_surface_verify": execute_self_awareness_surface_verify_skill,
+            "skill:self_awareness_plan_candidate": execute_self_awareness_intention_candidate_skill,
+            "skill:self_awareness_todo_candidate": execute_self_awareness_intention_candidate_skill,
         }
         executor = executor_by_id.get(request.skill_id, execute_observation_digest_skill)
         return executor(

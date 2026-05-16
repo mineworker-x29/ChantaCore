@@ -22,6 +22,16 @@ from chanta_core.skills.builtin import (
     create_read_workspace_text_file_skill,
     create_run_worker_once_skill,
     create_run_scheduler_once_skill,
+    create_self_awareness_path_verify_skill,
+    create_self_awareness_markdown_structure_skill,
+    create_self_awareness_plan_candidate_skill,
+    create_self_awareness_project_structure_skill,
+    create_self_awareness_python_symbols_skill,
+    create_self_awareness_surface_verify_skill,
+    create_self_awareness_text_read_skill,
+    create_self_awareness_todo_candidate_skill,
+    create_self_awareness_workspace_search_skill,
+    create_self_awareness_workspace_inventory_skill,
     create_summarize_pi_artifacts_skill,
     create_summarize_process_trace_skill,
     create_summarize_text_skill,
@@ -94,6 +104,16 @@ class SkillRegistry:
         self.register(create_summarize_pi_artifacts_skill())
         self.register(create_summarize_process_trace_skill())
         self.register(create_summarize_workspace_markdown_skill())
+        self.register(create_self_awareness_workspace_inventory_skill())
+        self.register(create_self_awareness_path_verify_skill())
+        self.register(create_self_awareness_text_read_skill())
+        self.register(create_self_awareness_workspace_search_skill())
+        self.register(create_self_awareness_markdown_structure_skill())
+        self.register(create_self_awareness_python_symbols_skill())
+        self.register(create_self_awareness_project_structure_skill())
+        self.register(create_self_awareness_surface_verify_skill())
+        self.register(create_self_awareness_plan_candidate_skill())
+        self.register(create_self_awareness_todo_candidate_skill())
         self.register(create_agent_observation_source_inspect_skill())
         self.register(create_agent_trace_observe_skill())
         self.register(create_agent_observation_normalize_skill())

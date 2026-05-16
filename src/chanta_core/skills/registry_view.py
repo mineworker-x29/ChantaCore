@@ -27,6 +27,7 @@ SKILL_LAYERS = {
     "core_process_intelligence",
     "internal_observation",
     "internal_digestion",
+    "self_awareness",
     "basic_foundation",
     "external_candidate",
     "external_adapted",

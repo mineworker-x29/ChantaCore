@@ -1,0 +1,25 @@
+{
+  "candidate_id": "candidate:valid_project_structure",
+  "review_status": "candidate_only",
+  "canonical_promotion_enabled": false,
+  "promoted": false,
+  "effect_types": ["read_only_observation", "state_candidate_created"],
+  "tree_nodes": [
+    {
+      "relative_path": "README.md",
+      "node_type": "file",
+      "depth": 1,
+      "file_kind": "readme"
+    }
+  ],
+  "surface_candidates": [
+    {
+      "candidate_type": "readme",
+      "relative_path": "README.md",
+      "reason": "README filename pattern",
+      "evidence_refs": [{"relative_path": "README.md"}]
+    }
+  ],
+  "evidence_refs": [{"relative_path": ".", "line_number": 1}],
+  "limitations": ["metadata_only_surface_mapping"]
+}

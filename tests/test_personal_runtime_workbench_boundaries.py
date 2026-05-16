@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 from chanta_core.ocpx.models import OCPXObjectView, OCPXProcessView
 from chanta_core.pig.reports import PIGReportService
@@ -10,7 +10,7 @@ def test_personal_runtime_workbench_boundaries_have_no_forbidden_behavior() -> N
         for path in [
             Path("src/chanta_core/runtime/workbench.py"),
             Path("src/chanta_core/runtime/history_adapter.py"),
-            Path("docs/chanta_core_v0_18_5_restore.md"),
+            Path("docs/versions/v0.18/chanta_core_v0_18_5_restore.md"),
         ]
     )
     forbidden = [

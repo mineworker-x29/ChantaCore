@@ -12,7 +12,7 @@ def test_personal_conformance_public_files_do_not_contain_forbidden_terms() -> N
         root / "tests" / "test_personal_conformance_history_adapter.py",
         root / "tests" / "test_personal_conformance_ocel_shape.py",
         root / "tests" / "test_personal_conformance_boundaries.py",
-        root / "docs" / "chanta_core_v0_16_4_restore.md",
+        root / "docs" / "versions" / "v0.16" / "chanta_core_v0_16_4_restore.md",
     ]
     text = "\n".join(path.read_text(encoding="utf-8") for path in paths)
 

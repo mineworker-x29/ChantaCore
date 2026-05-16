@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 
 def test_workspace_read_summary_has_no_forbidden_execution_or_writes() -> None:
@@ -31,7 +31,7 @@ def test_workspace_read_summary_has_no_forbidden_execution_or_writes() -> None:
 def test_workspace_read_summary_public_safe_surface() -> None:
     text = (
         Path("src/chanta_core/workspace/summary.py").read_text(encoding="utf-8")
-        + Path("docs/chanta_core_v0_18_4_restore.md").read_text(encoding="utf-8")
+        + Path("docs/versions/v0.18/chanta_core_v0_18_4_restore.md").read_text(encoding="utf-8")
     )
     assert "sample-secret" not in text
     assert "hidden-value" not in text

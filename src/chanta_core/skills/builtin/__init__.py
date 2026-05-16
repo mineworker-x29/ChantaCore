@@ -51,6 +51,38 @@ from chanta_core.skills.builtin.workspace_read import (
     execute_read_workspace_text_file_skill,
     execute_summarize_workspace_markdown_skill,
 )
+from chanta_core.skills.builtin.self_workspace_awareness import (
+    create_self_awareness_path_verify_skill,
+    create_self_awareness_workspace_inventory_skill,
+    execute_self_awareness_path_verify_skill,
+    execute_self_awareness_workspace_inventory_skill,
+)
+from chanta_core.skills.builtin.self_code_text_perception import (
+    create_self_awareness_text_read_skill,
+    execute_self_awareness_text_read_skill,
+)
+from chanta_core.skills.builtin.self_code_search_awareness import (
+    create_self_awareness_workspace_search_skill,
+    execute_self_awareness_workspace_search_skill,
+)
+from chanta_core.skills.builtin.self_structure_summarization import (
+    create_self_awareness_markdown_structure_skill,
+    create_self_awareness_python_symbols_skill,
+    execute_self_awareness_structure_summary_skill,
+)
+from chanta_core.skills.builtin.self_project_structure_awareness import (
+    create_self_awareness_project_structure_skill,
+    execute_self_awareness_project_structure_skill,
+)
+from chanta_core.skills.builtin.self_surface_verification import (
+    create_self_awareness_surface_verify_skill,
+    execute_self_awareness_surface_verify_skill,
+)
+from chanta_core.skills.builtin.self_directed_intention import (
+    create_self_awareness_plan_candidate_skill,
+    create_self_awareness_todo_candidate_skill,
+    execute_self_awareness_intention_candidate_skill,
+)
 from chanta_core.skills.builtin.observation_digest import (
     create_agent_behavior_infer_skill,
     create_agent_observation_normalize_skill,
@@ -90,6 +122,16 @@ __all__ = [
     "create_read_workspace_text_file_skill",
     "create_run_worker_once_skill",
     "create_run_scheduler_once_skill",
+    "create_self_awareness_path_verify_skill",
+    "create_self_awareness_markdown_structure_skill",
+    "create_self_awareness_plan_candidate_skill",
+    "create_self_awareness_project_structure_skill",
+    "create_self_awareness_python_symbols_skill",
+    "create_self_awareness_surface_verify_skill",
+    "create_self_awareness_text_read_skill",
+    "create_self_awareness_todo_candidate_skill",
+    "create_self_awareness_workspace_search_skill",
+    "create_self_awareness_workspace_inventory_skill",
     "create_summarize_pi_artifacts_skill",
     "create_summarize_process_trace_skill",
     "create_summarize_text_skill",
@@ -106,6 +148,14 @@ __all__ = [
     "execute_read_workspace_text_file_skill",
     "execute_run_worker_once_skill",
     "execute_run_scheduler_once_skill",
+    "execute_self_awareness_path_verify_skill",
+    "execute_self_awareness_intention_candidate_skill",
+    "execute_self_awareness_project_structure_skill",
+    "execute_self_awareness_surface_verify_skill",
+    "execute_self_awareness_structure_summary_skill",
+    "execute_self_awareness_text_read_skill",
+    "execute_self_awareness_workspace_search_skill",
+    "execute_self_awareness_workspace_inventory_skill",
     "execute_summarize_pi_artifacts_skill",
     "execute_summarize_process_trace_skill",
     "execute_summarize_text_skill",

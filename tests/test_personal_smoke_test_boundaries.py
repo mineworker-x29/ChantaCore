@@ -12,7 +12,7 @@ def test_personal_smoke_test_public_files_do_not_contain_forbidden_terms() -> No
         root / "tests" / "test_personal_smoke_test_history_adapter.py",
         root / "tests" / "test_personal_smoke_test_ocel_shape.py",
         root / "tests" / "test_personal_smoke_test_boundaries.py",
-        root / "docs" / "chanta_core_v0_16_5_restore.md",
+        root / "docs" / "versions" / "v0.16" / "chanta_core_v0_16_5_restore.md",
     ]
     text = "\n".join(path.read_text(encoding="utf-8") for path in paths)
 

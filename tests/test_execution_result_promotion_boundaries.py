@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 
 def test_execution_result_promotion_has_no_execution_or_canonical_writes() -> None:
@@ -34,7 +34,7 @@ def test_execution_result_promotion_has_no_execution_or_canonical_writes() -> No
 def test_execution_result_promotion_public_safe_surface() -> None:
     text = (
         Path("src/chanta_core/execution/promotion.py").read_text(encoding="utf-8")
-        + Path("docs/chanta_core_v0_18_3_restore.md").read_text(encoding="utf-8")
+        + Path("docs/versions/v0.18/chanta_core_v0_18_3_restore.md").read_text(encoding="utf-8")
     )
 
     assert "sample-secret" not in text
