@@ -155,11 +155,12 @@ def test_gap_register_release_manifest_and_consolidation_report() -> None:
     assert manifest.included_versions == INCLUDED_VERSIONS
     assert {"write", "shell", "network", "MCP", "plugin", "external_harness"} <= set(manifest.excluded_capabilities)
     assert "Self-Modification Safety" in manifest.future_tracks
-    assert "Self-Execution Safety" in manifest.future_tracks
+    assert "Internal Dominion Foundation" in manifest.future_tracks
+    assert "v0.24.x Local Runtime Provider" in manifest.future_tracks
     assert "External Contact Safety" in manifest.future_tracks
     assert "External Adapter Implementation" in manifest.future_tracks
     assert "Mission Loop / Self-Directed Operation" in manifest.future_tracks
-    assert "GrowthKernel Bridge" in manifest.future_tracks
+    assert "GrowthKernel future consumer" in manifest.future_tracks
     assert manifest.release_status == "releasable_with_warnings"
 
     assert report is not None
@@ -252,7 +253,7 @@ def test_pig_and_ocpx_consolidation_coverage() -> None:
     assert pig["consolidation"] == "implemented_release_closure"
     assert pig["read_only_self_awareness_v1"] == "warning"
     assert pig["self_modification"] == "not_started"
-    assert pig["self_execution"] == "not_started"
+    assert pig["local_runtime_provider"] == "not_started"
     assert pig["external_contact"] == "not_started"
     assert pig["growth_bridge"] == "not_started"
     assert ocpx["state"] == "self_awareness_foundation_v1_consolidated"

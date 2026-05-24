@@ -605,11 +605,12 @@ class SelfAwarenessReleaseManifestService:
             ],
             future_tracks=[
                 "Self-Modification Safety",
-                "Self-Execution Safety",
+                "Internal Dominion Foundation",
+                "v0.24.x Local Runtime Provider",
                 "External Contact Safety",
                 "External Adapter Implementation",
                 "Mission Loop / Self-Directed Operation",
-                "GrowthKernel Bridge",
+                "GrowthKernel future consumer",
             ],
             safety_boundary_report_id=safety_report.report_id,
             gap_register_id=gap_register.register_id,
@@ -804,7 +805,7 @@ class SelfAwarenessConsolidationService:
         elif command == "coverage-matrix":
             lines.append(f"coverage_status={self.last_coverage_matrix.coverage_status}")
             lines.append(f"missing_coverage_count={self.last_coverage_matrix.missing_coverage_count}")
-        lines.append("next_track_recommendations=Self-Modification Safety; Self-Execution Safety; External Contact Safety; External Adapter Implementation; Mission Loop / Self-Directed Operation; GrowthKernel Bridge")
+        lines.append("next_track_recommendations=Self-Modification Safety; Internal Dominion Foundation; v0.24.x Local Runtime Provider; External Contact Safety; External Adapter Implementation; Mission Loop / Self-Directed Operation; GrowthKernel future consumer")
         return "\n".join(lines)
 
 
@@ -812,9 +813,9 @@ REQUIRED_GAPS = [
     ("config_surface_not_implemented", "skill:self_awareness_config_surface", "v0.21.x Self-Modification Safety"),
     ("test_surface_not_implemented", "skill:self_awareness_test_surface", "v0.21.x Self-Modification Safety"),
     ("capability_registry_not_implemented", "skill:self_awareness_capability_registry", "v0.21.x Self-Modification Safety"),
-    ("runtime_boundary_not_implemented", "skill:self_awareness_runtime_boundary", "v0.22.x Self-Execution Safety"),
+    ("runtime_boundary_not_implemented", "skill:self_awareness_runtime_boundary", "v0.24.x Local Runtime Provider"),
     ("write_edit_safety_not_started", "write/edit", "v0.21.x Self-Modification Safety"),
-    ("shell_execution_safety_not_started", "shell", "v0.22.x Self-Execution Safety"),
+    ("shell_execution_safety_not_started", "shell", "v0.24.x Local Runtime Provider"),
     ("network_mcp_plugin_safety_not_started", "network/MCP/plugin", "v0.23.x External Contact Safety"),
     ("external_adapter_implementation_not_started", "external_adapter", "v0.24.x External Adapter Implementation"),
     ("mission_loop_not_started", "mission_loop", "v0.25.x Mission Loop / Self-Directed Operation"),
@@ -987,7 +988,7 @@ def _readiness_rationale(
 def _next_track_recommendations() -> list[dict[str, Any]]:
     return [
         {"track": "v0.21.x Self-Modification Safety", "status": "future_track"},
-        {"track": "v0.22.x Self-Execution Safety", "status": "future_track"},
+        {"track": "v0.24.x Local Runtime Provider", "status": "future_track"},
         {"track": "v0.23.x External Contact Safety", "status": "future_track"},
         {"track": "v0.24.x External Adapter Implementation", "status": "future_track"},
         {"track": "v0.25.x Mission Loop / Self-Directed Operation", "status": "future_track"},

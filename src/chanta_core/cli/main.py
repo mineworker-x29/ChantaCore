@@ -78,7 +78,77 @@ from chanta_core.deep_self_introspection import (
     DeepSelfIntrospectionReportService,
     SelfCapabilityRegistryAwarenessService,
     SelfCapabilityRegistryViewRequest,
+    SelfCandidateMemoryBoundaryAwarenessService,
+    SelfCandidateMemoryBoundaryRequest,
+    SelfClaimConsistencyRequest,
+    SelfClaimConsistencyService,
+    DeepSelfConsolidationService,
+    DeepSelfWorkbenchRequest,
+    DeepSelfWorkbenchService,
+    SelfPolicyGateAwarenessService,
+    SelfRuntimeBoundaryAwarenessService,
+    SelfContextProjectionAwarenessService,
+    SelfContextProjectionViewRequest,
+    SelfTraceIntegrityAwarenessService,
+    SelfTraceIntegrityRequest,
 )
+from chanta_core.self_modification_safety import (
+    BoundedPatchApplyRequest,
+    PatchDraftCreateRequest,
+    BoundedPatchApplyReportService,
+    BoundedPatchApplySourceService,
+    PatchDraftSourceService,
+    PatchDryRunCheckRequest,
+    PatchDryRunReportService,
+    PatchDryRunSourceService,
+    HumanReviewSourceService,
+    PatchStaticSafetyCheckRequest,
+    PatchStaticSafetyReportService,
+    PatchStaticSafetySourceService,
+    PostApplyVerificationReportService,
+    PostApplyVerificationRequest,
+    PostApplyVerificationSourceService,
+    SelfModificationConformanceService,
+    SelfModificationConsolidationService,
+    SelfModificationDiffPreviewService,
+    SelfModificationBoundedApplyService,
+    SelfModificationDryRunService,
+    SelfModificationPostApplyVerificationService,
+    SelfModificationReviewGateService,
+    SelfModificationRegistryService,
+    SelfModificationRequestCandidateService,
+    SelfModificationRequestCreateRequest,
+    SelfModificationReportService,
+    SelfModificationStaticSafetyService,
+    SelfModificationWorkbenchRequest,
+    SelfModificationWorkbenchService,
+)
+from chanta_core.internal_dominion import (
+    DominionConformanceService,
+    DominionCapabilityObservationDigestService,
+    DominionCapabilityObservationRequest,
+    DominionControlRequestCandidateService,
+    DominionControlRequestCreateRequest,
+    DominionControlPlanCreateRequest,
+    DominionControlPlanService,
+    DominionStaticSafetyCheckRequest,
+    DominionStaticSafetyService,
+    DominionRuntimePreflightRequest,
+    DominionRuntimePreflightService,
+    DominionHumanReviewGateService,
+    DominionHumanReviewRequestCreateRequest,
+    DominionDispatchBoundaryRequest,
+    DominionDispatchBoundaryService,
+    InternalDominionConsolidationService,
+    DominionRuntimeInventoryRequest,
+    DominionRuntimeInventoryService,
+    DominionMigrationAuditService,
+    InternalDominionRegistryService,
+    InternalDominionReportService,
+    CapabilityObservationDigestReportService,
+    RuntimeInventoryReportService,
+)
+from chanta_core.internal_provider import InternalProviderContractReportService
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.settings.app_settings import load_app_settings
 from chanta_core.workspace.summary import (
@@ -763,6 +833,728 @@ def build_parser() -> argparse.ArgumentParser:
         command_parser = deep_self_capability_subparsers.add_parser(
             command_name,
             help=f"Render self-capability {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_runtime = deep_self_subparsers.add_parser(
+        "runtime",
+        help="Render read-only self-runtime boundary awareness views.",
+    )
+    deep_self_runtime_subparsers = deep_self_runtime.add_subparsers(dest="deep_self_runtime_command")
+    runtime_truth = deep_self_runtime_subparsers.add_parser(
+        "truth-check",
+        help="Run read-only runtime boundary truth checks.",
+    )
+    runtime_truth.add_argument("--claims", help="JSON file containing claim dictionaries.")
+    runtime_truth.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "boundary",
+        "tracks",
+        "workspace-boundary",
+        "private-boundary",
+        "store-policy",
+        "execution-boundary",
+    ]:
+        command_parser = deep_self_runtime_subparsers.add_parser(
+            command_name,
+            help=f"Render self-runtime {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_policy = deep_self_subparsers.add_parser(
+        "policy",
+        help="Render read-only self-policy/gate awareness views.",
+    )
+    deep_self_policy_subparsers = deep_self_policy.add_subparsers(dest="deep_self_policy_command")
+    policy_truth = deep_self_policy_subparsers.add_parser(
+        "truth-check",
+        help="Run read-only policy/gate truth checks.",
+    )
+    policy_truth.add_argument("--claims", help="JSON file containing claim dictionaries.")
+    policy_truth.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "gate-map",
+        "review",
+        "permission-boundary",
+        "execution-gates",
+        "envelope",
+        "promotion",
+        "materialization",
+    ]:
+        command_parser = deep_self_policy_subparsers.add_parser(
+            command_name,
+            help=f"Render self-policy {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_trace = deep_self_subparsers.add_parser(
+        "trace",
+        help="Render read-only self-trace integrity awareness views.",
+    )
+    deep_self_trace_subparsers = deep_self_trace.add_subparsers(dest="deep_self_trace_command")
+    trace_integrity = deep_self_trace_subparsers.add_parser(
+        "integrity",
+        help="Run read-only trace integrity checks.",
+    )
+    trace_integrity.add_argument("--scope", choices=["self_awareness", "deep_self", "all"], default="self_awareness")
+    trace_integrity.add_argument("--candidate-id")
+    trace_integrity.add_argument("--envelope-id")
+    trace_integrity.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "envelope-links",
+        "event-object-coverage",
+        "candidate-lineage",
+        "process-chain",
+    ]:
+        command_parser = deep_self_trace_subparsers.add_parser(
+            command_name,
+            help=f"Render self-trace {command_name}.",
+        )
+        command_parser.add_argument("--scope", choices=["self_awareness", "deep_self", "all"], default="self_awareness")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_context = deep_self_subparsers.add_parser(
+        "context",
+        help="Render read-only self-context projection awareness views.",
+    )
+    deep_self_context_subparsers = deep_self_context.add_subparsers(dest="deep_self_context_command")
+    context_truth = deep_self_context_subparsers.add_parser(
+        "truth-check",
+        help="Run read-only context projection truth checks.",
+    )
+    context_truth.add_argument("--scope", choices=["current", "self_awareness", "deep_self", "all"], default="current")
+    context_truth.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "projection",
+        "sources",
+        "items",
+        "gaps",
+        "freshness",
+        "budget",
+    ]:
+        command_parser = deep_self_context_subparsers.add_parser(
+            command_name,
+            help=f"Render self-context {command_name}.",
+        )
+        command_parser.add_argument("--scope", choices=["current", "self_awareness", "deep_self", "all"], default="current")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_boundary = deep_self_subparsers.add_parser(
+        "boundary",
+        help="Render read-only self candidate/memory boundary awareness views.",
+    )
+    deep_self_boundary_subparsers = deep_self_boundary.add_subparsers(dest="deep_self_boundary_command")
+    boundary_candidate_memory = deep_self_boundary_subparsers.add_parser(
+        "candidate-memory",
+        help="Render candidate/memory boundary report.",
+    )
+    boundary_candidate_memory.add_argument("boundary_candidate_memory_command", nargs="?", choices=["truth-check"])
+    boundary_candidate_memory.add_argument("--candidate-id")
+    boundary_candidate_memory.add_argument("--scope", choices=["self_awareness", "deep_self", "intention", "reports", "all"], default="all")
+    boundary_candidate_memory.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "candidates",
+        "memory",
+        "promotion",
+        "materialization",
+        "persona-overlay",
+    ]:
+        command_parser = deep_self_boundary_subparsers.add_parser(
+            command_name,
+            help=f"Render self boundary {command_name}.",
+        )
+        command_parser.add_argument("--scope", choices=["self_awareness", "deep_self", "intention", "reports", "all"], default="all")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_claim = deep_self_subparsers.add_parser(
+        "claim",
+        help="Render read-only self-claim consistency and contradiction views.",
+    )
+    deep_self_claim_subparsers = deep_self_claim.add_subparsers(dest="deep_self_claim_command")
+    claim_consistency = deep_self_claim_subparsers.add_parser(
+        "consistency",
+        help="Run read-only self-claim consistency checks.",
+    )
+    claim_consistency.add_argument("--payload", help="JSON file containing a structured claim payload.")
+    claim_consistency.add_argument("--source-report")
+    claim_consistency.add_argument("--source-candidate")
+    claim_consistency.add_argument("--scope", choices=["payload", "report", "workbench", "projection", "candidate", "assistant_message"], default=None)
+    claim_consistency.add_argument("--json", action="store_true", help="Print result as JSON.")
+    claim_contradictions = deep_self_claim_subparsers.add_parser(
+        "contradictions",
+        help="Render the read-only contradiction register.",
+    )
+    claim_contradictions.add_argument("--severity", choices=["info", "warning", "error", "critical"])
+    claim_contradictions.add_argument("--json", action="store_true", help="Print result as JSON.")
+    claim_evidence = deep_self_claim_subparsers.add_parser(
+        "evidence",
+        help="Render sanitized claim evidence summaries.",
+    )
+    claim_evidence.add_argument("--claim-id", required=True)
+    claim_evidence.add_argument("--payload", help="JSON file containing a structured claim payload.")
+    claim_evidence.add_argument("--json", action="store_true", help="Print result as JSON.")
+    deep_self_workbench = deep_self_subparsers.add_parser(
+        "workbench",
+        help="Render the read-only Deep Self-Introspection workbench.",
+    )
+    deep_self_workbench.add_argument(
+        "--section",
+        choices=[
+            "overview",
+            "capability",
+            "runtime",
+            "policy",
+            "trace",
+            "context",
+            "boundary",
+            "claims",
+            "contradictions",
+            "findings",
+            "safety",
+            "coverage",
+            "pig",
+            "ocpx",
+        ],
+        default="overview",
+    )
+    deep_self_workbench.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "consolidate",
+        "release-manifest",
+        "gap-register",
+        "safety-report",
+        "capability-map",
+        "coverage-matrix",
+        "findings-summary",
+        "contradiction-summary",
+    ]:
+        command_parser = deep_self_subparsers.add_parser(
+            command_name,
+            help=f"Render deep self-introspection {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    dominion_parser = subparsers.add_parser(
+        "dominion",
+        help="Inspect read-only Internal Dominion contracts.",
+    )
+    dominion_subparsers = dominion_parser.add_subparsers(dest="dominion_command")
+    for command_name in [
+        "contract",
+        "taxonomy",
+        "subjects",
+        "provider-interface",
+        "migration-audit",
+        "conformance",
+        "pig-report",
+        "ocpx-projection",
+    ]:
+        command_parser = dominion_subparsers.add_parser(
+            command_name,
+            help=f"Render Internal Dominion {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    inventory_parser = dominion_subparsers.add_parser(
+        "inventory",
+        help="Render declared, sanitized Dominion runtime inventory.",
+    )
+    inventory_parser.add_argument("--source", default="declared_manifest", help="Declared inventory source type.")
+    inventory_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    inventory_subparsers = inventory_parser.add_subparsers(dest="dominion_inventory_command")
+    inventory_report_parser = inventory_subparsers.add_parser("report", help="Render a runtime inventory report view.")
+    inventory_report_parser.add_argument("--report-id", help="Report id to view; reports are not persisted in v0.23.1.")
+    inventory_report_parser.add_argument("--source", default="declared_manifest", help="Declared inventory source type.")
+    inventory_report_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["providers", "runtimes", "systems", "control-surfaces", "findings"]:
+        command_parser = inventory_subparsers.add_parser(
+            command_name,
+            help=f"Render runtime inventory {command_name}.",
+        )
+        command_parser.add_argument("--source", default="declared_manifest", help="Declared inventory source type.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    capability_parser = dominion_subparsers.add_parser(
+        "capability",
+        help="Render declared Dominion capability observation and digestion.",
+    )
+    capability_subparsers = capability_parser.add_subparsers(dest="dominion_capability_command")
+    for command_name in ["observe", "digest", "candidates", "descriptors", "risks", "findings"]:
+        command_parser = capability_subparsers.add_parser(
+            command_name,
+            help=f"Render Dominion capability {command_name}.",
+        )
+        command_parser.add_argument("--source", default="declared_descriptor", help="Declared capability source type.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    capability_report_parser = capability_subparsers.add_parser("report", help="Render a capability report view.")
+    capability_report_parser.add_argument("--report-id", help="Report id to view; reports are not persisted in v0.23.2.")
+    capability_report_parser.add_argument("--source", default="declared_descriptor", help="Declared capability source type.")
+    capability_report_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    control_parser = dominion_subparsers.add_parser(
+        "control",
+        help="Create candidate-only Dominion control intents.",
+    )
+    control_subparsers = control_parser.add_subparsers(dest="dominion_control_command")
+    control_request_parser = control_subparsers.add_parser("request", help="Control request candidate commands.")
+    control_request_subparsers = control_request_parser.add_subparsers(dest="dominion_control_request_command")
+    control_request_create = control_request_subparsers.add_parser("create", help="Create a request-only control candidate.")
+    control_request_create.add_argument("--goal", required=True, help="Goal text.")
+    control_request_create.add_argument("--capability-candidate-id", action="append", default=[])
+    control_request_create.add_argument("--action-verb")
+    control_request_create.add_argument("--json", action="store_true", help="Print result as JSON.")
+    control_request_report = control_request_subparsers.add_parser("report", help="Render request candidate report.")
+    control_request_report.add_argument("--report-id", required=True)
+    control_request_report.add_argument("--goal", default="observe status")
+    control_request_report.add_argument("--capability-candidate-id", action="append", default=[])
+    control_request_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+    control_plan_parser = control_subparsers.add_parser("plan", help="Control plan and target binding commands.")
+    control_plan_subparsers = control_plan_parser.add_subparsers(dest="dominion_control_plan_command")
+    for command_name in ["create", "view", "bindings", "policies", "findings", "report"]:
+        command_parser = control_plan_subparsers.add_parser(
+            command_name,
+            help=f"Render Dominion control plan {command_name}.",
+        )
+        if command_name == "create":
+            command_parser.add_argument("--action-candidate-id", required=True)
+        elif command_name == "report":
+            command_parser.add_argument("--report-id", required=True)
+            command_parser.add_argument("--action-candidate-id", default="external_action_candidate:v0.23.3")
+        else:
+            command_parser.add_argument("--plan-id", required=True)
+            command_parser.add_argument("--action-candidate-id", default="external_action_candidate:v0.23.3")
+        command_parser.add_argument("--requested-environment")
+        command_parser.add_argument("--requested-provider-ref-id")
+        command_parser.add_argument("--requested-runtime-id")
+        command_parser.add_argument("--requested-control-surface-id")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    static_safety_parser = dominion_subparsers.add_parser(
+        "static-safety",
+        help="Run read-only Dominion static safety checks.",
+    )
+    static_safety_subparsers = static_safety_parser.add_subparsers(dest="dominion_static_safety_command")
+    for command_name in ["check", "report", "findings", "rules", "summary"]:
+        command_parser = static_safety_subparsers.add_parser(
+            command_name,
+            help=f"Render Dominion static safety {command_name}.",
+        )
+        if command_name in {"report", "findings"}:
+            command_parser.add_argument("--report-id", required=True)
+            command_parser.add_argument("--plan-id", default="dominion_control_plan:v0.23.4")
+        elif command_name != "rules":
+            command_parser.add_argument("--plan-id", required=True)
+        command_parser.add_argument("--action-candidate-id")
+        command_parser.add_argument("--inventory-report-id")
+        command_parser.add_argument("--capability-report-id")
+        command_parser.add_argument("--strictness", default="standard")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    preflight_parser = dominion_subparsers.add_parser(
+        "preflight",
+        help="Run foundation-level Dominion runtime preflight checks.",
+    )
+    preflight_subparsers = preflight_parser.add_subparsers(dest="dominion_preflight_command")
+    for command_name in ["check", "report", "findings", "summary"]:
+        command_parser = preflight_subparsers.add_parser(
+            command_name,
+            help=f"Render Dominion runtime preflight {command_name}.",
+        )
+        if command_name in {"report", "findings"}:
+            command_parser.add_argument("--report-id", required=True)
+            command_parser.add_argument("--plan-id", default="dominion_control_plan:v0.23.4")
+        else:
+            command_parser.add_argument("--plan-id", required=True)
+        command_parser.add_argument("--static-safety-report-id", default="dominion_static_safety_report:v0.23.5")
+        command_parser.add_argument("--inventory-report-id")
+        command_parser.add_argument("--capability-report-id")
+        command_parser.add_argument("--preflight-mode", default="declared_only")
+        command_parser.add_argument("--strictness", default="standard")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    gate_parser = dominion_subparsers.add_parser(
+        "gate",
+        help="Record human review and evaluate the Dominion gate.",
+    )
+    gate_subparsers = gate_parser.add_subparsers(dest="dominion_gate_command")
+    for command_name in ["review", "report", "state", "authorization", "findings"]:
+        command_parser = gate_subparsers.add_parser(
+            command_name,
+            help=f"Render Dominion gate {command_name}.",
+        )
+        if command_name == "review":
+            command_parser.add_argument("--preflight-report-id", required=True)
+            command_parser.add_argument("--decision", required=True)
+            command_parser.add_argument("--approval-phrase")
+            command_parser.add_argument("--rationale")
+            command_parser.add_argument("--reviewer-type", default="operator")
+        elif command_name == "state":
+            command_parser.add_argument("--gate-id", required=True)
+            command_parser.add_argument("--preflight-report-id", default="dominion_runtime_preflight_report:v0.23.6")
+        elif command_name == "authorization":
+            command_parser.add_argument("--authorization-id", required=True)
+            command_parser.add_argument("--preflight-report-id", default="dominion_runtime_preflight_report:v0.23.6")
+            command_parser.add_argument("--decision", default="approve")
+            command_parser.add_argument(
+                "--approval-phrase",
+                default="I approve this Dominion gate for v0.23.8 boundary review",
+            )
+        else:
+            command_parser.add_argument("--report-id", required=True)
+            command_parser.add_argument("--preflight-report-id", default="dominion_runtime_preflight_report:v0.23.6")
+        command_parser.add_argument("--static-safety-report-id")
+        command_parser.add_argument("--plan-id")
+        command_parser.add_argument("--action-candidate-id")
+        command_parser.add_argument("--strictness", default="standard")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    dispatch_boundary_parser = dominion_subparsers.add_parser(
+        "dispatch-boundary",
+        help="Create read-only Dominion dispatch/status/output/outcome boundary views.",
+    )
+    dispatch_boundary_subparsers = dispatch_boundary_parser.add_subparsers(
+        dest="dominion_dispatch_boundary_command"
+    )
+    for command_name in ["create", "report", "authorization", "status", "outcome", "findings"]:
+        command_parser = dispatch_boundary_subparsers.add_parser(
+            command_name,
+            help=f"Render Dominion dispatch boundary {command_name}.",
+        )
+        if command_name == "create":
+            command_parser.add_argument("--gate-report-id", required=True)
+            command_parser.add_argument("--authorization-id")
+        else:
+            command_parser.add_argument("--report-id", required=True)
+            command_parser.add_argument("--gate-report-id", default="dominion_gate_report:v0.23.7")
+            command_parser.add_argument("--authorization-id", default="dominion_gate_authorization:v0.23.7")
+        command_parser.add_argument("--gate-id")
+        command_parser.add_argument("--plan-id")
+        command_parser.add_argument("--preflight-report-id")
+        command_parser.add_argument("--dispatch-mode", default="boundary_only")
+        command_parser.add_argument("--requested-dispatch-note")
+        command_parser.add_argument("--strictness", default="standard")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "consolidate",
+        "release-manifest",
+        "readiness",
+        "safety-boundary",
+        "roadmap-boundary",
+        "gaps",
+        "workbench",
+    ]:
+        command_parser = dominion_subparsers.add_parser(
+            command_name,
+            help=f"Render Dominion consolidation {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    action_parser = dominion_subparsers.add_parser(
+        "action",
+        help="Create or inspect candidate-only external action candidates.",
+    )
+    action_subparsers = action_parser.add_subparsers(dest="dominion_action_command")
+    action_candidate_parser = action_subparsers.add_parser("candidate", help="External action candidate commands.")
+    action_candidate_subparsers = action_candidate_parser.add_subparsers(dest="dominion_action_candidate_command")
+    action_candidate_create = action_candidate_subparsers.add_parser("create", help="Create an action candidate.")
+    action_candidate_create.add_argument("--goal", required=True)
+    action_candidate_create.add_argument("--capability-candidate-id", action="append", default=[])
+    action_candidate_create.add_argument("--action-verb")
+    action_candidate_create.add_argument("--json", action="store_true", help="Print result as JSON.")
+    action_candidate_view = action_candidate_subparsers.add_parser("view", help="View an action candidate.")
+    action_candidate_view.add_argument("--candidate-id", required=True)
+    action_candidate_view.add_argument("--goal", default="observe status")
+    action_candidate_view.add_argument("--capability-candidate-id", action="append", default=[])
+    action_candidate_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+    action_candidate_findings = action_candidate_subparsers.add_parser("findings", help="View candidate findings.")
+    action_candidate_findings.add_argument("--candidate-id", required=True)
+    action_candidate_findings.add_argument("--goal", default="observe status")
+    action_candidate_findings.add_argument("--capability-candidate-id", action="append", default=[])
+    action_candidate_findings.add_argument("--json", action="store_true", help="Print result as JSON.")
+    action_subparsers.add_parser("candidates", help="List action candidates.").add_argument(
+        "--json", action="store_true", help="Print result as JSON."
+    )
+
+    provider_parser = subparsers.add_parser(
+        "provider",
+        help="Inspect read-only Internal Provider contracts.",
+    )
+    provider_subparsers = provider_parser.add_subparsers(dest="provider_command")
+    for command_name in [
+        "contract",
+        "types",
+        "effect-policy",
+        "permission-policy",
+        "invocation-boundary",
+        "observability",
+        "safety-boundary",
+        "roadmap-boundary",
+    ]:
+        command_parser = provider_subparsers.add_parser(
+            command_name,
+            help=f"Render Internal Provider {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    self_modification_parser = subparsers.add_parser(
+        "self-modification",
+        help="Inspect read-only Self-Modification Safety contracts.",
+    )
+    self_modification_subparsers = self_modification_parser.add_subparsers(dest="self_modification_command")
+    for command_name in [
+        "contract",
+        "subjects",
+        "conformance",
+        "lifecycle",
+        "patch-policy",
+        "pig-report",
+        "ocpx-projection",
+    ]:
+        command_parser = self_modification_subparsers.add_parser(
+            command_name,
+            help=f"Render self-modification safety {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    request_parser = self_modification_subparsers.add_parser(
+        "request",
+        help="Create or inspect self-modification request candidates.",
+    )
+    request_subparsers = request_parser.add_subparsers(dest="self_modification_request_command")
+    request_create = request_subparsers.add_parser("create", help="Create a candidate-only modification request.")
+    request_create.add_argument("--goal", required=True, help="Modification goal summary.")
+    request_create.add_argument("--target", action="append", default=[], help="Workspace-relative target path.")
+    request_create.add_argument("--patch-type", dest="requested_patch_type", help="Requested patch type.")
+    request_create.add_argument("--json", action="store_true", help="Print result as JSON.")
+    request_view = request_subparsers.add_parser("view", help="View request metadata.")
+    request_view.add_argument("--request-id", required=True, help="Request id.")
+    request_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    candidate_parser = self_modification_subparsers.add_parser(
+        "candidate",
+        help="Create or inspect self-modification patch candidates.",
+    )
+    candidate_subparsers = candidate_parser.add_subparsers(dest="self_modification_candidate_command")
+    candidate_create = candidate_subparsers.add_parser("create", help="Create a candidate-only patch candidate.")
+    candidate_create.add_argument("--goal", required=True, help="Modification goal summary.")
+    candidate_create.add_argument("--target", action="append", default=[], help="Workspace-relative target path.")
+    candidate_create.add_argument("--patch-type", dest="requested_patch_type", help="Requested patch type.")
+    candidate_create.add_argument("--json", action="store_true", help="Print result as JSON.")
+    candidate_view = candidate_subparsers.add_parser("view", help="View patch candidate metadata.")
+    candidate_view.add_argument("--candidate-id", required=True, help="Patch candidate id.")
+    candidate_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+    candidate_list = candidate_subparsers.add_parser("list", help="List persisted patch candidates.")
+    candidate_list.add_argument("--json", action="store_true", help="Print result as JSON.")
+    candidate_risks = candidate_subparsers.add_parser("risks", help="View patch candidate risk summary.")
+    candidate_risks.add_argument("--candidate-id", required=True, help="Patch candidate id.")
+    candidate_risks.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    diff_parser = self_modification_subparsers.add_parser(
+        "diff",
+        help="Create or inspect candidate-only diff previews.",
+    )
+    diff_subparsers = diff_parser.add_subparsers(dest="self_modification_diff_command")
+    diff_preview = diff_subparsers.add_parser("preview", help="Create a sanitized diff preview.")
+    diff_preview.add_argument("--candidate-id", required=True, help="Patch candidate id.")
+    diff_preview.add_argument(
+        "--format",
+        dest="requested_preview_format",
+        choices=["unified_diff_like", "structured", "summary"],
+        default="unified_diff_like",
+        help="Preview format.",
+    )
+    diff_preview.add_argument("--json", action="store_true", help="Print result as JSON.")
+    diff_view = diff_subparsers.add_parser("view", help="View diff preview metadata.")
+    diff_view.add_argument("--preview-id", required=True, help="Diff preview id.")
+    diff_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+    diff_findings = diff_subparsers.add_parser("findings", help="View diff preview findings.")
+    diff_findings.add_argument("--preview-id", required=True, help="Diff preview id.")
+    diff_findings.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    patch_draft_parser = self_modification_subparsers.add_parser(
+        "patch-draft",
+        help="Create or inspect candidate-only patch drafts.",
+    )
+    patch_draft_subparsers = patch_draft_parser.add_subparsers(dest="self_modification_patch_draft_command")
+    patch_draft_create = patch_draft_subparsers.add_parser("create", help="Create a patch draft preview.")
+    patch_draft_create.add_argument("--candidate-id", required=True, help="Patch candidate id.")
+    patch_draft_create.add_argument("--json", action="store_true", help="Print result as JSON.")
+    patch_draft_view = patch_draft_subparsers.add_parser("view", help="View patch draft metadata.")
+    patch_draft_view.add_argument("--draft-id", required=True, help="Patch draft id.")
+    patch_draft_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    static_safety_parser = self_modification_subparsers.add_parser(
+        "static-safety",
+        help="Run read-only patch static safety checks.",
+    )
+    static_safety_subparsers = static_safety_parser.add_subparsers(dest="self_modification_static_safety_command")
+    static_safety_check = static_safety_subparsers.add_parser("check", help="Build a static safety report.")
+    static_safety_check.add_argument("--preview-id", help="Diff preview id.")
+    static_safety_check.add_argument("--draft-id", help="Patch draft id.")
+    static_safety_check.add_argument("--candidate-id", help="Patch candidate id.")
+    static_safety_check.add_argument("--json", action="store_true", help="Print result as JSON.")
+    static_safety_summary = static_safety_subparsers.add_parser("summary", help="Build a static safety summary.")
+    static_safety_summary.add_argument("--preview-id", help="Diff preview id.")
+    static_safety_summary.add_argument("--draft-id", help="Patch draft id.")
+    static_safety_summary.add_argument("--json", action="store_true", help="Print result as JSON.")
+    static_safety_report = static_safety_subparsers.add_parser("report", help="View static safety report metadata.")
+    static_safety_report.add_argument("--report-id", required=True, help="Static safety report id.")
+    static_safety_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+    static_safety_findings = static_safety_subparsers.add_parser("findings", help="View static safety findings.")
+    static_safety_findings.add_argument("--report-id", required=True, help="Static safety report id.")
+    static_safety_findings.add_argument("--json", action="store_true", help="Print result as JSON.")
+    static_safety_rules = static_safety_subparsers.add_parser("rules", help="List static safety rules.")
+    static_safety_rules.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    dry_run_parser = self_modification_subparsers.add_parser(
+        "dry-run",
+        help="Run in-memory patch dry-run applicability checks.",
+    )
+    dry_run_subparsers = dry_run_parser.add_subparsers(dest="self_modification_dry_run_command")
+    dry_run_check = dry_run_subparsers.add_parser("check", help="Build an in-memory dry-run report.")
+    dry_run_check.add_argument("--preview-id", help="Diff preview id.")
+    dry_run_check.add_argument("--draft-id", help="Patch draft id.")
+    dry_run_check.add_argument("--candidate-id", help="Patch candidate id.")
+    dry_run_check.add_argument("--static-report-id", help="Static safety report id.")
+    dry_run_check.add_argument("--json", action="store_true", help="Print result as JSON.")
+    dry_run_summary = dry_run_subparsers.add_parser("summary", help="Build an in-memory dry-run summary.")
+    dry_run_summary.add_argument("--preview-id", help="Diff preview id.")
+    dry_run_summary.add_argument("--draft-id", help="Patch draft id.")
+    dry_run_summary.add_argument("--static-report-id", help="Static safety report id.")
+    dry_run_summary.add_argument("--json", action="store_true", help="Print result as JSON.")
+    dry_run_report = dry_run_subparsers.add_parser("report", help="View dry-run report metadata.")
+    dry_run_report.add_argument("--report-id", required=True, help="Dry-run report id.")
+    dry_run_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+    dry_run_conflicts = dry_run_subparsers.add_parser("conflicts", help="View dry-run conflict metadata.")
+    dry_run_conflicts.add_argument("--report-id", required=True, help="Dry-run report id.")
+    dry_run_conflicts.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    review_parser = self_modification_subparsers.add_parser(
+        "review",
+        help="Create human review intake and decisions.",
+    )
+    review_subparsers = review_parser.add_subparsers(dest="self_modification_review_command")
+    review_request = review_subparsers.add_parser("request", help="Create a human review request.")
+    review_request.add_argument("--candidate-id", help="Patch candidate id.")
+    review_request.add_argument("--draft-id", help="Patch draft id.")
+    review_request.add_argument("--preview-id", help="Diff preview id.")
+    review_request.add_argument("--static-report-id", help="Static safety report id.")
+    review_request.add_argument("--dry-run-report-id", help="Dry-run report id.")
+    review_request.add_argument("--json", action="store_true", help="Print result as JSON.")
+    review_decide = review_subparsers.add_parser("decide", help="Record a human review decision.")
+    review_decide.add_argument("--review-request-id", required=True, help="Human review request id.")
+    review_decide.add_argument(
+        "--decision",
+        choices=["approve", "reject", "revise", "no_action", "needs_more_input"],
+        required=True,
+        help="Human review decision.",
+    )
+    review_decide.add_argument("--reason", dest="decision_reason", help="Decision reason.")
+    review_decide.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    apply_gate_parser = self_modification_subparsers.add_parser(
+        "apply-gate",
+        help="Evaluate or inspect apply gate state.",
+    )
+    apply_gate_subparsers = apply_gate_parser.add_subparsers(dest="self_modification_apply_gate_command")
+    apply_gate_evaluate = apply_gate_subparsers.add_parser("evaluate", help="Evaluate apply gate preconditions.")
+    apply_gate_evaluate.add_argument("--review-decision-id", help="Human review decision id.")
+    apply_gate_evaluate.add_argument("--decision", default="approve", choices=["approve", "reject", "revise", "no_action", "needs_more_input"])
+    apply_gate_evaluate.add_argument("--json", action="store_true", help="Print result as JSON.")
+    apply_gate_view = apply_gate_subparsers.add_parser("view", help="View apply gate metadata.")
+    apply_gate_view.add_argument("--apply-gate-id", required=True, help="Apply gate id.")
+    apply_gate_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    rollback_parser = self_modification_subparsers.add_parser(
+        "rollback-plan",
+        help="Inspect rollback plan descriptor metadata.",
+    )
+    rollback_subparsers = rollback_parser.add_subparsers(dest="self_modification_rollback_plan_command")
+    rollback_view = rollback_subparsers.add_parser("view", help="View rollback plan metadata.")
+    rollback_view.add_argument("--rollback-plan-id", required=True, help="Rollback plan id.")
+    rollback_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    apply_parser = self_modification_subparsers.add_parser(
+        "apply",
+        help="Run or inspect bounded patch apply records.",
+    )
+    apply_subparsers = apply_parser.add_subparsers(dest="self_modification_apply_command")
+    apply_bounded = apply_subparsers.add_parser("bounded", help="Run bounded patch apply with explicit authorization.")
+    apply_bounded.add_argument("--apply-gate-id", required=True, help="Apply gate id.")
+    apply_bounded.add_argument("--authorization-id", required=True, help="Apply authorization id.")
+    apply_bounded.add_argument("--candidate-id", default="", help="Patch candidate id.")
+    apply_bounded.add_argument("--draft-id", default="", help="Patch draft id.")
+    apply_bounded.add_argument("--preview-id", default="", help="Diff preview id.")
+    apply_bounded.add_argument("--dry-run-report-id", default="", help="Dry-run report id.")
+    apply_bounded.add_argument("--static-report-id", default="", help="Static safety report id.")
+    apply_bounded.add_argument("--rollback-plan-id", default="", help="Rollback plan id.")
+    apply_bounded.add_argument("--confirm", dest="confirmation_phrase", help="Required confirmation phrase.")
+    apply_bounded.add_argument("--json", action="store_true", help="Print result as JSON.")
+    apply_report = apply_subparsers.add_parser("report", help="View bounded apply report metadata.")
+    apply_report.add_argument("--report-id", required=True, help="Bounded apply report id.")
+    apply_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+    apply_transaction = apply_subparsers.add_parser("transaction", help="View bounded apply transaction metadata.")
+    apply_transaction.add_argument("--transaction-id", required=True, help="Bounded apply transaction id.")
+    apply_transaction.add_argument("--json", action="store_true", help="Print result as JSON.")
+    apply_changes = apply_subparsers.add_parser("changes", help="View bounded apply change metadata.")
+    apply_changes.add_argument("--report-id", required=True, help="Bounded apply report id.")
+    apply_changes.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    post_apply_parser = self_modification_subparsers.add_parser(
+        "post-apply",
+        help="Verify bounded apply results read-only and inspect post-apply reports.",
+    )
+    post_apply_subparsers = post_apply_parser.add_subparsers(dest="self_modification_post_apply_command")
+    post_apply_verify = post_apply_subparsers.add_parser("verify", help="Build a post-apply verification report.")
+    post_apply_verify.add_argument("--apply-report-id", help="Bounded apply report id.")
+    post_apply_verify.add_argument("--transaction-id", help="Bounded apply transaction id.")
+    post_apply_verify.add_argument("--json", action="store_true", help="Print result as JSON.")
+    post_apply_report = post_apply_subparsers.add_parser("report", help="View post-apply report metadata.")
+    post_apply_report.add_argument("--report-id", required=True, help="Post-apply verification report id.")
+    post_apply_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+    post_apply_findings = post_apply_subparsers.add_parser("findings", help="View post-apply findings.")
+    post_apply_findings.add_argument("--report-id", required=True, help="Post-apply verification report id.")
+    post_apply_findings.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    outcome_parser = self_modification_subparsers.add_parser(
+        "outcome",
+        help="Record or inspect self-modification outcome records.",
+    )
+    outcome_subparsers = outcome_parser.add_subparsers(dest="self_modification_outcome_command")
+    outcome_record = outcome_subparsers.add_parser("record", help="Record outcome from a verification report id.")
+    outcome_record.add_argument("--verification-report-id", required=True, help="Post-apply verification report id.")
+    outcome_record.add_argument("--json", action="store_true", help="Print result as JSON.")
+    outcome_view = outcome_subparsers.add_parser("view", help="View outcome record metadata.")
+    outcome_view.add_argument("--outcome-id", required=True, help="Outcome record id.")
+    outcome_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    self_modification_workbench = self_modification_subparsers.add_parser(
+        "workbench",
+        help="Render the read-only self-modification safety workbench.",
+    )
+    self_modification_workbench.add_argument(
+        "--section",
+        choices=[
+            "overview",
+            "pipeline",
+            "re" + "quests",
+            "candidates",
+            "drafts",
+            "safety",
+            "dry-run",
+            "review",
+            "apply",
+            "post-apply",
+            "outcomes",
+            "findings",
+            "timeline",
+            "coverage",
+            "readiness",
+        ],
+        default="overview",
+        help="Workbench section to render.",
+    )
+    self_modification_workbench.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "consolidate",
+        "release-manifest",
+        "gap-register",
+        "safety-report",
+        "capability-map",
+        "coverage-matrix",
+        "pipeline-summary",
+        "authorization-summary",
+        "change-summary",
+        "outcome-summary",
+    ]:
+        command_parser = self_modification_subparsers.add_parser(
+            command_name,
+            help="Render read-only self-modification safety consolidation artifacts.",
         )
         command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
 
@@ -2976,6 +3768,31 @@ def run_deep_self(args: argparse.Namespace) -> int:
         return 0
     if args.deep_self_command == "capability":
         return _run_deep_self_capability(args)
+    if args.deep_self_command == "runtime":
+        return _run_deep_self_runtime(args)
+    if args.deep_self_command == "policy":
+        return _run_deep_self_policy(args)
+    if args.deep_self_command == "trace":
+        return _run_deep_self_trace(args)
+    if args.deep_self_command == "context":
+        return _run_deep_self_context(args)
+    if args.deep_self_command == "boundary":
+        return _run_deep_self_boundary(args)
+    if args.deep_self_command == "claim":
+        return _run_deep_self_claim(args)
+    if args.deep_self_command == "workbench":
+        return _run_deep_self_workbench(args)
+    if args.deep_self_command in {
+        "consolidate",
+        "release-manifest",
+        "gap-register",
+        "safety-report",
+        "capability-map",
+        "coverage-matrix",
+        "findings-summary",
+        "contradiction-summary",
+    }:
+        return _run_deep_self_consolidation(args)
     raise SystemExit(f"unsupported deep-self command: {args.deep_self_command}")
 
 
@@ -3028,6 +3845,1389 @@ def _load_claims(path: str | None) -> list[dict[str, object]] | None:
     if not isinstance(loaded, list) or not all(isinstance(item, dict) for item in loaded):
         raise SystemExit("claims file must contain a list of objects")
     return loaded
+
+
+def _run_deep_self_runtime(args: argparse.Namespace) -> int:
+    if not args.deep_self_runtime_command:
+        print("deep-self runtime command is required", file=sys.stderr)
+        return 1
+    service = SelfRuntimeBoundaryAwarenessService()
+    command = args.deep_self_runtime_command
+    if command == "truth-check":
+        claims = _load_claims(getattr(args, "claims", None))
+        report = service.truth_check(optional_claims=claims)
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("runtime truth-check", report=report))
+        return 0 if report.status in {"passed", "warning"} else 1
+    snapshot = service.view_runtime_boundary()
+    if command == "boundary":
+        payload: object = snapshot.to_dict()
+    elif command == "tracks":
+        payload = [item.to_dict() for item in snapshot.tracks]
+    elif command == "workspace-boundary":
+        payload = [item.to_dict() for item in snapshot.workspace_boundaries]
+    elif command == "private-boundary":
+        payload = [item.to_dict() for item in snapshot.private_boundaries]
+    elif command == "store-policy":
+        payload = snapshot.store_policy.to_dict()
+    elif command == "execution-boundary":
+        payload = snapshot.execution_boundary.to_dict()
+    else:
+        raise SystemExit(f"unsupported deep-self runtime command: {command}")
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(f"runtime {command}", snapshot=snapshot))
+    return 0
+
+
+def _run_deep_self_policy(args: argparse.Namespace) -> int:
+    if not args.deep_self_policy_command:
+        print("deep-self policy command is required", file=sys.stderr)
+        return 1
+    service = SelfPolicyGateAwarenessService()
+    command = args.deep_self_policy_command
+    if command == "truth-check":
+        claims = _load_claims(getattr(args, "claims", None))
+        report = service.truth_check(optional_claims=claims)
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("policy truth-check", report=report))
+        return 0 if report.status in {"passed", "warning"} else 1
+    snapshot = service.view_policy_gate_map()
+    if command == "gate-map":
+        payload: object = snapshot.to_dict()
+    elif command == "review":
+        payload = snapshot.review_policy.to_dict()
+    elif command == "permission-boundary":
+        payload = snapshot.permission_boundary.to_dict()
+    elif command == "execution-gates":
+        payload = [item.to_dict() for item in snapshot.execution_gates]
+    elif command == "envelope":
+        payload = snapshot.envelope_policy.to_dict()
+    elif command == "promotion":
+        payload = snapshot.promotion_gate.to_dict()
+    elif command == "materialization":
+        payload = snapshot.materialization_gate.to_dict()
+    else:
+        raise SystemExit(f"unsupported deep-self policy command: {command}")
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(f"policy {command}", snapshot=snapshot))
+    return 0
+
+
+def _run_deep_self_trace(args: argparse.Namespace) -> int:
+    if not args.deep_self_trace_command:
+        print("deep-self trace command is required", file=sys.stderr)
+        return 1
+    service = SelfTraceIntegrityAwarenessService()
+    command = args.deep_self_trace_command
+    request = SelfTraceIntegrityRequest(
+        scope=getattr(args, "scope", "self_awareness"),
+        candidate_id=getattr(args, "candidate_id", None),
+        envelope_id=getattr(args, "envelope_id", None),
+    )
+    report = service.check_trace_integrity(request)
+    snapshot = service.last_snapshot
+    if command == "integrity":
+        payload: object = report.to_dict()
+    elif command == "envelope-links" and snapshot is not None:
+        payload = [item.to_dict() for item in snapshot.envelope_link_checks]
+    elif command == "event-object-coverage" and snapshot is not None:
+        payload = [item.to_dict() for item in snapshot.event_object_coverage_checks]
+    elif command == "candidate-lineage" and snapshot is not None:
+        payload = [item.to_dict() for item in snapshot.candidate_lineage_checks]
+    elif command == "process-chain" and snapshot is not None:
+        payload = [item.to_dict() for item in snapshot.process_chain_checks]
+    else:
+        raise SystemExit(f"unsupported deep-self trace command: {command}")
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(f"trace {command}", report=report))
+    return 0 if report.status in {"passed", "warning"} else 1
+
+
+def _run_deep_self_context(args: argparse.Namespace) -> int:
+    if not args.deep_self_context_command:
+        print("deep-self context command is required", file=sys.stderr)
+        return 1
+    service = SelfContextProjectionAwarenessService()
+    command = args.deep_self_context_command
+    request = SelfContextProjectionViewRequest(scope=getattr(args, "scope", "current"))
+    if command == "truth-check":
+        report = service.truth_check(request)
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("context truth-check", report=report))
+        return 0 if report.status in {"passed", "warning"} else 1
+    snapshot = service.view_context_projection(request)
+    report = service.truth_service.check_truth(snapshot)
+    if command == "projection":
+        payload: object = snapshot.to_dict()
+    elif command == "sources":
+        payload = [item.to_dict() for item in snapshot.sources]
+    elif command == "items":
+        payload = [item.to_dict() for item in snapshot.projected_items]
+    elif command == "gaps":
+        payload = [item.to_dict() for item in snapshot.gaps]
+    elif command == "freshness":
+        payload = [item.to_dict() for item in snapshot.freshness]
+    elif command == "budget":
+        payload = snapshot.budget.to_dict()
+    else:
+        raise SystemExit(f"unsupported deep-self context command: {command}")
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(f"context {command}", snapshot=snapshot, report=report))
+    return 0
+
+
+def _run_deep_self_boundary(args: argparse.Namespace) -> int:
+    if not args.deep_self_boundary_command:
+        print("deep-self boundary command is required", file=sys.stderr)
+        return 1
+    service = SelfCandidateMemoryBoundaryAwarenessService()
+    command = args.deep_self_boundary_command
+    request = SelfCandidateMemoryBoundaryRequest(
+        scope=getattr(args, "scope", "all"),
+        candidate_id=getattr(args, "candidate_id", None),
+    )
+    if command == "candidate-memory" and getattr(args, "boundary_candidate_memory_command", None) == "truth-check":
+        report = service.truth_check(request)
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_cli("boundary candidate-memory truth-check", report=report))
+        return 0 if report.status in {"passed", "warning"} else 1
+    snapshot = service.view_boundary(request)
+    report = service.truth_service.check_truth(snapshot)
+    if command == "candidate-memory":
+        payload: object = snapshot.to_dict()
+    elif command == "candidates":
+        payload = [item.to_dict() for item in snapshot.candidate_states]
+    elif command == "memory":
+        payload = snapshot.memory_boundary.to_dict()
+    elif command == "promotion":
+        payload = snapshot.promotion_boundary.to_dict()
+    elif command == "materialization":
+        payload = snapshot.materialization_boundary.to_dict()
+    elif command == "persona-overlay":
+        payload = snapshot.persona_overlay_boundary.to_dict()
+    else:
+        raise SystemExit(f"unsupported deep-self boundary command: {command}")
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(f"boundary {command}", snapshot=snapshot, report=report))
+    return 0
+
+
+def _run_deep_self_claim(args: argparse.Namespace) -> int:
+    if not args.deep_self_claim_command:
+        print("deep-self claim command is required", file=sys.stderr)
+        return 1
+    service = SelfClaimConsistencyService()
+    command = args.deep_self_claim_command
+    request = _claim_request_from_args(args, command)
+    report = service.check_claim_consistency(request)
+    register = service.last_register or service.build_contradiction_register(request)
+    if command == "consistency":
+        payload: object = report.to_dict()
+    elif command == "contradictions":
+        if getattr(args, "severity", None):
+            payload = [
+                item.to_dict()
+                for item in register.entries
+                if item.severity == getattr(args, "severity")
+            ]
+        else:
+            payload = register.to_dict()
+    elif command == "evidence":
+        claim_id = getattr(args, "claim_id", None)
+        payload = [
+            item.to_dict()
+            for item in report.evidence_matches
+            if item.claim_id == claim_id
+        ]
+    else:
+        raise SystemExit(f"unsupported deep-self claim command: {command}")
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(f"claim {command}", report=report, register=register, claim_id=getattr(args, "claim_id", None)))
+    return 0 if report.status in {"passed", "warning"} or command in {"contradictions", "evidence"} else 1
+
+
+def _claim_request_from_args(args: argparse.Namespace, command: str) -> SelfClaimConsistencyRequest:
+    payload = _load_json_object(getattr(args, "payload", None)) if getattr(args, "payload", None) else None
+    if command == "evidence" and payload is None and getattr(args, "claim_id", None):
+        payload = {
+            "claims": [
+                {
+                    "claim_id": args.claim_id,
+                    "claim_type": "unsupported_claim",
+                    "normalized_claim": "claim evidence lookup requires structured payload",
+                    "confidence": "low",
+                }
+            ]
+        }
+    source_type = getattr(args, "scope", None) or "payload"
+    source_id = None
+    if getattr(args, "source_report", None):
+        source_type = "report"
+        source_id = args.source_report
+    if getattr(args, "source_candidate", None):
+        source_type = "candidate"
+        source_id = args.source_candidate
+    return SelfClaimConsistencyRequest(
+        source_type=source_type,
+        source_id=source_id,
+        claim_payload=payload,
+    )
+
+
+def _run_deep_self_workbench(args: argparse.Namespace) -> int:
+    service = DeepSelfWorkbenchService()
+    request = DeepSelfWorkbenchRequest(section=getattr(args, "section", "overview"))
+    snapshot = service.build_snapshot(request)
+    if args.json:
+        print(json.dumps(snapshot.to_dict(), ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(snapshot))
+    return 0
+
+
+def _run_deep_self_consolidation(args: argparse.Namespace) -> int:
+    service = DeepSelfConsolidationService()
+    report = service.consolidate()
+    command = args.deep_self_command
+    if command == "consolidate":
+        payload: object = report.to_dict()
+    elif command == "release-manifest":
+        payload = service.last_release_manifest.to_dict() if service.last_release_manifest else {}
+    elif command == "gap-register":
+        payload = service.last_gap_register.to_dict() if service.last_gap_register else {}
+    elif command == "safety-report":
+        payload = service.last_safety_report.to_dict() if service.last_safety_report else {}
+    elif command == "capability-map":
+        payload = service.last_capability_map.to_dict() if service.last_capability_map else {}
+    elif command == "coverage-matrix":
+        payload = service.last_coverage_matrix.to_dict() if service.last_coverage_matrix else {}
+    elif command == "findings-summary":
+        payload = service.last_findings_summary.to_dict() if service.last_findings_summary else {}
+    elif command == "contradiction-summary":
+        payload = service.last_contradiction_summary.to_dict() if service.last_contradiction_summary else {}
+    else:
+        raise SystemExit(f"unsupported deep-self consolidation command: {command}")
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_cli(command))
+    return 0 if report.readiness_status in {"ready", "warning"} else 1
+
+
+def run_dominion(args: argparse.Namespace) -> int:
+    if not args.dominion_command:
+        print("dominion command is required", file=sys.stderr)
+        return 1
+    registry = InternalDominionRegistryService()
+    conformance = DominionConformanceService(registry)
+    migration = DominionMigrationAuditService()
+    reports = InternalDominionReportService(
+        registry_service=registry,
+        conformance_service=conformance,
+        migration_audit_service=migration,
+    )
+    command = args.dominion_command
+    if command == "contract":
+        contract = registry.build_contract()
+        if args.json:
+            print(json.dumps(contract.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_contract_cli())
+        return 0
+    if command == "taxonomy":
+        taxonomy = registry.build_contract().taxonomy
+        if args.json:
+            print(json.dumps(taxonomy.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_taxonomy_cli())
+        return 0
+    if command == "subjects":
+        subjects = registry.list_subjects()
+        if args.json:
+            print(json.dumps([item.to_dict() for item in subjects], ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_subjects_cli())
+        return 0
+    if command == "provider-interface":
+        interface = registry.build_contract().provider_interface
+        if args.json:
+            print(json.dumps(interface.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_provider_interface_cli())
+        return 0
+    if command == "migration-audit":
+        findings = migration.scan_existing_code()
+        if args.json:
+            print(json.dumps([item.to_dict() for item in findings], ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_migration_audit_cli())
+        return 0
+    if command == "conformance":
+        report = conformance.run_conformance()
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(conformance.render_conformance_cli())
+        return 0 if report.passed else 1
+    if command == "pig-report":
+        report = reports.build_pig_report()
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_pig_report_cli())
+        return 0
+    if command == "ocpx-projection":
+        projection = reports.build_ocpx_projection()
+        if args.json:
+            print(json.dumps(projection, ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_ocpx_projection_cli())
+        return 0
+    if command == "inventory":
+        request = DominionRuntimeInventoryRequest(source_type=getattr(args, "source", "declared_manifest"))
+        inventory_reports = RuntimeInventoryReportService()
+        inventory_service = DominionRuntimeInventoryService(report_service=inventory_reports)
+        report = inventory_service.inventory(request)
+        section = getattr(args, "dominion_inventory_command", None)
+        if section in {None, "report"}:
+            if args.json:
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(inventory_reports.render_report_cli(report))
+            return 0 if report.report_status in {"passed", "warning"} else 1
+        if section in {"providers", "runtimes", "systems", "control-surfaces", "findings"}:
+            if args.json:
+                payload = {
+                    "providers": report.snapshot.providers,
+                    "runtimes": report.snapshot.runtimes,
+                    "systems": report.snapshot.systems,
+                    "control-surfaces": report.snapshot.control_surfaces,
+                    "findings": report.snapshot.findings,
+                }[section]
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(inventory_reports.render_collection_cli(section, report))
+            return 0 if report.report_status in {"passed", "warning"} else 1
+        raise SystemExit(f"unsupported dominion inventory command: {section}")
+    if command == "capability":
+        request = DominionCapabilityObservationRequest(source_type=getattr(args, "source", "declared_descriptor"))
+        capability_reports = CapabilityObservationDigestReportService()
+        capability_service = DominionCapabilityObservationDigestService(report_service=capability_reports)
+        report = capability_service.observe_and_digest(request)
+        section = getattr(args, "dominion_capability_command", None) or "observe"
+        if section in {"observe", "digest", "report"}:
+            if args.json:
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(capability_reports.render_report_cli(report))
+            return 0 if report.report_status in {"passed", "warning"} else 1
+        if section in {"candidates", "descriptors", "risks", "findings"}:
+            if args.json:
+                payload = {
+                    "candidates": report.snapshot.candidates,
+                    "descriptors": report.snapshot.descriptors,
+                    "risks": [item.risk_profile for item in report.snapshot.digestion_results],
+                    "findings": report.snapshot.findings,
+                }[section]
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(capability_reports.render_collection_cli(section, report))
+            return 0 if report.report_status in {"passed", "warning"} else 1
+        raise SystemExit(f"unsupported dominion capability command: {section}")
+    if command == "static-safety":
+        subcommand = getattr(args, "dominion_static_safety_command", None)
+        if subcommand not in {"check", "report", "findings", "rules", "summary"}:
+            raise SystemExit("unsupported dominion static-safety command")
+        service = DominionStaticSafetyService()
+        request = DominionStaticSafetyCheckRequest(
+            plan_id=getattr(args, "plan_id", "dominion_control_plan:v0.23.4"),
+            action_candidate_id=getattr(args, "action_candidate_id", None),
+            inventory_report_id=getattr(args, "inventory_report_id", None),
+            capability_report_id=getattr(args, "capability_report_id", None),
+            strictness=getattr(args, "strictness", "standard"),
+        )
+        report = service.check_static_safety(request)
+        section = "summary" if subcommand in {"check", "summary", "report"} else subcommand
+        if args.json:
+            if subcommand == "findings":
+                print(json.dumps([item.to_dict() for item in report.findings], ensure_ascii=False, sort_keys=True))
+            elif subcommand == "rules":
+                print(json.dumps([item.to_dict() for item in service.rules.list_rules()], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section))
+        return 0 if report.static_safety_status in {"passed", "warning"} else 1
+    if command == "preflight":
+        subcommand = getattr(args, "dominion_preflight_command", None)
+        if subcommand not in {"check", "report", "findings", "summary"}:
+            raise SystemExit("unsupported dominion preflight command")
+        service = DominionRuntimePreflightService()
+        request = DominionRuntimePreflightRequest(
+            plan_id=getattr(args, "plan_id", "dominion_control_plan:v0.23.4"),
+            static_safety_report_id=getattr(args, "static_safety_report_id", "dominion_static_safety_report:v0.23.5"),
+            inventory_report_id=getattr(args, "inventory_report_id", None),
+            capability_report_id=getattr(args, "capability_report_id", None),
+            preflight_mode=getattr(args, "preflight_mode", "declared_only"),
+            strictness=getattr(args, "strictness", "standard"),
+        )
+        report = service.check_preflight(request)
+        section = "findings" if subcommand == "findings" else "summary"
+        if args.json:
+            if subcommand == "findings":
+                print(json.dumps([item.to_dict() for item in report.findings], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section))
+        return 0 if report.preflight_status in {"passed", "warning"} else 1
+    if command == "gate":
+        subcommand = getattr(args, "dominion_gate_command", None)
+        if subcommand not in {"review", "report", "state", "authorization", "findings"}:
+            raise SystemExit("unsupported dominion gate command")
+        decision = getattr(args, "decision", None)
+        request = DominionHumanReviewRequestCreateRequest(
+            preflight_report_id=getattr(args, "preflight_report_id", "dominion_runtime_preflight_report:v0.23.6"),
+            static_safety_report_id=getattr(args, "static_safety_report_id", None),
+            plan_id=getattr(args, "plan_id", None),
+            action_candidate_id=getattr(args, "action_candidate_id", None),
+            requested_review_decision=decision or ("approve" if subcommand == "authorization" else "needs_more_input"),
+            reviewer_type=getattr(args, "reviewer_type", "operator"),
+            decision_rationale=getattr(args, "rationale", None),
+            approval_phrase=getattr(args, "approval_phrase", None),
+            strictness=getattr(args, "strictness", "standard"),
+        )
+        service = DominionHumanReviewGateService()
+        report = service.review_and_gate(request)
+        section = {
+            "findings": "findings",
+            "state": "state",
+            "authorization": "authorization",
+        }.get(subcommand, "summary")
+        if args.json:
+            if subcommand == "findings":
+                print(json.dumps([item.to_dict() for item in report.findings], ensure_ascii=False, sort_keys=True))
+            elif subcommand == "state":
+                print(json.dumps(report.gate_state.to_dict() if report.gate_state else {}, ensure_ascii=False, sort_keys=True))
+            elif subcommand == "authorization":
+                print(json.dumps(report.authorization.to_dict() if report.authorization else {}, ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section))
+        return 0 if report.report_status in {"open", "rejected", "needs_more_input", "no_action"} else 1
+    if command == "dispatch-boundary":
+        subcommand = getattr(args, "dominion_dispatch_boundary_command", None)
+        if subcommand not in {"create", "report", "authorization", "status", "outcome", "findings"}:
+            raise SystemExit("unsupported dominion dispatch-boundary command")
+        request = DominionDispatchBoundaryRequest(
+            gate_report_id=getattr(args, "gate_report_id", "dominion_gate_report:v0.23.7"),
+            authorization_id=getattr(args, "authorization_id", None),
+            gate_id=getattr(args, "gate_id", None),
+            plan_id=getattr(args, "plan_id", None),
+            preflight_report_id=getattr(args, "preflight_report_id", None),
+            dispatch_mode=getattr(args, "dispatch_mode", "boundary_only"),
+            requested_dispatch_note=getattr(args, "requested_dispatch_note", None),
+            strictness=getattr(args, "strictness", "standard"),
+        )
+        service = DominionDispatchBoundaryService()
+        report = service.create_boundary(request)
+        section = {
+            "authorization": "authorization",
+            "status": "status",
+            "outcome": "outcome",
+            "findings": "findings",
+        }.get(subcommand, "summary")
+        if args.json:
+            if subcommand == "findings":
+                print(json.dumps([item.to_dict() for item in report.findings], ensure_ascii=False, sort_keys=True))
+            elif subcommand == "authorization":
+                print(json.dumps(report.authorization_check.to_dict() if report.authorization_check else {}, ensure_ascii=False, sort_keys=True))
+            elif subcommand == "status":
+                print(json.dumps(report.status_boundary.to_dict() if report.status_boundary else {}, ensure_ascii=False, sort_keys=True))
+            elif subcommand == "outcome":
+                print(json.dumps(report.outcome_boundary.to_dict() if report.outcome_boundary else {}, ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section))
+        return 0 if report.report_status in {"ready_for_consolidation", "needs_more_input", "no_action"} else 1
+    if command in {
+        "consolidate",
+        "release-manifest",
+        "readiness",
+        "safety-boundary",
+        "roadmap-boundary",
+        "gaps",
+        "workbench",
+    }:
+        service = InternalDominionConsolidationService()
+        report = service.consolidate()
+        if command == "workbench":
+            snapshot = service.build_workbench_snapshot(report)
+            if args.json:
+                print(json.dumps(snapshot.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(service.render_workbench_cli(snapshot))
+            return 0 if snapshot.release_status in {"releasable", "releasable_with_warnings", "blocked"} else 1
+        section = "summary" if command in {"consolidate", "readiness"} else command
+        payload = {
+            "consolidate": report,
+            "readiness": report,
+            "release-manifest": report.release_manifest,
+            "safety-boundary": report.safety_boundary_report,
+            "roadmap-boundary": report.roadmap_boundary_report,
+            "gaps": report.gap_register,
+        }[command]
+        if args.json:
+            print(json.dumps(payload.to_dict() if payload else {}, ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section))
+        return 0 if report.release_status in {"releasable", "releasable_with_warnings"} else 1
+    if command == "control":
+        control_command = getattr(args, "dominion_control_command", None)
+        if control_command == "plan":
+            plan_command = getattr(args, "dominion_control_plan_command", None)
+            if plan_command not in {"create", "view", "bindings", "policies", "findings", "report"}:
+                raise SystemExit("unsupported dominion control plan command")
+            request = DominionControlPlanCreateRequest(
+                action_candidate_id=getattr(args, "action_candidate_id", "external_action_candidate:v0.23.3"),
+                requested_environment=getattr(args, "requested_environment", None),
+                requested_provider_ref_id=getattr(args, "requested_provider_ref_id", None),
+                requested_runtime_id=getattr(args, "requested_runtime_id", None),
+                requested_control_surface_id=getattr(args, "requested_control_surface_id", None),
+            )
+            service = DominionControlPlanService()
+            report = service.create_control_plan(request)
+            if args.json:
+                if plan_command == "findings":
+                    print(json.dumps([item.to_dict() for item in report.findings], ensure_ascii=False, sort_keys=True))
+                elif plan_command == "bindings" and report.plan:
+                    print(
+                        json.dumps(
+                            {
+                                "provider_binding": report.plan.provider_binding.to_dict(),
+                                "runtime_binding": report.plan.runtime_binding.to_dict(),
+                                "capability_binding": report.plan.capability_binding.to_dict(),
+                                "control_surface_binding": report.plan.control_surface_binding.to_dict()
+                                if report.plan.control_surface_binding
+                                else None,
+                                "environment_binding": report.plan.environment_binding.to_dict(),
+                                "input_binding": report.plan.input_binding.to_dict() if report.plan.input_binding else None,
+                            },
+                            ensure_ascii=False,
+                            sort_keys=True,
+                        )
+                    )
+                elif plan_command == "policies" and report.plan:
+                    print(
+                        json.dumps(
+                            {
+                                "output_policy": report.plan.output_policy.to_dict(),
+                                "status_tracking_policy": report.plan.status_tracking_policy.to_dict(),
+                                "idempotency_policy": report.plan.idempotency_policy.to_dict(),
+                                "rate_limit_policy": report.plan.rate_limit_policy.to_dict(),
+                                "cancel_or_stop_plan": report.plan.cancel_or_stop_plan.to_dict()
+                                if report.plan.cancel_or_stop_plan
+                                else None,
+                            },
+                            ensure_ascii=False,
+                            sort_keys=True,
+                        )
+                    )
+                else:
+                    print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(service.render_report_cli(report, section=plan_command or "summary"))
+            return 0 if report.report_status in {"planned", "needs_more_input", "no_action"} else 1
+        if control_command != "request":
+            raise SystemExit("unsupported dominion control command")
+        if getattr(args, "dominion_control_request_command", None) not in {"create", "report"}:
+            raise SystemExit("unsupported dominion control request command")
+        request = DominionControlRequestCreateRequest(
+            goal_text=getattr(args, "goal", "observe status"),
+            capability_candidate_ids=getattr(args, "capability_candidate_id", []),
+            requested_action_verb=getattr(args, "action_verb", None),
+        )
+        service = DominionControlRequestCandidateService()
+        report = service.create_request_and_candidate(request)
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report))
+        return 0 if report.report_status in {"candidate_created", "needs_more_input", "no_action"} else 1
+    if command == "action":
+        subcommand = getattr(args, "dominion_action_command", None)
+        candidate_subcommand = getattr(args, "dominion_action_candidate_command", None)
+        request = DominionControlRequestCreateRequest(
+            goal_text=getattr(args, "goal", "observe status"),
+            capability_candidate_ids=getattr(args, "capability_candidate_id", []),
+            requested_action_verb=getattr(args, "action_verb", None),
+        )
+        service = DominionControlRequestCandidateService()
+        report = service.create_request_and_candidate(request)
+        if subcommand == "candidates" or candidate_subcommand in {"create", "view", "findings"}:
+            if args.json:
+                if candidate_subcommand == "findings":
+                    print(json.dumps([item.to_dict() for item in report.findings], ensure_ascii=False, sort_keys=True))
+                else:
+                    print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(service.render_report_cli(report))
+            return 0 if report.report_status in {"candidate_created", "needs_more_input", "no_action"} else 1
+        raise SystemExit("unsupported dominion action command")
+    raise SystemExit(f"unsupported dominion command: {command}")
+
+
+def run_provider(args: argparse.Namespace) -> int:
+    command = getattr(args, "provider_command", None)
+    if not command:
+        print("provider command is required", file=sys.stderr)
+        return 1
+    if command not in {
+        "contract",
+        "types",
+        "effect-policy",
+        "permission-policy",
+        "invocation-boundary",
+        "observability",
+        "safety-boundary",
+        "roadmap-boundary",
+    }:
+        raise SystemExit(f"unsupported provider command: {command}")
+    service = InternalProviderContractReportService()
+    report = service.build_report()
+    if args.json:
+        payload = {
+            "contract": report,
+            "types": report.contract.provider_types,
+            "effect-policy": report.contract.effect_policy,
+            "permission-policy": report.contract.permission_policy,
+            "invocation-boundary": report.contract.invocation_boundary,
+            "observability": report.contract.observability_contract,
+            "safety-boundary": report.contract.safety_boundary,
+            "roadmap-boundary": report.contract.roadmap_boundary,
+        }[command]
+        if isinstance(payload, list):
+            print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+        else:
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+    else:
+        print(service.render_report_cli(report, section=command))
+    return 0 if report.report_status in {"passed", "warning"} else 1
+
+
+def run_self_modification(args: argparse.Namespace) -> int:
+    if not args.self_modification_command:
+        print("self-modification command is required", file=sys.stderr)
+        return 1
+    registry = SelfModificationRegistryService()
+    conformance = SelfModificationConformanceService(registry)
+    reports = SelfModificationReportService(
+        registry_service=registry,
+        conformance_service=conformance,
+    )
+    command = args.self_modification_command
+    candidate_service = SelfModificationRequestCandidateService()
+    diff_preview_service = SelfModificationDiffPreviewService(
+        source_service=PatchDraftSourceService(allow_synthetic=True)
+    )
+    static_safety_service = SelfModificationStaticSafetyService()
+    dry_run_service = SelfModificationDryRunService()
+    review_gate_service = SelfModificationReviewGateService()
+    bounded_apply_service = SelfModificationBoundedApplyService()
+    post_apply_service = SelfModificationPostApplyVerificationService()
+    workbench_service = SelfModificationWorkbenchService()
+    consolidation_service = SelfModificationConsolidationService(workbench_service=workbench_service)
+    if command == "request":
+        subcommand = getattr(args, "self_modification_request_command", None)
+        if subcommand == "create":
+            request = SelfModificationRequestCreateRequest(
+                goal_text=args.goal,
+                target_paths=list(args.target or []),
+                requested_patch_type=getattr(args, "requested_patch_type", None),
+            )
+            result = candidate_service.create_request_and_candidate(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(candidate_service.render_result_cli(result))
+            return 0
+        if subcommand == "view":
+            payload = {
+                "request_id": args.request_id,
+                "status": "not_persisted_in_v0.22.1",
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+                "applied": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(candidate_service.render_view_cli(object_id=args.request_id, object_type="request"))
+            return 0
+        raise SystemExit("unsupported self-modification request command")
+    if command == "candidate":
+        subcommand = getattr(args, "self_modification_candidate_command", None)
+        if subcommand == "create":
+            request = SelfModificationRequestCreateRequest(
+                goal_text=args.goal,
+                target_paths=list(args.target or []),
+                requested_patch_type=getattr(args, "requested_patch_type", None),
+            )
+            result = candidate_service.create_request_and_candidate(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(candidate_service.render_result_cli(result))
+            return 0
+        if subcommand == "view":
+            payload = {
+                "candidate_id": args.candidate_id,
+                "status": "not_persisted_in_v0.22.1",
+                "candidate_status": "candidate_only",
+                "diff_generated": False,
+                "applied": False,
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(candidate_service.render_view_cli(object_id=args.candidate_id, object_type="candidate"))
+            return 0
+        if subcommand == "list":
+            payload = {
+                "candidate_count": 0,
+                "storage": "not_persisted_in_v0.22.1",
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+            }
+            if getattr(args, "json", False):
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(candidate_service.render_list_cli())
+            return 0
+        if subcommand == "risks":
+            payload = {
+                "candidate_id": args.candidate_id,
+                "risk_level": "unknown_without_persisted_candidate",
+                "safe_to_generate_diff": False,
+                "safe_to_apply": False,
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(candidate_service.render_risks_cli(candidate_id=args.candidate_id))
+            return 0
+        raise SystemExit("unsupported self-modification candidate command")
+    if command == "diff":
+        subcommand = getattr(args, "self_modification_diff_command", None)
+        if subcommand == "preview":
+            request = PatchDraftCreateRequest(
+                patch_candidate_id=args.candidate_id,
+                requested_preview_format=getattr(args, "requested_preview_format", "unified_diff_like"),
+                operation_hints=[
+                    {
+                        "relative_path": "README.md",
+                        "operation_type": "comment_only_change",
+                        "anchor_type": "eof",
+                        "new_text_preview": "# preview-only candidate change",
+                    }
+                ],
+            )
+            result = diff_preview_service.create_patch_draft_and_preview(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(diff_preview_service.render_result_cli(result))
+            return 0
+        if subcommand == "view":
+            payload = {
+                "preview_id": args.preview_id,
+                "status": "not_persisted_in_v0.22.2",
+                "lifecycle_state": "preview_created",
+                "static_safety_checked": False,
+                "dry_run_checked": False,
+                "applies_cleanly": None,
+                "applied": False,
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(diff_preview_service.render_view_cli(object_id=args.preview_id, object_type="diff"))
+            return 0
+        if subcommand == "findings":
+            payload = {
+                "preview_id": args.preview_id,
+                "finding_types": [
+                    "static_safety_not_performed",
+                    "dry_run_not_performed",
+                    "apply_not_allowed",
+                ],
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+                "applied": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(diff_preview_service.render_findings_cli(preview_id=args.preview_id))
+            return 0
+        raise SystemExit("unsupported self-modification diff command")
+    if command == "patch-draft":
+        subcommand = getattr(args, "self_modification_patch_draft_command", None)
+        if subcommand == "create":
+            request = PatchDraftCreateRequest(
+                patch_candidate_id=args.candidate_id,
+                operation_hints=[
+                    {
+                        "relative_path": "README.md",
+                        "operation_type": "comment_only_change",
+                        "anchor_type": "eof",
+                        "new_text_preview": "# preview-only candidate change",
+                    }
+                ],
+            )
+            result = diff_preview_service.create_patch_draft_and_preview(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(diff_preview_service.render_result_cli(result))
+            return 0
+        if subcommand == "view":
+            payload = {
+                "draft_id": args.draft_id,
+                "status": "not_persisted_in_v0.22.2",
+                "lifecycle_state": "preview_created",
+                "draft_status": "draft_only",
+                "static_safety_checked": False,
+                "dry_run_checked": False,
+                "applied": False,
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(diff_preview_service.render_view_cli(object_id=args.draft_id, object_type="patch_draft"))
+            return 0
+        raise SystemExit("unsupported self-modification patch-draft command")
+    if command == "static-safety":
+        # CLI views are read-only and non-persistent, so a synthetic preview bundle
+        # is used when ids are not backed by a local store.
+        static_safety_service = SelfModificationStaticSafetyService(
+            report_service=PatchStaticSafetyReportService(
+                source_service=PatchStaticSafetySourceService(allow_synthetic=True)
+            )
+        )
+        subcommand = getattr(args, "self_modification_static_safety_command", None)
+        if subcommand in {"check", "summary"}:
+            request = PatchStaticSafetyCheckRequest(
+                patch_candidate_id=getattr(args, "candidate_id", None),
+                draft_id=getattr(args, "draft_id", None),
+                preview_id=getattr(args, "preview_id", None),
+            )
+            result = static_safety_service.check_static_safety(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(static_safety_service.render_result_cli(result))
+            return 0 if result.report.static_safety_status in {"passed", "warning"} else 1
+        if subcommand == "report":
+            payload = {
+                "report_id": args.report_id,
+                "status": "not_persisted_in_v0.22.3",
+                "safe_to_apply": False,
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+                "applied": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(static_safety_service.render_report_view_cli(report_id=args.report_id))
+            return 0
+        if subcommand == "findings":
+            payload = {
+                "report_id": args.report_id,
+                "finding_types": [
+                    "dry_run_not_performed",
+                    "review_not_approved",
+                    "apply_gate_not_opened",
+                ],
+                "safe_to_apply": False,
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+                "applied": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(static_safety_service.render_findings_cli(report_id=args.report_id))
+            return 0
+        if subcommand == "rules":
+            payload = {
+                "rule_count": 20,
+                "categories": [
+                    "path",
+                    "operation",
+                    "scope",
+                    "content_pattern",
+                    "secret_private",
+                    "lifecycle",
+                    "policy",
+                ],
+                "safe_to_apply": False,
+                "file_write_enabled": False,
+                "apply_patch_enabled": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(static_safety_service.render_rules_cli())
+            return 0
+        raise SystemExit("unsupported self-modification static-safety command")
+    if command == "dry-run":
+        dry_run_service = SelfModificationDryRunService(
+            report_service=PatchDryRunReportService(
+                source_service=PatchDryRunSourceService(allow_synthetic=True)
+            )
+        )
+        subcommand = getattr(args, "self_modification_dry_run_command", None)
+        if subcommand in {"check", "summary"}:
+            request = PatchDryRunCheckRequest(
+                patch_candidate_id=getattr(args, "candidate_id", None),
+                draft_id=getattr(args, "draft_id", None),
+                preview_id=getattr(args, "preview_id", None),
+                static_safety_report_id=getattr(args, "static_report_id", None),
+            )
+            result = dry_run_service.check_applicability(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(dry_run_service.render_result_cli(result))
+            return 0 if result.report.dry_run_status in {"passed", "warning"} else 1
+        if subcommand == "report":
+            payload = {
+                "report_id": args.report_id,
+                "status": "not_persisted_in_v0.22.4",
+                "safe_to_apply": False,
+                "file_write_performed": False,
+                "patch_applied": False,
+                "workspace_file_changed_emitted": False,
+                "shell_executed": False,
+                "test_lint_executed": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(dry_run_service.render_report_view_cli(report_id=args.report_id))
+            return 0
+        if subcommand == "conflicts":
+            payload = {
+                "report_id": args.report_id,
+                "conflict_types": [
+                    "anchor_missing",
+                    "anchor_ambiguous",
+                    "old_text_mismatch",
+                    "context_mismatch",
+                    "operation_order_conflict",
+                    "overlapping_hunks",
+                ],
+                "safe_to_apply": False,
+                "file_write_performed": False,
+                "patch_applied": False,
+                "workspace_file_changed_emitted": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(dry_run_service.render_conflicts_cli(report_id=args.report_id))
+            return 0
+        raise SystemExit("unsupported self-modification dry-run command")
+    if command == "review":
+        review_gate_service = SelfModificationReviewGateService(
+            source_service=HumanReviewSourceService(allow_synthetic=True)
+        )
+        subcommand = getattr(args, "self_modification_review_command", None)
+        if subcommand == "request":
+            request = review_gate_service.request_review(
+                patch_candidate_id=getattr(args, "candidate_id", None),
+                draft_id=getattr(args, "draft_id", None),
+                preview_id=getattr(args, "preview_id", None),
+                static_safety_report_id=getattr(args, "static_report_id", None),
+                dry_run_report_id=getattr(args, "dry_run_report_id", None),
+            )
+            if args.json:
+                print(json.dumps(request.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(review_gate_service.render_review_request_cli(request))
+            return 0
+        if subcommand == "decide":
+            decision = review_gate_service.record_review_decision(
+                review_request_id=args.review_request_id,
+                decision=args.decision,
+                decision_reason=getattr(args, "decision_reason", None),
+            )
+            if args.json:
+                print(json.dumps(decision.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(review_gate_service.render_decision_cli(decision))
+            return 0
+        raise SystemExit("unsupported self-modification review command")
+    if command == "apply-gate":
+        review_gate_service = SelfModificationReviewGateService(
+            source_service=HumanReviewSourceService(allow_synthetic=True)
+        )
+        subcommand = getattr(args, "self_modification_apply_gate_command", None)
+        if subcommand == "evaluate":
+            request = review_gate_service.request_review()
+            decision = review_gate_service.record_review_decision(
+                review_request_id=request.review_request_id,
+                decision=getattr(args, "decision", "approve"),
+            )
+            result = review_gate_service.evaluate_apply_gate(review_request=request, review_decision=decision)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(review_gate_service.render_result_cli(result))
+            return 0 if result.report.gate_status in {"open", "needs_more_input", "revise_required"} else 1
+        if subcommand == "view":
+            payload = {
+                "apply_gate_id": args.apply_gate_id,
+                "status": "not_persisted_in_v0.22.5",
+                "safe_to_apply": False,
+                "patch_applied": False,
+                "file_write_performed": False,
+                "workspace_file_changed_emitted": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(review_gate_service.render_gate_view_cli(apply_gate_id=args.apply_gate_id))
+            return 0
+        raise SystemExit("unsupported self-modification apply-gate command")
+    if command == "rollback-plan":
+        review_gate_service = SelfModificationReviewGateService()
+        subcommand = getattr(args, "self_modification_rollback_plan_command", None)
+        if subcommand == "view":
+            payload = {
+                "rollback_plan_id": args.rollback_plan_id,
+                "status": "not_persisted_in_v0.22.5",
+                "rollback_execution_enabled": False,
+                "rollback_executed": False,
+                "patch_applied": False,
+                "file_write_performed": False,
+                "workspace_file_changed_emitted": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(review_gate_service.render_rollback_plan_view_cli(rollback_plan_id=args.rollback_plan_id))
+            return 0
+        raise SystemExit("unsupported self-modification rollback-plan command")
+    if command == "apply":
+        subcommand = getattr(args, "self_modification_apply_command", None)
+        if subcommand == "bounded":
+            request = BoundedPatchApplyRequest(
+                apply_gate_id=args.apply_gate_id,
+                authorization_id=args.authorization_id,
+                patch_candidate_id=getattr(args, "candidate_id", ""),
+                draft_id=getattr(args, "draft_id", ""),
+                preview_id=getattr(args, "preview_id", ""),
+                dry_run_report_id=getattr(args, "dry_run_report_id", ""),
+                static_safety_report_id=getattr(args, "static_report_id", ""),
+                rollback_plan_id=getattr(args, "rollback_plan_id", ""),
+                operator_confirmation=bool(getattr(args, "confirmation_phrase", None)),
+                confirmation_phrase=getattr(args, "confirmation_phrase", None),
+            )
+            service = SelfModificationBoundedApplyService(
+                report_service=BoundedPatchApplyReportService(
+                    source_service=BoundedPatchApplySourceService(workspace_root=Path.cwd())
+                )
+            )
+            result = service.apply_bounded_patch(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(service.render_result_cli(result))
+            return 0 if result.report.apply_status == "applied" else 1
+        if subcommand == "report":
+            payload = {
+                "report_id": args.report_id,
+                "status": "not_persisted_in_v0.22.6",
+                "apply_status": "unknown_without_persisted_report",
+                "post_apply_verification_required": True,
+                "post_apply_verified": False,
+                "outcome_recorded": False,
+                "shell_executed": False,
+                "test_lint_executed": False,
+                "raw_content_emitted": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(_render_bounded_apply_view("report", args.report_id))
+            return 0
+        if subcommand == "transaction":
+            payload = {
+                "transaction_id": args.transaction_id,
+                "status": "not_persisted_in_v0.22.6",
+                "post_apply_verification_required": True,
+                "post_apply_verified": False,
+                "shell_executed": False,
+                "test_lint_executed": False,
+                "raw_content_emitted": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(_render_bounded_apply_view("transaction", args.transaction_id))
+            return 0
+        if subcommand == "changes":
+            payload = {
+                "report_id": args.report_id,
+                "status": "not_persisted_in_v0.22.6",
+                "workspace_file_changed_event_id": "",
+                "raw_content_emitted": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(_render_bounded_apply_view("changes", args.report_id))
+            return 0
+        raise SystemExit("unsupported self-modification apply command")
+    if command == "post-apply":
+        post_apply_service = SelfModificationPostApplyVerificationService(
+            report_service=PostApplyVerificationReportService(
+                source_service=PostApplyVerificationSourceService(workspace_root=Path.cwd())
+            )
+        )
+        subcommand = getattr(args, "self_modification_post_apply_command", None)
+        if subcommand == "verify":
+            request = PostApplyVerificationRequest(
+                apply_report_id=getattr(args, "apply_report_id", None) or "",
+                transaction_id=getattr(args, "transaction_id", None),
+            )
+            result = post_apply_service.verify_and_record_outcome(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(post_apply_service.render_result_cli(result))
+            return 0 if result.verification_report.verification_status in {"passed", "warning"} else 1
+        if subcommand == "report":
+            payload = {
+                "report_id": args.report_id,
+                "status": "not_persisted_in_v0.22.7",
+                "verification_status": "unknown_without_persisted_report",
+                "outcome_status": "unknown_without_persisted_record",
+                "file_write_performed": False,
+                "additional_patch_applied": False,
+                "shell_executed": False,
+                "test_lint_executed": False,
+                "rollback_executed": False,
+                "raw_content_emitted": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(post_apply_service.render_report_view_cli(report_id=args.report_id))
+            return 0
+        if subcommand == "findings":
+            payload = {
+                "report_id": args.report_id,
+                "finding_types": [
+                    "missing_workspace_file_changed_event",
+                    "after_hash_mismatch",
+                    "authorization_not_consumed",
+                    "scope_mismatch",
+                    "post_apply_safety_regression",
+                ],
+                "file_write_performed": False,
+                "additional_patch_applied": False,
+                "rollback_executed": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(post_apply_service.render_findings_cli(report_id=args.report_id))
+            return 0
+        raise SystemExit("unsupported self-modification post-apply command")
+    if command == "outcome":
+        subcommand = getattr(args, "self_modification_outcome_command", None)
+        if subcommand == "record":
+            request = PostApplyVerificationRequest(apply_report_id=args.verification_report_id)
+            result = post_apply_service.verify_and_record_outcome(request)
+            if args.json:
+                print(json.dumps(result.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(post_apply_service.render_result_cli(result))
+            return 0 if result.outcome_record is not None else 1
+        if subcommand == "view":
+            payload = {
+                "outcome_id": args.outcome_id,
+                "status": "not_persisted_in_v0.22.7",
+                "outcome_status": "unknown_without_persisted_record",
+                "canonical_promotion_enabled": False,
+                "memory_mutation_enabled": False,
+                "persona_mutation_enabled": False,
+                "overlay_mutation_enabled": False,
+                "rollback_executed": False,
+            }
+            if args.json:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+            else:
+                print(post_apply_service.render_outcome_view_cli(outcome_id=args.outcome_id))
+            return 0
+        raise SystemExit("unsupported self-modification outcome command")
+    if command == "workbench":
+        section = getattr(args, "section", "overview")
+        request = SelfModificationWorkbenchRequest(section=section)
+        snapshot = workbench_service.build_snapshot(request)
+        if args.json:
+            print(json.dumps(snapshot.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(workbench_service.render_snapshot_cli(snapshot))
+        return 0 if snapshot.readiness.readiness_status in {"ready", "warning", "blocked"} else 1
+    if command == "contract":
+        contract = registry.build_contract()
+        if args.json:
+            print(json.dumps(contract.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_contract_cli())
+        return 0
+    if command == "subjects":
+        subjects = registry.list_subjects()
+        if args.json:
+            print(json.dumps([item.to_dict() for item in subjects], ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_subjects_cli())
+        return 0
+    if command == "conformance":
+        report = conformance.run_conformance()
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(conformance.render_conformance_cli())
+        return 0 if report.passed else 1
+    if command == "lifecycle":
+        policy = registry.build_contract().lifecycle_policy
+        if args.json:
+            print(json.dumps(policy.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_lifecycle_cli())
+        return 0
+    if command == "patch-policy":
+        policy = registry.build_contract().allowed_patch_policy
+        if args.json:
+            print(json.dumps(policy.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(reports.render_patch_policy_cli())
+        return 0
+    if command == "pig-report":
+        report = consolidation_service.build_pig_report()
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        else:
+            print(consolidation_service.render_pig_report_cli())
+        return 0
+    if command == "ocpx-projection":
+        projection = consolidation_service.build_ocpx_projection()
+        if args.json:
+            print(json.dumps(projection, ensure_ascii=False, sort_keys=True))
+        else:
+            print(consolidation_service.render_ocpx_projection_cli())
+        return 0
+    if command in {
+        "consolidate",
+        "release-manifest",
+        "gap-register",
+        "safety-report",
+        "capability-map",
+        "coverage-matrix",
+        "pipeline-summary",
+        "authorization-summary",
+        "change-summary",
+        "outcome-summary",
+    }:
+        report = consolidation_service.build_report()
+        section_payload = {
+            "consolidate": report,
+            "release-manifest": report.release_manifest,
+            "gap-register": report.gap_register,
+            "safety-report": report.safety_boundary_report,
+            "capability-map": report.capability_map,
+            "coverage-matrix": report.coverage_matrix,
+            "pipeline-summary": report.pipeline_summary,
+            "authorization-summary": report.authorization_summary,
+            "change-summary": report.change_summary,
+            "outcome-summary": report.outcome_summary,
+        }[command]
+        if args.json:
+            print(json.dumps(section_payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(consolidation_service.render_report_cli(report, section=command))
+        return 0
+    raise SystemExit(f"unsupported self-modification command: {command}")
+
+
+def _render_bounded_apply_view(object_type: str, object_id: str) -> str:
+    title = {
+        "report": "Self-Modification Bounded Apply Report View",
+        "transaction": "Self-Modification Bounded Apply Transaction View",
+        "changes": "Self-Modification Bounded Apply Changes View",
+    }.get(object_type, "Self-Modification Bounded Apply View")
+    id_label = {
+        "report": "report_id",
+        "transaction": "transaction_id",
+        "changes": "report_id",
+    }.get(object_type, "object_id")
+    return "\n".join(
+        [
+            title,
+            "version=v0.22.6",
+            "layer=self_modification_safety",
+            f"{id_label}={object_id}",
+            "status=not_persisted_in_v0.22.6",
+            "apply_status=unknown_without_persisted_report",
+            "changed_file_count=unknown",
+            "applied_operation_count=unknown",
+            "workspace_file_changed_event_id=",
+            "authorization_consumed=unknown",
+            "rollback_plan_available=unknown",
+            "post_apply_verification_required=true",
+            "post_apply_verified=false",
+            "next_required_step=v0.22.7 Post-Apply Verification & Outcome",
+            "raw_full_file_content_printed=False",
+            "private_full_paths_printed=False",
+            "raw_secrets_printed=False",
+        ]
+    )
 
 
 def _render_deep_self_contract(contract: dict[str, object]) -> str:
@@ -3203,6 +5403,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_self_awareness(args)
     if args.command == "deep-self":
         return run_deep_self(args)
+    if args.command == "dominion":
+        return run_dominion(args)
+    if args.command == "provider":
+        return run_provider(args)
+    if args.command == "self-modification":
+        return run_self_modification(args)
     if args.command == "workbench":
         return run_workbench(args)
     raise SystemExit(f"unsupported command: {args.command}")

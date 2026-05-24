@@ -1,0 +1,14 @@
+{
+  "claims": [
+    {
+      "claim_id": "claim:contradicted-canonical",
+      "claim_type": "canonical_truth_claim",
+      "normalized_claim": "candidate-only report is canonical truth",
+      "predicate": "is_canonical_truth",
+      "object_ref": {
+        "target_status": "candidate_only"
+      },
+      "confidence": "high"
+    }
+  ]
+}

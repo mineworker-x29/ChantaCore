@@ -1,0 +1,15 @@
+{
+  "claims": [
+    {
+      "claim_id": "claim:valid-capability",
+      "claim_type": "capability_claim",
+      "normalized_claim": "deep self capability registry view is implemented",
+      "predicate": "implemented",
+      "object_ref": {
+        "skill_id": "skill:deep_self_capability_registry_view",
+        "claimed_status": "implemented"
+      },
+      "confidence": "high"
+    }
+  ]
+}

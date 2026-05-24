@@ -34,6 +34,30 @@ version intent:
 - `v0.21.x`: Deep Self-Introspection. This line is reserved for deeper
   OCEL-oriented inspection of runtime, capability, policy, context, and trace
   consistency.
+- `v0.22.x`: Self-Modification Safety. This line defines safety contracts,
+  gates, lifecycle policy, patch policy, and observability before any
+  self-modification capability is enabled.
+- `v0.23.x`: Internal Dominion Foundation. This line defines a vendor-neutral
+  internal control grammar for external runtimes under OCEL-visible gates and
+  authorizations. `v0.23.1` adds declared runtime/agent/system inventory,
+  `v0.23.2` adds capability observation/digestion, `v0.23.3` adds candidate-only
+  control requests/action candidates, `v0.23.4` adds control plan and target
+  binding, `v0.23.5` adds static safety checks, `v0.23.6` adds foundation-level
+  declared runtime preflight/reachability checks, `v0.23.7` adds human review
+  plus Dominion Gate state and unconsumed single-use authorization artifacts,
+  `v0.23.8` adds authorization / bounded dispatch / status / output /
+  outcome boundary artifacts without consuming authorization or dispatching,
+  and `v0.23.9` consolidates Internal Dominion Foundation v1 for release readiness.
+  It is not Self-Execution Safety and does not dispatch.
+- `v0.24.x`: Internal Provider / Local Runtime Provider. Self-execution and
+  bounded local runtime/provider work belongs to this later provider track, not
+  to v0.23.x. `v0.24.0` introduces the contract-only Internal Provider
+  foundation and does not invoke providers or execute local commands.
+- `v0.25.x`: General Agent Usability & Tool Routing.
+- `v0.26.x`: Workspace Agent Workbench.
+- `v0.27.x`: Memory Candidate & Continuity.
+- `v0.28.x`: Public Alpha / Schumpeter Split Preparation.
+- `v0.29.x+`: External Skill / External Provider Adapter Development.
 
 Do not describe `v0.20.x` as a write/shell/network/MCP/plugin safety track.
 Those capabilities remain excluded from the self-awareness foundation unless a

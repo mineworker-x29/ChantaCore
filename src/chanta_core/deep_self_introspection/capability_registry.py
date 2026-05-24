@@ -338,14 +338,55 @@ class SelfCapabilityRegistrySourceService:
         implemented = {
             "skill:deep_self_capability_registry_view",
             "skill:deep_self_capability_truth_check",
+            "skill:deep_self_runtime_boundary_view",
+            "skill:deep_self_runtime_boundary_truth_check",
+            "skill:deep_self_policy_gate_map",
+            "skill:deep_self_policy_gate_truth_check",
+            "skill:deep_self_trace_integrity_check",
+            "skill:deep_self_envelope_ocel_consistency",
+            "skill:deep_self_context_projection_view",
+            "skill:deep_self_context_projection_gap_report",
+            "skill:deep_self_candidate_memory_boundary_report",
+            "skill:deep_self_promotion_boundary_check",
+            "skill:deep_self_claim_consistency_check",
+            "skill:deep_self_contradiction_register",
+            "skill:deep_self_workbench_view",
+            "skill:deep_self_audit_view",
+            "skill:deep_self_findings_view",
+            "skill:deep_self_consolidation_view",
         }
         skill_ids = [
             "skill:deep_self_capability_registry_view",
             "skill:deep_self_capability_truth_check",
+            "skill:deep_self_runtime_boundary_view",
+            "skill:deep_self_runtime_boundary_truth_check",
+            "skill:deep_self_policy_gate_map",
+            "skill:deep_self_policy_gate_truth_check",
+            "skill:deep_self_trace_integrity_check",
+            "skill:deep_self_envelope_ocel_consistency",
+            "skill:deep_self_context_projection_view",
+            "skill:deep_self_context_projection_gap_report",
+            "skill:deep_self_candidate_memory_boundary_report",
+            "skill:deep_self_promotion_boundary_check",
+            "skill:deep_self_claim_consistency_check",
+            "skill:deep_self_contradiction_register",
+            "skill:deep_self_workbench_view",
+            "skill:deep_self_audit_view",
+            "skill:deep_self_findings_view",
+            "skill:deep_self_consolidation_view",
             *[
                 skill_id
                 for skill_id in DEEP_SELF_INTROSPECTION_SEED_SKILL_IDS
-                if skill_id != "skill:deep_self_capability_registry_view"
+                if skill_id
+                not in {
+                    "skill:deep_self_capability_registry_view",
+                    "skill:deep_self_runtime_boundary_view",
+                    "skill:deep_self_policy_gate_map",
+                        "skill:deep_self_trace_integrity_check",
+                        "skill:deep_self_context_projection_view",
+                        "skill:deep_self_candidate_memory_boundary_report",
+                        "skill:deep_self_claim_consistency_check",
+                    }
             ],
         ]
         for skill_id in skill_ids:
@@ -362,10 +403,89 @@ class SelfCapabilityRegistrySourceService:
                         if skill_id == "skill:deep_self_capability_registry_view"
                         else "Read-only capability truth check."
                         if skill_id == "skill:deep_self_capability_truth_check"
-                        else "Contract-only deep self-introspection seed skill."
-                    ),
+                        else "Read-only runtime boundary awareness view."
+                        if skill_id == "skill:deep_self_runtime_boundary_view"
+                    else "Read-only runtime boundary truth check."
+                    if skill_id == "skill:deep_self_runtime_boundary_truth_check"
+                    else "Read-only policy and gate awareness map."
+                    if skill_id == "skill:deep_self_policy_gate_map"
+                    else "Read-only policy and gate truth check."
+                    if skill_id == "skill:deep_self_policy_gate_truth_check"
+                    else "Read-only OCEL trace integrity check."
+                    if skill_id == "skill:deep_self_trace_integrity_check"
+                    else "Read-only execution envelope to OCEL consistency check."
+                    if skill_id == "skill:deep_self_envelope_ocel_consistency"
+                    else "Read-only context projection awareness view."
+                    if skill_id == "skill:deep_self_context_projection_view"
+                    else "Read-only context projection gap report."
+                    if skill_id == "skill:deep_self_context_projection_gap_report"
+                    else "Read-only candidate and memory boundary report."
+                    if skill_id == "skill:deep_self_candidate_memory_boundary_report"
+                    else "Read-only promotion boundary check."
+                    if skill_id == "skill:deep_self_promotion_boundary_check"
+                    else "Read-only self-claim consistency check."
+                    if skill_id == "skill:deep_self_claim_consistency_check"
+                    else "Read-only contradiction register view."
+                    if skill_id == "skill:deep_self_contradiction_register"
+                    else "Read-only deep self-introspection workbench view."
+                    if skill_id == "skill:deep_self_workbench_view"
+                    else "Read-only deep self-introspection audit view."
+                    if skill_id == "skill:deep_self_audit_view"
+                    else "Read-only deep self-introspection findings view."
+                    if skill_id == "skill:deep_self_findings_view"
+                    else "Read-only deep self-introspection consolidation view."
+                    if skill_id == "skill:deep_self_consolidation_view"
+                    else "Contract-only deep self-introspection seed skill."
+                ),
                     status=status,
-                    introduced_in="v0.21.1" if skill_id in implemented else "v0.21.0",
+                    introduced_in="v0.21.2"
+                    if skill_id
+                    in {
+                        "skill:deep_self_runtime_boundary_view",
+                        "skill:deep_self_runtime_boundary_truth_check",
+                    }
+                    else "v0.21.3"
+                    if skill_id
+                    in {
+                        "skill:deep_self_policy_gate_map",
+                        "skill:deep_self_policy_gate_truth_check",
+                    }
+                    else "v0.21.4"
+                    if skill_id
+                    in {
+                        "skill:deep_self_trace_integrity_check",
+                        "skill:deep_self_envelope_ocel_consistency",
+                    }
+                    else "v0.21.5"
+                    if skill_id
+                    in {
+                        "skill:deep_self_context_projection_view",
+                        "skill:deep_self_context_projection_gap_report",
+                    }
+                    else "v0.21.6"
+                    if skill_id
+                    in {
+                        "skill:deep_self_candidate_memory_boundary_report",
+                        "skill:deep_self_promotion_boundary_check",
+                    }
+                    else "v0.21.7"
+                    if skill_id
+                    in {
+                        "skill:deep_self_claim_consistency_check",
+                        "skill:deep_self_contradiction_register",
+                    }
+                    else "v0.21.8"
+                    if skill_id
+                    in {
+                        "skill:deep_self_workbench_view",
+                        "skill:deep_self_audit_view",
+                        "skill:deep_self_findings_view",
+                    }
+                    else "v0.21.9"
+                    if skill_id == "skill:deep_self_consolidation_view"
+                    else "v0.21.1"
+                    if skill_id in implemented
+                    else "v0.21.0",
                     execution_enabled=False,
                     materialization_enabled=False,
                     canonical_promotion_enabled=False,
@@ -379,7 +499,58 @@ class SelfCapabilityRegistrySourceService:
                     ocel_event_types=DEEP_SELF_INTROSPECTION_OCEL_EVENT_TYPES,
                     ocel_relation_types=DEEP_SELF_INTROSPECTION_OCEL_RELATION_TYPES,
                     source_refs=[{"source": "deep_self_introspection_registry", "skill_id": skill_id}],
-                    evidence_refs=[{"introduced_in": "v0.21.1" if skill_id in implemented else "v0.21.0"}],
+                    evidence_refs=[
+                        {
+                            "introduced_in": "v0.21.2"
+                            if skill_id
+                            in {
+                                "skill:deep_self_runtime_boundary_view",
+                                "skill:deep_self_runtime_boundary_truth_check",
+                            }
+                            else "v0.21.3"
+                            if skill_id
+                            in {
+                                "skill:deep_self_policy_gate_map",
+                                "skill:deep_self_policy_gate_truth_check",
+                            }
+                            else "v0.21.4"
+                            if skill_id
+                            in {
+                                "skill:deep_self_trace_integrity_check",
+                                "skill:deep_self_envelope_ocel_consistency",
+                            }
+                            else "v0.21.5"
+                            if skill_id
+                            in {
+                                "skill:deep_self_context_projection_view",
+                                "skill:deep_self_context_projection_gap_report",
+                            }
+                            else "v0.21.6"
+                            if skill_id
+                            in {
+                                "skill:deep_self_candidate_memory_boundary_report",
+                                "skill:deep_self_promotion_boundary_check",
+                            }
+                            else "v0.21.7"
+                            if skill_id
+                            in {
+                                "skill:deep_self_claim_consistency_check",
+                                "skill:deep_self_contradiction_register",
+                            }
+                            else "v0.21.8"
+                            if skill_id
+                            in {
+                                "skill:deep_self_workbench_view",
+                                "skill:deep_self_audit_view",
+                                "skill:deep_self_findings_view",
+                            }
+                            else "v0.21.9"
+                            if skill_id == "skill:deep_self_consolidation_view"
+                            else "v0.21.1"
+                            if skill_id in implemented
+                            else "v0.21.0"
+                        }
+                    ],
                 )
             )
         return records

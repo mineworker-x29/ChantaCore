@@ -38,12 +38,27 @@ orientation:
 - `v0.21.x`: Deep Self-Introspection. This line is reserved for deeper
   OCEL-oriented inspection of runtime, capability, policy, context, and trace
   consistency.
+- `v0.22.x`: Self-Modification Safety. This line defines safety contracts,
+  gates, lifecycle policy, patch policy, and observability before any
+  self-modification capability is enabled.
+- `v0.23.x`: Internal Dominion Foundation. This line defines OCEL-native,
+  vendor-neutral internal control grammar over external runtimes without
+  dispatch, provider API calls, or external runtime touch. `v0.23.1` is
+  declared inventory, `v0.23.2` is capability observation/digestion, and
+  `v0.23.3` is candidate-only control request/action candidate creation.
+- `v0.24.x`: Local Runtime Provider. Self-execution safety and bounded local
+  command execution planning are reclassified to this later provider track.
 
 Older future-track language that calls `v0.20.x` a write, shell, network, MCP,
 plugin, or external harness safety track should be treated as superseded. In
 current restore documents, those dangerous or mutating capabilities remain
 explicitly excluded until a later release line defines and verifies a dedicated
 safety layer.
+
+Older future-track language that calls `v0.23.x` Self-Execution Safety should
+also be treated as superseded. Current v0.23.x restore documents must describe
+Internal Dominion Foundation, and self-execution belongs to v0.24.x Local
+Runtime Provider.
 
 ## Required Sections
 
