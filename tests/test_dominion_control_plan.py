@@ -24,7 +24,7 @@ from chanta_core.internal_dominion import (
 
 
 def test_control_plan_doc_records_v0_23_4_identity_and_boundaries() -> None:
-    text = open("docs/versions/v0.23.4_control_plan_target_binding.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.4_control_plan_target_binding.md", encoding="utf-8").read()
 
     assert "Control Plan & Target Binding" in text
     assert "제어 계획·대상 바인딩" in text

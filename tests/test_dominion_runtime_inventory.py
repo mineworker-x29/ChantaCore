@@ -30,7 +30,7 @@ def _manifest(items: list[dict]) -> DominionRuntimeInventoryRequest:
 
 
 def test_runtime_inventory_doc_records_v0_23_1_identity() -> None:
-    text = open("docs/versions/v0.23.1_runtime_agent_system_inventory.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.1_runtime_agent_system_inventory.md", encoding="utf-8").read()
 
     assert "Runtime / Agent / System Inventory" in text
     assert "Track: Internal Dominion Foundation" in text

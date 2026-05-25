@@ -6,7 +6,7 @@ from chanta_core.internal_dominion import DominionDispatchBoundaryRequest, Domin
 
 
 SOURCE = Path("src/chanta_core/internal_dominion/dispatch_boundary.py")
-DOC = Path("docs/versions/v0.23.8_authorization_bounded_dispatch_status_outcome_boundary.md")
+DOC = Path("docs/versions/v0.23/v0.23.8_authorization_bounded_dispatch_status_outcome_boundary.md")
 
 
 def test_docs_define_v0_23_8_identity_and_boundaries():

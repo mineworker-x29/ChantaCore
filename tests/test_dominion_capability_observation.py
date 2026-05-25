@@ -26,7 +26,7 @@ def _request(items: list[dict]) -> DominionCapabilityObservationRequest:
 
 
 def test_capability_doc_records_v0_23_2_identity_and_boundaries() -> None:
-    text = open("docs/versions/v0.23.2_capability_observation_digestion.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.2_capability_observation_digestion.md", encoding="utf-8").read()
 
     assert "Capability Observation & Digestion for Dominion" in text
     assert "Track: Internal Dominion Foundation" in text

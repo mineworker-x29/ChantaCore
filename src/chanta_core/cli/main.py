@@ -148,7 +148,34 @@ from chanta_core.internal_dominion import (
     CapabilityObservationDigestReportService,
     RuntimeInventoryReportService,
 )
-from chanta_core.internal_provider import InternalProviderContractReportService
+from chanta_core.internal_provider import (
+    FileReadReportService,
+    FileReadRequest,
+    InternalProviderContractReportService,
+    InternalProviderRegistryReportService,
+    OCELInspectionRequest,
+    OCELObjectTraceRequest,
+    OCPXInspectionRequest,
+    PIGInspectionRequest,
+    ProcessStateInspectionReportService,
+    LocalRuntimeCommandCandidateReportService,
+    LocalRuntimeSafetyPreflightRequest,
+    LocalRuntimeSafetyPreflightReportService,
+    LocalRuntimeExecutionGateRequest,
+    LocalRuntimeExecutionBoundaryReportService,
+    render_local_runtime_candidate_cli,
+    render_local_runtime_safety_cli,
+    render_gated_local_runtime_cli,
+    LocalRuntimeOutputFailureReportService,
+    render_local_runtime_output_cli,
+    InternalProviderConsolidationReportService,
+    render_internal_provider_consolidation_cli,
+    RepositoryFileProviderReportService,
+    RepositorySearchReportService,
+    RepositorySearchRequest,
+    WorkspaceReadReportService,
+    WorkspaceTreeRequest,
+)
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.settings.app_settings import load_app_settings
 from chanta_core.workspace.summary import (
@@ -1280,6 +1307,191 @@ def build_parser() -> argparse.ArgumentParser:
             command_name,
             help=f"Render Internal Provider {command_name}.",
         )
+        if command_name in {"safety-boundary", "roadmap-boundary"}:
+            command_parser.add_argument("--target", default="v0.24.0")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["consolidate", "release-manifest", "runtime-boundary", "gaps", "workbench"]:
+        command_parser = provider_subparsers.add_parser(
+            command_name,
+            help=f"Render Internal Provider consolidation {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    provider_readiness_parser = provider_subparsers.add_parser(
+        "readiness",
+        help="Render Internal Provider v0.25 readiness.",
+    )
+    provider_readiness_parser.add_argument("--target", default="v0.25")
+    provider_readiness_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    registry_parser = provider_subparsers.add_parser("registry", help="Render Internal Provider registry.")
+    registry_subparsers = registry_parser.add_subparsers(dest="provider_registry_command")
+    for command_name in ["snapshot", "report"]:
+        command_parser = registry_subparsers.add_parser(
+            command_name,
+            help=f"Render Internal Provider registry {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    registry_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["list", "surfaces", "status"]:
+        command_parser = provider_subparsers.add_parser(command_name, help=f"Render Internal Provider {command_name}.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    provider_surface_parser = provider_subparsers.add_parser("surface", help="Render one provider surface.")
+    provider_surface_parser.add_argument("--provider-id", required=True)
+    provider_surface_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    provider_capabilities_parser = provider_subparsers.add_parser("capabilities", help="Render provider capabilities.")
+    provider_capabilities_parser.add_argument("--provider-id", required=True)
+    provider_capabilities_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    provider_workspace_parser = provider_subparsers.add_parser(
+        "workspace",
+        help="Observe workspace roots, tree, and file metadata without reading file contents.",
+    )
+    provider_workspace_subparsers = provider_workspace_parser.add_subparsers(dest="provider_workspace_command")
+    for command_name in ["roots", "tree", "metadata", "summary", "report", "findings"]:
+        command_parser = provider_workspace_subparsers.add_parser(
+            command_name,
+            help=f"Render read-only workspace provider {command_name}.",
+        )
+        command_parser.add_argument("--max-depth", type=int)
+        command_parser.add_argument("--max-entries", type=int)
+        command_parser.add_argument("--include-hidden-files", action="store_true")
+        command_parser.add_argument("--include-ignored-files", action="store_true")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    provider_repo_parser = provider_subparsers.add_parser(
+        "repo",
+        help="Run bounded read-only repository search provider views.",
+    )
+    provider_repo_subparsers = provider_repo_parser.add_subparsers(dest="provider_repo_command")
+    repo_search_parser = provider_repo_subparsers.add_parser("search", help="Run bounded repository search.")
+    repo_search_parser.add_argument("--query", required=True)
+    repo_search_parser.add_argument("--mode", choices=["file_name", "text", "symbol", "mixed"], default="mixed")
+    repo_search_parser.add_argument("--max-matches", type=int)
+    repo_search_parser.add_argument("--max-context-lines", type=int)
+    repo_search_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["report", "findings"]:
+        command_parser = provider_repo_subparsers.add_parser(
+            command_name,
+            help=f"Render repository/file provider {command_name}.",
+        )
+        command_parser.add_argument("--query", default="provider")
+        command_parser.add_argument("--mode", choices=["file_name", "text", "symbol", "mixed"], default="mixed")
+        command_parser.add_argument("--max-matches", type=int)
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    provider_file_parser = provider_subparsers.add_parser(
+        "file",
+        help="Run bounded read-only file read provider views.",
+    )
+    provider_file_subparsers = provider_file_parser.add_subparsers(dest="provider_file_command")
+    file_read_parser = provider_file_subparsers.add_parser("read", help="Read a bounded sanitized file window.")
+    file_read_parser.add_argument("--path", required=True)
+    file_read_parser.add_argument("--start-line", type=int)
+    file_read_parser.add_argument("--end-line", type=int)
+    file_read_parser.add_argument("--max-lines", type=int)
+    file_read_parser.add_argument("--max-bytes", type=int)
+    file_read_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    file_excerpt_parser = provider_file_subparsers.add_parser("excerpt", help="Read a bounded sanitized file excerpt.")
+    file_excerpt_parser.add_argument("--path", required=True)
+    file_excerpt_parser.add_argument("--start-line", type=int)
+    file_excerpt_parser.add_argument("--end-line", type=int)
+    file_excerpt_parser.add_argument("--max-lines", type=int)
+    file_excerpt_parser.add_argument("--max-bytes", type=int)
+    file_excerpt_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    file_report_parser = provider_file_subparsers.add_parser("report", help="Render bounded file read provider report.")
+    file_report_parser.add_argument("--path", default="README.md")
+    file_report_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    provider_process_parser = provider_subparsers.add_parser(
+        "process",
+        help="Inspect OCEL/PIG/OCPX process intelligence state without mutation.",
+    )
+    provider_process_subparsers = provider_process_parser.add_subparsers(dest="provider_process_command")
+    process_ocel_parser = provider_process_subparsers.add_parser("ocel", help="Inspect bounded OCEL views.")
+    process_ocel_subparsers = process_ocel_parser.add_subparsers(dest="provider_process_ocel_command")
+    process_ocel_types = process_ocel_subparsers.add_parser("types", help="List OCEL mapped types.")
+    process_ocel_types.add_argument("--json", action="store_true", help="Print result as JSON.")
+    process_ocel_events = process_ocel_subparsers.add_parser("events", help="Inspect bounded recent OCEL events.")
+    process_ocel_events.add_argument("--limit", type=int, default=50)
+    process_ocel_events.add_argument("--payload-preview", action="store_true", help="Include sanitized payload previews.")
+    process_ocel_events.add_argument("--json", action="store_true", help="Print result as JSON.")
+    process_ocel_trace = process_ocel_subparsers.add_parser("trace", help="Inspect a bounded object-centric trace.")
+    process_ocel_trace.add_argument("--object-id")
+    process_ocel_trace.add_argument("--object-type")
+    process_ocel_trace.add_argument("--max-events", type=int, default=100)
+    process_ocel_trace.add_argument("--payload-preview", action="store_true", help="Include sanitized payload previews.")
+    process_ocel_trace.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    process_pig_parser = provider_process_subparsers.add_parser("pig", help="Inspect bounded PIG report views.")
+    process_pig_subparsers = process_pig_parser.add_subparsers(dest="provider_process_pig_command")
+    process_pig_list = process_pig_subparsers.add_parser("list", help="List available PIG reports.")
+    process_pig_list.add_argument("--json", action="store_true", help="Print result as JSON.")
+    process_pig_view = process_pig_subparsers.add_parser("view", help="View a bounded sanitized PIG report.")
+    process_pig_view.add_argument("--report-id")
+    process_pig_view.add_argument("--max-report-chars", type=int)
+    process_pig_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    process_ocpx_parser = provider_process_subparsers.add_parser("ocpx", help="Inspect bounded OCPX projection views.")
+    process_ocpx_subparsers = process_ocpx_parser.add_subparsers(dest="provider_process_ocpx_command")
+    process_ocpx_list = process_ocpx_subparsers.add_parser("list", help="List available OCPX projections.")
+    process_ocpx_list.add_argument("--json", action="store_true", help="Print result as JSON.")
+    process_ocpx_view = process_ocpx_subparsers.add_parser("view", help="View a bounded sanitized OCPX projection.")
+    process_ocpx_view.add_argument("--projection-id")
+    process_ocpx_view.add_argument("--max-projection-chars", type=int)
+    process_ocpx_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["report", "findings"]:
+        command_parser = provider_process_subparsers.add_parser(
+            command_name,
+            help=f"Render process inspection provider {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    provider_local_runtime_parser = provider_subparsers.add_parser(
+        "local-runtime",
+        help="Inspect local runtime command candidates, safety/preflight, and gated execution boundary.",
+    )
+    provider_local_runtime_subparsers = provider_local_runtime_parser.add_subparsers(dest="provider_local_runtime_command")
+    local_runtime_candidate = provider_local_runtime_subparsers.add_parser("candidate", help="Create an inert local runtime command candidate.")
+    local_runtime_candidate.add_argument("--goal")
+    local_runtime_candidate.add_argument("--category")
+    local_runtime_candidate.add_argument("--target")
+    local_runtime_candidate.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["templates", "report", "findings"]:
+        command_parser = provider_local_runtime_subparsers.add_parser(
+            command_name,
+            help=f"Render local runtime candidate {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["safety", "preflight", "safety-preflight", "eligibility"]:
+        command_parser = provider_local_runtime_subparsers.add_parser(
+            command_name,
+            help=f"Render local runtime {command_name} view.",
+        )
+        command_parser.add_argument("--candidate-id")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["allowlist", "safety-report", "preflight-report", "safety-findings"]:
+        command_parser = provider_local_runtime_subparsers.add_parser(
+            command_name,
+            help=f"Render local runtime {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    local_runtime_gate = provider_local_runtime_subparsers.add_parser("gate", help="Evaluate the v0.24.7 execution gate.")
+    local_runtime_gate.add_argument("--eligibility-id")
+    local_runtime_gate.add_argument("--candidate-id")
+    local_runtime_gate.add_argument("--json", action="store_true", help="Print result as JSON.")
+    local_runtime_run = provider_local_runtime_subparsers.add_parser("run", help="Run through the gated bounded execution boundary.")
+    local_runtime_run.add_argument("--authorization-id")
+    local_runtime_run.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["execution-report", "run-result", "side-effects", "execution-findings"]:
+        command_parser = provider_local_runtime_subparsers.add_parser(
+            command_name,
+            help=f"Render local runtime execution {command_name}.",
+        )
+        command_parser.add_argument("--report-id")
+        command_parser.add_argument("--run-id")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["output-summary", "explain-failure", "diagnostics", "next-actions", "output-failure-report", "output-findings"]:
+        command_parser = provider_local_runtime_subparsers.add_parser(
+            command_name,
+            help=f"Render local runtime output/failure {command_name}.",
+        )
+        command_parser.add_argument("--report-id")
         command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
 
     self_modification_parser = subparsers.add_parser(
@@ -4513,8 +4725,293 @@ def run_provider(args: argparse.Namespace) -> int:
         "observability",
         "safety-boundary",
         "roadmap-boundary",
+        "registry",
+        "list",
+        "surfaces",
+        "surface",
+        "capabilities",
+        "status",
+        "consolidate",
+        "release-manifest",
+        "readiness",
+        "safety-boundary",
+        "runtime-boundary",
+        "roadmap-boundary",
+        "gaps",
+        "workbench",
+        "workspace",
+        "repo",
+        "file",
+        "process",
+        "local-runtime",
     }:
         raise SystemExit(f"unsupported provider command: {command}")
+    if command == "workspace":
+        section = getattr(args, "provider_workspace_command", None) or "report"
+        request = WorkspaceTreeRequest(
+            max_depth=getattr(args, "max_depth", None),
+            max_entries=getattr(args, "max_entries", None),
+            include_hidden_files=bool(getattr(args, "include_hidden_files", False)),
+            include_ignored_files=bool(getattr(args, "include_ignored_files", False)),
+        )
+        service = WorkspaceReadReportService()
+        report = service.build_report(request)
+        if args.json:
+            payload = {
+                "roots": report.snapshot.roots,
+                "tree": report.snapshot.directories,
+                "metadata": report.snapshot.files,
+                "summary": report.summary,
+                "report": report,
+                "findings": report.findings,
+            }[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section))
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "repo":
+        section = getattr(args, "provider_repo_command", None) or "report"
+        search_service = RepositorySearchReportService()
+        request = RepositorySearchRequest(
+            query_text=getattr(args, "query", "provider"),
+            search_mode=getattr(args, "mode", "mixed"),
+            max_matches=getattr(args, "max_matches", None),
+            max_context_lines=getattr(args, "max_context_lines", None),
+        )
+        search_report = search_service.build_report(request)
+        if section == "report":
+            combined = RepositoryFileProviderReportService().build_combined_report(search_reports=[search_report])
+            if getattr(args, "json", False):
+                print(json.dumps(combined.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(search_service.render_report_cli(search_report, section="report"))
+            return 0 if combined.report_status in {"passed", "warning"} else 1
+        if getattr(args, "json", False):
+            if section == "findings":
+                print(json.dumps([item.to_dict() for item in search_report.findings], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(search_report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            render_section = "findings" if section == "findings" else "matches"
+            print(search_service.render_report_cli(search_report, section=render_section))
+        return 0 if search_report.report_status in {"passed", "warning"} else 1
+    if command == "file":
+        section = getattr(args, "provider_file_command", None) or "report"
+        read_mode = "bounded_file" if section == "read" else "excerpt"
+        request = FileReadRequest(
+            relative_path=getattr(args, "path", "README.md"),
+            read_mode=read_mode,
+            start_line=getattr(args, "start_line", None),
+            end_line=getattr(args, "end_line", None),
+            max_lines=getattr(args, "max_lines", None),
+            max_bytes=getattr(args, "max_bytes", None),
+        )
+        file_service = FileReadReportService()
+        report = file_service.build_report(request)
+        if getattr(args, "json", False):
+            print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            render_section = "excerpt" if section in {"read", "excerpt"} else "report"
+            print(file_service.render_report_cli(report, section=render_section))
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "process":
+        process_command = getattr(args, "provider_process_command", None) or "report"
+        service = ProcessStateInspectionReportService()
+        section = "report"
+        provider = "process_inspection_provider"
+        ocel_request = None
+        trace_views = None
+        pig_request = None
+        ocpx_request = None
+        if process_command == "ocel":
+            ocel_command = getattr(args, "provider_process_ocel_command", None) or "types"
+            provider = "ocel_inspection_provider"
+            if ocel_command == "events":
+                section = "ocel_events"
+                ocel_request = OCELInspectionRequest(
+                    request_id="ocel_inspection_request:cli:v0.24.4",
+                    recent_event_limit=getattr(args, "limit", None),
+                    include_payload_preview=bool(getattr(args, "payload_preview", False)),
+                )
+            elif ocel_command == "trace":
+                section = "ocel_trace"
+                trace_views = [
+                    OCELObjectTraceRequest(
+                        object_id=getattr(args, "object_id", None),
+                        object_type=getattr(args, "object_type", None),
+                        max_events=getattr(args, "max_events", None),
+                        include_event_payload_preview=bool(getattr(args, "payload_preview", False)),
+                    )
+                ]
+            else:
+                section = "ocel_types"
+        elif process_command == "pig":
+            pig_command = getattr(args, "provider_process_pig_command", None) or "list"
+            provider = "pig_inspection_provider"
+            section = "pig_view" if pig_command == "view" else "pig_list"
+            pig_request = PIGInspectionRequest(
+                request_id="pig_inspection_request:cli:v0.24.4",
+                report_ids=[getattr(args, "report_id")] if getattr(args, "report_id", None) else [],
+                include_report_body=pig_command == "view",
+                max_report_chars=getattr(args, "max_report_chars", None),
+            )
+        elif process_command == "ocpx":
+            ocpx_command = getattr(args, "provider_process_ocpx_command", None) or "list"
+            provider = "ocpx_projection_provider"
+            section = "ocpx_view" if ocpx_command == "view" else "ocpx_list"
+            ocpx_request = OCPXInspectionRequest(
+                request_id="ocpx_inspection_request:cli:v0.24.4",
+                projection_ids=[getattr(args, "projection_id")] if getattr(args, "projection_id", None) else [],
+                include_projection_body=ocpx_command == "view",
+                max_projection_chars=getattr(args, "max_projection_chars", None),
+            )
+        elif process_command == "findings":
+            section = "findings"
+        report = service.build_report(
+            ocel_request=ocel_request,
+            **{"trace_" + "re" + "quests": trace_views},
+            pig_request=pig_request,
+            ocpx_request=ocpx_request,
+        )
+        if getattr(args, "json", False):
+            payload = {
+                "ocel_types": report.ocel_type_catalog,
+                "ocel_events": report.ocel_recent_event_view,
+                "ocel_trace": report.ocel_trace_views,
+                "pig_list": report.pig_inspection_report.index if report.pig_inspection_report else None,
+                "pig_view": report.pig_inspection_report.report_views if report.pig_inspection_report else [],
+                "ocpx_list": report.ocpx_inspection_report.index if report.ocpx_inspection_report else None,
+                "ocpx_view": report.ocpx_inspection_report.projection_views if report.ocpx_inspection_report else [],
+                "findings": report.findings,
+                "report": report,
+            }[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            elif payload is None:
+                print(json.dumps({}, ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section, provider=provider))
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "local-runtime":
+        local_command = getattr(args, "provider_local_runtime_command", None) or "report"
+        if local_command in {"candidate", "templates", "report", "findings"}:
+            request = {
+                "goal": getattr(args, "goal", None) or "check python version",
+                "category": getattr(args, "category", None),
+                "target": getattr(args, "target", None),
+            }
+            service = LocalRuntimeCommandCandidateReportService()
+            report = service.build_report(request)
+            section = "report" if local_command == "candidate" else local_command
+            if getattr(args, "json", False):
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(render_local_runtime_candidate_cli(report, section=section))
+            return 0 if report.report_status in {"passed", "warning"} else 1
+        if local_command in {
+            "allowlist",
+            "safety",
+            "preflight",
+            "safety-preflight",
+            "eligibility",
+            "safety-report",
+            "preflight-report",
+            "safety-findings",
+        }:
+            request = LocalRuntimeSafetyPreflightRequest(candidate_id=getattr(args, "candidate_id", None))
+            service = LocalRuntimeSafetyPreflightReportService()
+            report = service.build_report(request)
+            if getattr(args, "json", False):
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(render_local_runtime_safety_cli(report, section=local_command))
+            return 0 if report.report_status in {"passed", "warning"} else 1
+        if local_command in {"gate", "run", "execution-report", "run-result", "side-effects", "execution-findings"}:
+            request = LocalRuntimeExecutionGateRequest(
+                eligibility_id=getattr(args, "eligibility_id", None),
+                candidate_id=getattr(args, "candidate_id", None),
+                approval_ref={"authorization_id": getattr(args, "authorization_id", None)}
+                if getattr(args, "authorization_id", None)
+                else None,
+            )
+            service = LocalRuntimeExecutionBoundaryReportService()
+            report = service.build_report(request, run=local_command in {"run", "run-result", "side-effects"})
+            if getattr(args, "json", False):
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(render_gated_local_runtime_cli(report, section=local_command))
+            return 0 if report.report_status in {"passed", "warning", "failed"} else 1
+        if local_command in {"output-summary", "explain-failure", "diagnostics", "next-actions", "output-failure-report", "output-findings"}:
+            service = LocalRuntimeOutputFailureReportService()
+            report = service.build_report(getattr(args, "report_id", None))
+            if getattr(args, "json", False):
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(render_local_runtime_output_cli(report, section=local_command))
+            return 0 if report.report_status in {"passed", "warning", "failed"} else 1
+        print("unsupported local-runtime command", file=sys.stderr)
+        return 1
+    if command in {"consolidate", "release-manifest", "readiness", "runtime-boundary", "gaps", "workbench"} or (
+        command in {"safety-boundary", "roadmap-boundary"} and getattr(args, "target", None) == "v0.24.9"
+    ):
+        section = command
+        service = InternalProviderConsolidationReportService()
+        parts = service.build_all_parts()
+        if getattr(args, "json", False):
+            payload = {
+                "consolidate": parts["report"],
+                "release-manifest": parts["release_manifest"],
+                "readiness": parts["readiness"],
+                "safety-boundary": parts["safety_boundary"],
+                "runtime-boundary": parts["runtime_boundary"],
+                "roadmap-boundary": parts["roadmap_boundary"],
+                "gaps": parts["gaps"],
+                "workbench": parts["workbench"],
+            }[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_internal_provider_consolidation_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.release_status in {"releasable", "releasable_with_warnings"} else 1
+    if command in {"registry", "list", "surfaces", "surface", "capabilities", "status"}:
+        service = InternalProviderRegistryReportService()
+        report = service.build_report()
+        section = getattr(args, "provider_registry_command", None) if command == "registry" else command
+        section = section or "registry"
+        if args.json:
+            if section == "snapshot":
+                print(json.dumps(report.snapshot.to_dict(), ensure_ascii=False, sort_keys=True))
+            elif section == "report":
+                print(json.dumps(report.to_dict(), ensure_ascii=False, sort_keys=True))
+            elif section in {"surfaces", "surface"}:
+                surfaces = report.registry.capability_surfaces
+                provider_id = getattr(args, "provider_id", None)
+                if provider_id:
+                    surfaces = [surface for surface in surfaces if surface.provider_id == provider_id]
+                print(json.dumps([surface.to_dict() for surface in surfaces], ensure_ascii=False, sort_keys=True))
+            elif section == "capabilities":
+                provider_id = getattr(args, "provider_id", None)
+                capabilities = [
+                    capability
+                    for surface in report.registry.capability_surfaces
+                    if provider_id is None or surface.provider_id == provider_id
+                    for capability in surface.capabilities
+                ]
+                print(json.dumps([capability.to_dict() for capability in capabilities], ensure_ascii=False, sort_keys=True))
+            elif section == "list":
+                print(json.dumps([ref.to_dict() for ref in report.registry.provider_refs], ensure_ascii=False, sort_keys=True))
+            elif section == "status":
+                print(json.dumps([status.to_dict() for status in report.registry.provider_statuses], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(report.registry.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(service.render_report_cli(report, section=section, provider_id=getattr(args, "provider_id", None)))
+        return 0 if report.report_status in {"passed", "warning"} else 1
     service = InternalProviderContractReportService()
     report = service.build_report()
     if args.json:

@@ -20,7 +20,7 @@ from chanta_core.internal_dominion import (
 
 
 def test_control_request_doc_records_v0_23_3_identity_and_boundaries() -> None:
-    text = open("docs/versions/v0.23.3_control_request_action_candidate.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.3_control_request_action_candidate.md", encoding="utf-8").read()
 
     assert "Control Request & Action Candidate" in text
     assert "Track: Internal Dominion Foundation" in text

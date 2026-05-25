@@ -6,7 +6,7 @@ from chanta_core.internal_dominion import DominionRuntimePreflightRequest, Domin
 
 
 SOURCE = Path("src/chanta_core/internal_dominion/runtime_preflight.py")
-DOC = Path("docs/versions/v0.23.6_runtime_preflight_reachability_check.md")
+DOC = Path("docs/versions/v0.23/v0.23.6_runtime_preflight_reachability_check.md")
 
 
 def _report(plan_id: str = "dominion_control_plan:v0.23.4"):

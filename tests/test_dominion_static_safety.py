@@ -26,7 +26,7 @@ def _report(plan_id: str = "dominion_control_plan:v0.23.4"):
 
 
 def test_static_safety_doc_records_v0_23_5_identity_and_boundaries() -> None:
-    text = open("docs/versions/v0.23.5_dominion_static_safety_check.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.5_dominion_static_safety_check.md", encoding="utf-8").read()
 
     assert "Dominion Static Safety Check" in text
     assert "지배 정적 안전성 검사" in text

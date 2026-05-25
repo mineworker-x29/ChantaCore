@@ -13,6 +13,8 @@ Examples:
 ```text
 docs/versions/v0.19/chanta_core_v0_19_9_restore.md
 docs/versions/v0.20/v0.20.1_self_workspace_awareness.md
+docs/versions/v0.23/chanta_core_v0_23_foundation_restore.md
+docs/versions/v0.24/chanta_core_v0_24_0_restore.md
 ```
 
 Use this folder for restore-grade version records, version contracts, version audits, and migration notes that belong to a specific release line. General documentation that is not tied to one version should remain directly under `docs/` or another topic-specific documentation folder.
@@ -49,10 +51,23 @@ version intent:
   outcome boundary artifacts without consuming authorization or dispatching,
   and `v0.23.9` consolidates Internal Dominion Foundation v1 for release readiness.
   It is not Self-Execution Safety and does not dispatch.
+  Restore-grade v0.23 records live under `docs/versions/v0.23/`; direct
+  `docs/versions/v0.23.*.md` compatibility files were folded into that folder.
 - `v0.24.x`: Internal Provider / Local Runtime Provider. Self-execution and
   bounded local runtime/provider work belongs to this later provider track, not
   to v0.23.x. `v0.24.0` introduces the contract-only Internal Provider
-  foundation and does not invoke providers or execute local commands.
+  foundation, `v0.24.1` declares the provider registry and capability surface,
+  `v0.24.2` activates only read-only workspace tree/metadata observation,
+  `v0.24.3` activates bounded repository search and bounded sanitized file
+  read/excerpt providers, `v0.24.4` activates bounded read-only OCEL/PIG/OCPX
+  process-intelligence inspection providers, `v0.24.5` activates inert local
+  runtime command candidate creation, `v0.24.6` activates deterministic static
+  safety and declared preflight without execution, `v0.24.7` activates a gated
+  bounded local runtime execution boundary, `v0.24.8` interprets bounded output
+  without rerun or repair, and `v0.24.9` consolidates the provider foundation
+  for v0.25 readiness.
+  This track does not permit unrestricted shell, provider adapters, or local
+  runtime execution before their scoped release units.
 - `v0.25.x`: General Agent Usability & Tool Routing.
 - `v0.26.x`: Workspace Agent Workbench.
 - `v0.27.x`: Memory Candidate & Continuity.

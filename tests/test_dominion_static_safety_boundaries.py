@@ -77,7 +77,7 @@ def test_static_safety_does_not_introduce_private_persona_material() -> None:
     private_root_token = "ChantaResearchGroup" + "_Members"
     changed_public_files = [
         Path("src/chanta_core/internal_dominion/static_safety.py"),
-        Path("docs/versions/v0.23.5_dominion_static_safety_check.md"),
+        Path("docs/versions/v0.23/v0.23.5_dominion_static_safety_check.md"),
         Path("tests/test_dominion_static_safety.py"),
         Path("tests/test_dominion_static_safety_boundaries.py"),
     ]

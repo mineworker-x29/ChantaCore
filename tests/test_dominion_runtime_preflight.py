@@ -41,7 +41,7 @@ def _report(
 
 
 def test_runtime_preflight_doc_records_identity_roadmap_and_boundaries() -> None:
-    text = open("docs/versions/v0.23.6_runtime_preflight_reachability_check.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.6_runtime_preflight_reachability_check.md", encoding="utf-8").read()
 
     assert "Runtime Preflight / Reachability Check" in text
     assert "Korean name" in text

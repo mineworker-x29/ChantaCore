@@ -92,7 +92,7 @@ def test_control_plan_does_not_introduce_private_vera_material() -> None:
     private_root_token = "ChantaResearchGroup" + "_Members"
     changed_public_files = [
         Path("src/chanta_core/internal_dominion/control_plan.py"),
-        Path("docs/versions/v0.23.4_control_plan_target_binding.md"),
+        Path("docs/versions/v0.23/v0.23.4_control_plan_target_binding.md"),
         Path("tests/test_dominion_control_plan.py"),
         Path("tests/test_dominion_control_plan_boundaries.py"),
     ]

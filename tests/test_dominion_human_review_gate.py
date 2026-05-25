@@ -43,7 +43,7 @@ def _report(
 
 
 def test_human_review_gate_doc_records_identity_roadmap_and_boundaries() -> None:
-    text = open("docs/versions/v0.23.7_human_review_dominion_gate.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.7_human_review_dominion_gate.md", encoding="utf-8").read()
 
     assert "Human Review & Dominion Gate" in text
     assert "Korean name: 인간 검토·지배 게이트" in text

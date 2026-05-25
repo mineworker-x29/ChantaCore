@@ -10,7 +10,7 @@ from chanta_core.internal_dominion import (
 
 
 SOURCE = Path("src/chanta_core/internal_dominion/human_review_gate.py")
-DOC = Path("docs/versions/v0.23.7_human_review_dominion_gate.md")
+DOC = Path("docs/versions/v0.23/v0.23.7_human_review_dominion_gate.md")
 
 
 def _report(**kwargs):

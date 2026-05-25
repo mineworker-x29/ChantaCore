@@ -17,14 +17,14 @@ from chanta_core.internal_dominion import (
 
 
 def test_v0_23_0_internal_dominion_doc_records_policy_change() -> None:
-    text = open("docs/versions/v0.23.0_internal_dominion_contract.md", encoding="utf-8").read()
+    text = open("docs/versions/v0.23/v0.23.0_internal_dominion_contract.md", encoding="utf-8").read()
 
     assert "OCEL-native Internal Dominion Contract" in text
     assert "Track: Internal Dominion Foundation" in text
     assert "v0.23.x is no longer Self-Execution Safety" in text
     assert "Self-Execution Safety is reclassified to v0.24.x Local Runtime Provider" in text
-    assert "Schumpeter is the company deployment name for ChantaCore Company Edition" in text
-    assert "Schumpeter Legacy is a previous prototype / asset source" in text
+    assert "No provider API call, external runtime touch, dispatch, local command" in text
+    assert "Schumpeter split" in text
     assert "GrowthKernel is a future consumer / future optimizer" in text
 
 
