@@ -176,6 +176,37 @@ from chanta_core.internal_provider import (
     WorkspaceReadReportService,
     WorkspaceTreeRequest,
 )
+from chanta_core.agent_surface import (
+    AgentSurfaceContractReportService,
+    AgentIntentClassificationReportService,
+    AgentSafetyGateReportService,
+    AgentToolRoutingReportService,
+    AgentProviderInvocationReportService,
+    AgentResponseAssemblyReportService,
+    AgentAskReplReportService,
+    AgentReplSessionService,
+    AgentTraceTelemetryReportService,
+    AgentUsabilityConsolidationReportService,
+    AgentTurnReportService,
+    render_agent_ask_repl_cli,
+    render_agent_intent_cli,
+    render_agent_provider_invocation_cli,
+    render_agent_response_cli,
+    render_agent_route_cli,
+    render_agent_safety_cli,
+    render_agent_surface_contract_cli,
+    render_agent_trace_telemetry_cli,
+    render_agent_turn_cli,
+    render_agent_usability_consolidation_cli,
+)
+from chanta_core.workspace_agent_workbench import (
+    WorkbenchContractReportService,
+    WorkbenchTraceExplorerReportService,
+    WorkbenchViewStateReportService,
+    render_workbench_contract_cli,
+    render_workbench_trace_explorer_cli,
+    render_workbench_view_state_cli,
+)
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.settings.app_settings import load_app_settings
 from chanta_core.workspace.summary import (
@@ -1494,6 +1525,282 @@ def build_parser() -> argparse.ArgumentParser:
         command_parser.add_argument("--report-id")
         command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
 
+    agent_parser = subparsers.add_parser(
+        "agent",
+        help="Inspect read-only Agent Surface contracts.",
+    )
+    agent_subparsers = agent_parser.add_subparsers(dest="agent_command")
+    for command_name in [
+        "contract",
+        "modes",
+        "outcome-policy",
+        "permission-policy",
+        "effect-policy",
+        "routing-boundary",
+        "evidence-policy",
+        "observability",
+        "safety-boundary",
+        "roadmap-boundary",
+        "reference-architecture",
+    ]:
+        command_parser = agent_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent Surface {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_turn_parser = agent_subparsers.add_parser(
+        "turn",
+        help="Create envelope/context-only Agent Turn views.",
+    )
+    agent_turn_subparsers = agent_turn_parser.add_subparsers(dest="agent_turn_command")
+    for command_name in ["envelope", "context", "report"]:
+        command_parser = agent_turn_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent Turn {command_name}.",
+        )
+        command_parser.add_argument("--text", default="Explain the project structure")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_turn_findings = agent_turn_subparsers.add_parser(
+        "findings",
+        help="Render Agent Turn findings.",
+    )
+    agent_turn_findings.add_argument("--report-id", required=True)
+    agent_turn_findings.add_argument("--text", default="Explain the project structure")
+    agent_turn_findings.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_session_parser = agent_subparsers.add_parser(
+        "session",
+        help="View the conversation-local Agent interaction session.",
+    )
+    agent_session_subparsers = agent_session_parser.add_subparsers(dest="agent_session_command")
+    agent_session_view = agent_session_subparsers.add_parser("view", help="Render Agent interaction session view.")
+    agent_session_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_context_policy = agent_subparsers.add_parser(
+        "context-policy",
+        help="Render Agent context boundary policy.",
+    )
+    agent_context_policy.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_intent_parser = agent_subparsers.add_parser(
+        "intent",
+        help="Classify intent and inspect deterministic intent/task framing views.",
+    )
+    agent_intent_subparsers = agent_intent_parser.add_subparsers(dest="agent_intent_command")
+    agent_intent_classify = agent_intent_subparsers.add_parser("classify", help="Classify intent from text or envelope ref.")
+    agent_intent_classify.add_argument("--text", default="Explain the project structure")
+    agent_intent_classify.add_argument("--envelope-id")
+    agent_intent_classify.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["taxonomy", "rules"]:
+        command_parser = agent_intent_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent Intent {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["report", "findings"]:
+        command_parser = agent_intent_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent Intent {command_name}.",
+        )
+        command_parser.add_argument("--report-id", required=True)
+        command_parser.add_argument("--text", default="Explain the project structure")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_task_parser = agent_subparsers.add_parser(
+        "task",
+        help="Create task-frame-only Agent views.",
+    )
+    agent_task_subparsers = agent_task_parser.add_subparsers(dest="agent_task_command")
+    agent_task_frame = agent_task_subparsers.add_parser("frame", help="Frame task from text or envelope ref.")
+    agent_task_frame.add_argument("--text", default="Explain the project structure")
+    agent_task_frame.add_argument("--envelope-id")
+    agent_task_frame.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_safety_parser = agent_subparsers.add_parser(
+        "safety",
+        help="Evaluate deterministic safety/no-action/clarification gate views.",
+    )
+    agent_safety_subparsers = agent_safety_parser.add_subparsers(dest="agent_safety_command")
+    agent_safety_gate = agent_safety_subparsers.add_parser("gate", help="Evaluate the v0.25.3 safety gate.")
+    agent_safety_gate.add_argument("--text", default="Explain the project structure")
+    agent_safety_gate.add_argument("--intent-report-id")
+    agent_safety_gate.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_safety_rules = agent_safety_subparsers.add_parser("rules", help="Render Agent Safety rules.")
+    agent_safety_rules.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_safety_no_action = agent_safety_subparsers.add_parser("no-action", help="Render a no-action gate view.")
+    agent_safety_no_action.add_argument("--intent-report-id", required=True)
+    agent_safety_no_action.add_argument("--text", default="Do nothing and stop here")
+    agent_safety_no_action.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_safety_clarify = agent_safety_subparsers.add_parser("clarify", help="Render a clarification gate view.")
+    agent_safety_clarify.add_argument("--intent-report-id", required=True)
+    agent_safety_clarify.add_argument("--text", default="unclear ambiguous target")
+    agent_safety_clarify.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["report", "findings"]:
+        command_parser = agent_safety_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent Safety {command_name}.",
+        )
+        command_parser.add_argument("--report-id", required=True)
+        command_parser.add_argument("--text", default="Explain the project structure")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_route_parser = agent_subparsers.add_parser(
+        "route",
+        help="Create route-plan-only Agent provider selection views.",
+    )
+    agent_route_subparsers = agent_route_parser.add_subparsers(dest="agent_route_command")
+    agent_route_plan = agent_route_subparsers.add_parser("plan", help="Plan route from a safety gate report or text.")
+    agent_route_plan.add_argument("--safety-report-id")
+    agent_route_plan.add_argument("--text", default="Explain the project structure")
+    agent_route_plan.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["providers", "mappings"]:
+        command_parser = agent_route_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent Route {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["report", "findings"]:
+        command_parser = agent_route_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent Route {command_name}.",
+        )
+        command_parser.add_argument("--report-id", required=True)
+        command_parser.add_argument("--text", default="Explain the project structure")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_invoke_parser = agent_subparsers.add_parser(
+        "invoke",
+        help="Orchestrate internal provider invocation through provider-owned boundaries.",
+    )
+    agent_invoke_subparsers = agent_invoke_parser.add_subparsers(dest="agent_invoke_command")
+    agent_invoke_plan = agent_invoke_subparsers.add_parser("plan", help="Build a v0.25.5 invocation plan.")
+    agent_invoke_plan.add_argument("--route-plan-id")
+    agent_invoke_plan.add_argument("--text", default="Explain the project structure")
+    agent_invoke_plan.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_invoke_run = agent_invoke_subparsers.add_parser("run", help="Run internal provider invocation orchestration.")
+    agent_invoke_run.add_argument("--route-report-id")
+    agent_invoke_run.add_argument("--route-plan-id")
+    agent_invoke_run.add_argument("--text", default="Explain the project structure")
+    agent_invoke_run.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["result", "bundle", "evidence-seed", "trace", "findings"]:
+        command_parser = agent_invoke_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent provider invocation {command_name}.",
+        )
+        command_parser.add_argument("--report-id")
+        command_parser.add_argument("--text", default="Explain the project structure")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_response_parser = agent_subparsers.add_parser(
+        "response",
+        help="Assemble response artifacts and bind evidence without emission.",
+    )
+    agent_response_subparsers = agent_response_parser.add_subparsers(dest="agent_response_command")
+    agent_response_assemble = agent_response_subparsers.add_parser("assemble", help="Assemble a v0.25.6 response artifact.")
+    agent_response_assemble.add_argument("--provider-report-id")
+    agent_response_assemble.add_argument("--safety-report-id")
+    agent_response_assemble.add_argument("--text", default="Explain the project structure")
+    agent_response_assemble.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["evidence", "draft", "assembled", "findings"]:
+        command_parser = agent_response_subparsers.add_parser(
+            command_name,
+            help=f"Render Agent response {command_name}.",
+        )
+        command_parser.add_argument("--report-id")
+        command_parser.add_argument("--text", default="Explain the project structure")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_ask_parser = agent_subparsers.add_parser(
+        "ask",
+        help="Run a bounded v0.25.7 single-turn ask surface.",
+    )
+    agent_ask_subparsers = agent_ask_parser.add_subparsers(dest="agent_ask_command")
+    agent_ask_run = agent_ask_subparsers.add_parser("run", help="Execute one bounded ask turn.")
+    agent_ask_run.add_argument("prompt", nargs="?")
+    agent_ask_run.add_argument("--text")
+    agent_ask_run.add_argument("--assembled-response-id")
+    agent_ask_run.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_ask_report = agent_ask_subparsers.add_parser("report", help="Render a v0.25.7 ask report view.")
+    agent_ask_report.add_argument("--report-id")
+    agent_ask_report.add_argument("--text", default="Explain the project structure")
+    agent_ask_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_ask_history = agent_ask_subparsers.add_parser("history", help="Render sanitized ask command history.")
+    agent_ask_history.add_argument("--text", default="Explain the project structure")
+    agent_ask_history.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_repl_parser = agent_subparsers.add_parser(
+        "repl",
+        help="Start or inspect a user-driven v0.25.7 REPL surface.",
+    )
+    agent_repl_subparsers = agent_repl_parser.add_subparsers(dest="agent_repl_command")
+    agent_repl_start = agent_repl_subparsers.add_parser("start", help="Start a non-background REPL session view.")
+    agent_repl_start.add_argument("--session-id")
+    agent_repl_start.add_argument("--text", default="Explain the project structure")
+    agent_repl_start.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_repl_turn = agent_repl_subparsers.add_parser("turn", help="Process one explicit REPL user turn.")
+    agent_repl_turn.add_argument("prompt", nargs="?")
+    agent_repl_turn.add_argument("--text")
+    agent_repl_turn.add_argument("--session-id")
+    agent_repl_turn.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_repl_session = agent_repl_subparsers.add_parser("session", help="Render a REPL session view.")
+    agent_repl_session.add_argument("--session-id")
+    agent_repl_session.add_argument("--text", default="Explain the project structure")
+    agent_repl_session.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_surface_parser = agent_subparsers.add_parser("surface", help="Render agent surface state.")
+    agent_surface_subparsers = agent_surface_parser.add_subparsers(dest="agent_surface_command")
+    agent_surface_state = agent_surface_subparsers.add_parser("state", help="Render v0.25.7 surface session state.")
+    agent_surface_state.add_argument("--text", default="Explain the project structure")
+    agent_surface_state.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_trace_parser = agent_subparsers.add_parser(
+        "trace",
+        help="Create report-derived v0.25.8 agent trace views without executing ask/repl.",
+    )
+    agent_trace_subparsers = agent_trace_parser.add_subparsers(dest="agent_trace_command")
+    agent_trace_record = agent_trace_subparsers.add_parser("record", help="Record a report-derived surface trace.")
+    agent_trace_record.add_argument("--ask-report-id")
+    agent_trace_record.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_trace_view = agent_trace_subparsers.add_parser("view", help="Render a surface trace view.")
+    agent_trace_view.add_argument("--trace-id")
+    agent_trace_view.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_trace_projection = agent_trace_subparsers.add_parser("projection", help="Render the OCEL projection.")
+    agent_trace_projection.add_argument("--trace-id")
+    agent_trace_projection.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_trace_source = agent_trace_subparsers.add_parser("source-bundle", help="Render trace source refs.")
+    agent_trace_source.add_argument("--ask-report-id")
+    agent_trace_source.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_telemetry_parser = agent_subparsers.add_parser(
+        "telemetry",
+        help="Create report-derived v0.25.8 usability telemetry views.",
+    )
+    agent_telemetry_subparsers = agent_telemetry_parser.add_subparsers(dest="agent_telemetry_command")
+    agent_telemetry_report = agent_telemetry_subparsers.add_parser("report", help="Render telemetry report.")
+    agent_telemetry_report.add_argument("--ask-report-id")
+    agent_telemetry_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["metrics", "findings"]:
+        command_parser = agent_telemetry_subparsers.add_parser(
+            command_name,
+            help=f"Render telemetry {command_name}.",
+        )
+        command_parser.add_argument("--report-id")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_usability_parser = agent_subparsers.add_parser(
+        "usability",
+        help="Create report-derived v0.25.9 consolidation/readiness views.",
+    )
+    agent_usability_subparsers = agent_usability_parser.add_subparsers(dest="agent_usability_command")
+    for command_name in [
+        "consolidate",
+        "release-manifest",
+        "safety-boundary",
+        "pipeline-boundary",
+        "trace-coverage",
+        "gaps",
+    ]:
+        command_parser = agent_usability_subparsers.add_parser(
+            command_name,
+            help=f"Render usability {command_name}.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_usability_readiness = agent_usability_subparsers.add_parser("readiness", help="Render v0.26 readiness.")
+    agent_usability_readiness.add_argument("--target", default="v0.26")
+    agent_usability_readiness.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_usability_handoff = agent_usability_subparsers.add_parser("handoff", help="Render workbench handoff packet.")
+    agent_usability_handoff.add_argument("--target", default="v0.26")
+    agent_usability_handoff.add_argument("--json", action="store_true", help="Print result as JSON.")
+    agent_usability_report = agent_usability_subparsers.add_parser("report", help="Render a usability consolidation report.")
+    agent_usability_report.add_argument("--report-id")
+    agent_usability_report.add_argument("--json", action="store_true", help="Print result as JSON.")
+
     self_modification_parser = subparsers.add_parser(
         "self-modification",
         help="Inspect read-only Self-Modification Safety contracts.",
@@ -1775,6 +2082,49 @@ def build_parser() -> argparse.ArgumentParser:
         help="Render a read-only Personal Runtime operator workbench.",
     )
     workbench_subparsers = workbench_parser.add_subparsers(dest="workbench_command")
+    for command_name in [
+        "contract",
+        "modes",
+        "permissions",
+        "action-boundary",
+        "approval-policy",
+        "snapshot-policy",
+        "roadmap-boundary",
+        "contract-report",
+        "view-state",
+        "layout",
+        "selection",
+        "filters",
+        "focus",
+        "navigation",
+        "session-view",
+        "view-state-report",
+    ]:
+        command_parser = workbench_subparsers.add_parser(
+            command_name,
+            help=f"Render Workspace Agent Workbench {command_name} view.",
+        )
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    panels_parser = workbench_subparsers.add_parser(
+        "panels",
+        help="Render Workbench panel contracts or v0.26.1 panel models.",
+    )
+    panels_parser.add_argument("panel_view_command", nargs="?", choices=["model"], help="Render v0.26.1 panel model view.")
+    panels_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    trace_parser = workbench_subparsers.add_parser(
+        "trace",
+        help="Render v0.26.2 Trace Explorer and Pipeline Timeline view artifacts.",
+    )
+    trace_subparsers = trace_parser.add_subparsers(dest="workbench_trace_command")
+    for command_name in ["view", "source", "timeline", "stages", "decisions", "filters", "inspect", "report"]:
+        command_parser = trace_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench trace {command_name} artifact.",
+        )
+        command_parser.add_argument("--trace-id", help="Existing trace id reference to inspect.")
+        command_parser.add_argument("--ask-report-id", help="Existing ask/repl report id reference to inspect.")
+        command_parser.add_argument("--report-id", help="Existing trace explorer report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
     for command_name in ["status", "recent", "pending", "blockers", "candidates", "summaries", "health"]:
         command_parser = workbench_subparsers.add_parser(
             command_name,
@@ -5034,6 +5384,388 @@ def run_provider(args: argparse.Namespace) -> int:
     return 0 if report.report_status in {"passed", "warning"} else 1
 
 
+def run_agent(args: argparse.Namespace) -> int:
+    command = getattr(args, "agent_command", None)
+    if not command:
+        print("agent command is required", file=sys.stderr)
+        return 1
+    if command == "turn":
+        turn_command = getattr(args, "agent_turn_command", None)
+        if not turn_command:
+            print("agent turn command is required", file=sys.stderr)
+            return 1
+        service = AgentTurnReportService()
+        parts = service.build_all_parts(request_text=getattr(args, "text", "Explain the project structure"))
+        section = "report" if turn_command == "report" else turn_command
+        if getattr(args, "json", False):
+            payload = parts["report"] if section == "report" else parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_turn_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "session":
+        if getattr(args, "agent_session_command", None) != "view":
+            print("agent session command is required", file=sys.stderr)
+            return 1
+        service = AgentTurnReportService()
+        parts = service.build_all_parts()
+        if getattr(args, "json", False):
+            print(json.dumps(parts["session"].to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_turn_cli(parts, section="session"))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "context-policy":
+        service = AgentTurnReportService()
+        parts = service.build_all_parts()
+        if getattr(args, "json", False):
+            print(json.dumps(parts["policy"].to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_turn_cli(parts, section="context-policy"))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "intent":
+        intent_command = getattr(args, "agent_intent_command", None)
+        if not intent_command:
+            print("agent intent command is required", file=sys.stderr)
+            return 1
+        service = AgentIntentClassificationReportService()
+        parts = service.build_all_parts(request_text=getattr(args, "text", "Explain the project structure"))
+        section = "classify" if intent_command == "classify" else intent_command
+        if getattr(args, "json", False):
+            payload = {
+                "classify": parts["intent"],
+                "taxonomy": parts["taxonomy"],
+                "rules": parts["rules"],
+                "report": parts["report"],
+                "findings": parts["findings"],
+            }[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_intent_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "task":
+        task_command = getattr(args, "agent_task_command", None)
+        if task_command != "frame":
+            print("agent task command is required", file=sys.stderr)
+            return 1
+        service = AgentIntentClassificationReportService()
+        parts = service.build_all_parts(request_text=getattr(args, "text", "Explain the project structure"))
+        if getattr(args, "json", False):
+            print(json.dumps(parts["task_frame"].to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_intent_cli(parts, section="frame"))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "safety":
+        safety_command = getattr(args, "agent_safety_command", None)
+        if not safety_command:
+            print("agent safety command is required", file=sys.stderr)
+            return 1
+        service = AgentSafetyGateReportService()
+        parts = service.build_all_parts(request_text=getattr(args, "text", "Explain the project structure"))
+        section = "gate" if safety_command == "gate" else safety_command
+        if getattr(args, "json", False):
+            payload = {
+                "gate": parts["report"],
+                "rules": parts["rules"],
+                "no-action": parts["no_action"],
+                "clarify": parts["clarification"],
+                "report": parts["report"],
+                "findings": parts["findings"],
+            }[section]
+            if payload is None:
+                payload = {}
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            elif hasattr(payload, "to_dict"):
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_safety_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning", "blocked"} else 1
+    if command == "route":
+        route_command = getattr(args, "agent_route_command", None)
+        if not route_command:
+            print("agent route command is required", file=sys.stderr)
+            return 1
+        service = AgentToolRoutingReportService()
+        parts = service.build_all_parts(request_text=getattr(args, "text", "Explain the project structure"))
+        section = "plan" if route_command == "plan" else route_command
+        if getattr(args, "json", False):
+            payload = {
+                "plan": parts["route_plan"],
+                "providers": parts["providers"],
+                "mappings": parts["mappings"],
+                "report": parts["report"],
+                "findings": parts["findings"],
+            }[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_route_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "invoke":
+        invoke_command = getattr(args, "agent_invoke_command", None)
+        if not invoke_command:
+            print("agent invoke command is required", file=sys.stderr)
+            return 1
+        service = AgentProviderInvocationReportService()
+        parts = service.build_all_parts(request_text=getattr(args, "text", "Explain the project structure"))
+        section = "run" if invoke_command == "run" else invoke_command
+        if getattr(args, "json", False):
+            payload = {
+                "plan": parts["invocation_plan"],
+                "run": parts["report"],
+                "result": parts["results"],
+                "bundle": parts["result_bundle"],
+                "evidence-seed": parts["evidence_seed"],
+                "trace": parts["invocation_trace"],
+                "findings": parts["findings"],
+            }[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_provider_invocation_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "response":
+        response_command = getattr(args, "agent_response_command", None)
+        if not response_command:
+            print("agent response command is required", file=sys.stderr)
+            return 1
+        service = AgentResponseAssemblyReportService()
+        use_provider_report = not (
+            response_command == "assemble"
+            and getattr(args, "safety_report_id", None)
+            and not getattr(args, "provider_report_id", None)
+        )
+        parts = service.build_all_parts(
+            request_text=getattr(args, "text", "Explain the project structure"),
+            use_provider_report=use_provider_report,
+        )
+        section = "assemble" if response_command == "assemble" else response_command
+        if getattr(args, "json", False):
+            payload = {
+                "assemble": parts["report"],
+                "evidence": parts["evidence_bundle"],
+                "draft": parts["answer_draft"],
+                "assembled": parts["assembled_response"],
+                "findings": parts["findings"],
+            }[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_response_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "ask":
+        ask_command = getattr(args, "agent_ask_command", None)
+        if not ask_command:
+            print("agent ask command is required", file=sys.stderr)
+            return 1
+        text = getattr(args, "text", None) or getattr(args, "prompt", None) or "Explain the project structure"
+        service = AgentAskReplReportService()
+        parts = service.build_all_parts(
+            user_text=text,
+            source_type="cli",
+            assembled_response_id=getattr(args, "assembled_response_id", None),
+        )
+        section = "ask" if ask_command == "run" else ask_command
+        if getattr(args, "json", False):
+            payload = {
+                "ask": parts["report"],
+                "report": parts["report"],
+                "history": parts["session_state"],
+            }[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_ask_repl_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.report_status in {"passed", "warning"} else 1
+    if command == "repl":
+        repl_command = getattr(args, "agent_repl_command", None)
+        if not repl_command:
+            print("agent repl command is required", file=sys.stderr)
+            return 1
+        text = getattr(args, "text", None) or getattr(args, "prompt", None) or "Explain the project structure"
+        session = AgentReplSessionService().start_session(getattr(args, "session_id", None))
+        if repl_command == "start":
+            report = AgentAskReplReportService().build_repl_start_report(session)
+            parts = {
+                "report": report,
+                "policy": report.policy,
+                "ask_request": report.ask_request,
+                "pipeline_run": report.pipeline_run,
+                "pipeline_result": report.pipeline_result,
+                "emission": report.emission,
+                "repl_session": report.repl_session,
+                "repl_turn_result": report.repl_turn_result,
+                "session_state": report.session_state,
+                "findings": report.findings,
+            }
+        elif repl_command == "turn":
+            _turn_request, _turn_result, report = AgentReplSessionService().run_user_turn(session, text)
+            parts = {
+                "report": report,
+                "policy": report.policy,
+                "ask_request": report.ask_request,
+                "pipeline_run": report.pipeline_run,
+                "pipeline_result": report.pipeline_result,
+                "emission": report.emission,
+                "repl_session": report.repl_session,
+                "repl_turn_result": report.repl_turn_result,
+                "session_state": report.session_state,
+                "findings": report.findings,
+            }
+        elif repl_command == "session":
+            report = AgentAskReplReportService().build_repl_start_report(session)
+            parts = {
+                "report": report,
+                "policy": report.policy,
+                "ask_request": report.ask_request,
+                "pipeline_run": report.pipeline_run,
+                "pipeline_result": report.pipeline_result,
+                "emission": report.emission,
+                "repl_session": report.repl_session,
+                "repl_turn_result": report.repl_turn_result,
+                "session_state": report.session_state,
+                "findings": report.findings,
+            }
+        else:
+            raise SystemExit("unsupported agent repl command")
+        if getattr(args, "json", False):
+            print(json.dumps(parts["report"].to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_ask_repl_cli(parts, section="session" if repl_command == "session" else "ask"))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if command == "surface":
+        surface_command = getattr(args, "agent_surface_command", None)
+        if surface_command != "state":
+            print("agent surface command is required", file=sys.stderr)
+            return 1
+        parts = AgentAskReplReportService().build_all_parts(user_text=getattr(args, "text", "Explain the project structure"))
+        if getattr(args, "json", False):
+            print(json.dumps(parts["session_state"].to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_ask_repl_cli(parts, section="state"))
+        return 0
+    if command == "trace":
+        trace_command = getattr(args, "agent_trace_command", None)
+        if not trace_command:
+            print("agent trace command is required", file=sys.stderr)
+            return 1
+        service = AgentTraceTelemetryReportService()
+        parts = service.build_all_parts(
+            ask_report_id=getattr(args, "ask_report_id", None),
+            trace_id=getattr(args, "trace_id", None),
+        )
+        section = "record" if trace_command == "record" else trace_command
+        if getattr(args, "json", False):
+            payload = {
+                "record": parts["report"],
+                "view": parts["surface_trace"],
+                "projection": parts["ocel_projection"],
+                "source-bundle": parts["source_bundle"],
+            }[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_trace_telemetry_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if command == "telemetry":
+        telemetry_command = getattr(args, "agent_telemetry_command", None)
+        if not telemetry_command:
+            print("agent telemetry command is required", file=sys.stderr)
+            return 1
+        service = AgentTraceTelemetryReportService()
+        parts = service.build_all_parts(
+            ask_report_id=getattr(args, "ask_report_id", None),
+            report_id=getattr(args, "report_id", None),
+        )
+        section = "telemetry" if telemetry_command == "report" else telemetry_command
+        if getattr(args, "json", False):
+            payload = {
+                "telemetry": parts["telemetry_report"],
+                "metrics": parts["metric_set"],
+                "findings": parts["findings"],
+            }[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_trace_telemetry_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if command == "usability":
+        usability_command = getattr(args, "agent_usability_command", None)
+        if not usability_command:
+            print("agent usability command is required", file=sys.stderr)
+            return 1
+        service = AgentUsabilityConsolidationReportService()
+        parts = service.build_all_parts()
+        section = "report" if usability_command == "report" else usability_command
+        if getattr(args, "json", False):
+            payload = {
+                "consolidate": parts["report"],
+                "release-manifest": parts["release_manifest"],
+                "readiness": parts["v026_readiness_report"],
+                "safety-boundary": parts["safety_boundary_report"],
+                "pipeline-boundary": parts["pipeline_boundary_report"],
+                "trace-coverage": parts["trace_telemetry_coverage_report"],
+                "gaps": parts["gap_register"],
+                "handoff": parts["workbench_handoff_packet"],
+                "report": parts["report"],
+            }[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_agent_usability_consolidation_cli(parts, section=section))
+        return 0 if parts["report"].readiness_status in {"ready", "warning"} else 1
+    allowed = {
+        "contract",
+        "modes",
+        "outcome-policy",
+        "permission-policy",
+        "effect-policy",
+        "routing-boundary",
+        "evidence-policy",
+        "observability",
+        "safety-boundary",
+        "roadmap-boundary",
+        "reference-architecture",
+    }
+    if command not in allowed:
+        raise SystemExit(f"unsupported agent command: {command}")
+    service = AgentSurfaceContractReportService()
+    parts = service.build_all_parts()
+    if getattr(args, "json", False):
+        payload = parts["report"] if command == "contract" else parts[command]
+        if isinstance(payload, list):
+            print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+        else:
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+    else:
+        print(render_agent_surface_contract_cli(parts, section=command))
+    report = parts["report"]
+    return 0 if report.report_status in {"passed", "warning"} else 1
+
+
 def run_self_modification(args: argparse.Namespace) -> int:
     if not args.self_modification_command:
         print("self-modification command is required", file=sys.stderr)
@@ -5829,6 +6561,104 @@ def run_workbench(args: argparse.Namespace) -> int:
     if not args.workbench_command:
         print("workbench command is required", file=sys.stderr)
         return 1
+    if args.workbench_command == "trace":
+        if not getattr(args, "workbench_trace_command", None):
+            print("workbench trace command is required", file=sys.stderr)
+            return 1
+        service = WorkbenchTraceExplorerReportService()
+        parts = service.build_all_parts(
+            trace_id=getattr(args, "trace_id", None),
+            ask_report_id=getattr(args, "ask_report_id", None),
+            report_id=getattr(args, "report_id", None),
+        )
+        section = args.workbench_trace_command
+        if args.json:
+            payload_by_section = {
+                "view": parts["trace_explorer_view"],
+                "source": parts["source_view"],
+                "timeline": parts["timeline"],
+                "stages": parts["stage_nodes"],
+                "decisions": parts["decision_nodes"],
+                "filters": parts["filter_state"],
+                "inspect": parts["inspection_report"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_trace_explorer_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    contract_commands = {
+        "contract",
+        "modes",
+        "panels",
+        "permissions",
+        "action-boundary",
+        "approval-policy",
+        "snapshot-policy",
+        "roadmap-boundary",
+        "contract-report",
+    }
+    view_state_commands = {
+        "view-state",
+        "layout",
+        "selection",
+        "filters",
+        "focus",
+        "navigation",
+        "session-view",
+        "view-state-report",
+    }
+    if args.workbench_command in view_state_commands or (
+        args.workbench_command == "panels" and getattr(args, "panel_view_command", None) == "model"
+    ):
+        service = WorkbenchViewStateReportService()
+        parts = service.build_all_parts()
+        section = "panels-model" if args.workbench_command == "panels" else args.workbench_command
+        if args.json:
+            payload_by_section = {
+                "view-state": parts["view_state"],
+                "panels-model": parts["panel_registry_view"],
+                "layout": parts["layout"],
+                "selection": parts["selection_state"],
+                "filters": parts["filter_state"],
+                "focus": parts["focus_state"],
+                "navigation": parts["navigation_state"],
+                "session-view": parts["session_view"],
+                "view-state-report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_view_state_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command in contract_commands:
+        service = WorkbenchContractReportService()
+        parts = service.build_all_parts()
+        section = args.workbench_command
+        if args.json:
+            payload_by_section = {
+                "contract": parts["contract"],
+                "modes": parts["surface_modes"],
+                "panels": parts["panel_contracts"],
+                "permissions": parts["view_permission_policy"],
+                "action-boundary": parts["action_boundary_policy"],
+                "approval-policy": parts["approval_policy"],
+                "snapshot-policy": parts["snapshot_policy"],
+                "roadmap-boundary": parts["roadmap_boundary"],
+                "contract-report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_contract_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
     store = OCELStore(args.ocel_db) if getattr(args, "ocel_db", None) else OCELStore()
     service = PersonalRuntimeWorkbenchService(ocel_store=store)
     snapshot = service.build_snapshot(limit=args.limit, show_paths=bool(args.show_paths))
@@ -5904,6 +6734,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_dominion(args)
     if args.command == "provider":
         return run_provider(args)
+    if args.command == "agent":
+        return run_agent(args)
     if args.command == "self-modification":
         return run_self_modification(args)
     if args.command == "workbench":

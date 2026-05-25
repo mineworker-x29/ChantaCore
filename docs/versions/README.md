@@ -68,11 +68,81 @@ version intent:
   for v0.25 readiness.
   This track does not permit unrestricted shell, provider adapters, or local
   runtime execution before their scoped release units.
-- `v0.25.x`: General Agent Usability & Tool Routing.
-- `v0.26.x`: Workspace Agent Workbench.
+- `v0.25.x`: Bounded General Agent Surface & Internal Tool Routing. `v0.25.0`
+  introduces the contract-only Agent Surface Contract and does not execute
+  ask/REPL, tool routing, provider invocation, local commands, memory
+  continuity, workspace workbench, or external adapters. `v0.25.1` introduces
+  turn envelope and conversation-local interaction context records without
+  intent classification, safety gate, routing, provider invocation, command
+  execution, memory promotion, persistent memory write, or persona mutation.
+  `v0.25.2` introduces deterministic intent classification and task framing
+  without safety gate, final no-action/blocked/clarification decisions, tool
+  routing, provider invocation, command execution, memory mutation, external
+  adapters, or LLM judge. `v0.25.3` introduces deterministic safety/no-action/
+  clarification gate decisions without creating route plans, selecting or
+  invoking providers, executing local commands, executing ask/REPL, promoting
+  memory, mutating persona, implementing external adapters, or using an LLM
+  judge. `v0.25.4` introduces deterministic tool route planning and provider
+  selection without route execution, provider invocation, local command
+  execution, response assembly, memory mutation, external adapters, or LLM
+  judge. `v0.25.5` introduces internal provider invocation orchestration through
+  provider-owned boundaries, result references, traces, result bundles, and
+  evidence seeds without direct file/search/process/command access, final
+  response assembly, ask/REPL, memory mutation, external adapters, raw provider
+  output inlining, or LLM judge. `v0.25.6` introduces response assembly and
+  evidence binding from provider result refs or gate outcomes without final
+  response emission, ask/REPL execution, provider invocation, direct
+  file/search/process/command access, memory mutation, external adapters, raw
+  provider output inlining, raw secret output, or LLM judge. `v0.25.7`
+  introduces a synchronous Ask / REPL Surface that emits only v0.25.6 assembled
+  responses, one explicit user turn at a time, without autonomous loops,
+  background execution, self-prompting, direct provider/file/process/command
+  bypasses, command rerun, automatic repair, memory mutation, external
+  adapters, raw provider output emission, raw secret output, or LLM judge.
+  `v0.25.8` introduces report-derived Agent Trace / Usability Telemetry that
+  creates source bundles, surface traces, OCEL projections, metric sets, and
+  descriptive telemetry reports from existing v0.25.7 artifacts without
+  executing ask/REPL, emitting final responses, invoking providers, executing
+  commands, starting background collection, running continuous watchers,
+  performing autonomous optimization, implementing workspace workbench UI,
+  promoting memory, mutating persona, persisting raw transcripts, exposing raw
+  secrets, inlining raw provider output, implementing external adapters, or
+  using an LLM judge. `v0.25.9` consolidates v0.25.0 through v0.25.8 into
+  Bounded General Agent Surface Foundation v1, creates release manifest,
+  coverage, safety, pipeline, trace/telemetry, gap, v0.26 readiness, handoff,
+  and consolidation artifacts, and may mark `ready_for_v0_26` when criteria
+  pass. It does not execute ask/REPL, emit final responses, invoke providers,
+  execute local commands, run background collection or autonomous optimization,
+  implement workspace workbench UI, mutate memory/persona, implement external
+  adapters, introduce Schumpeter split, add GrowthKernel runtime dependency,
+  persist raw transcripts, expose secrets, inline raw provider output, or use
+  an LLM judge.
+- `v0.26.x`: Workspace Agent Workbench. `v0.26.0` declares the contract-only
+  Workspace Agent Workbench layer: surface modes, panel contracts, view
+  permissions, action boundaries, read-only inspection, approval, command,
+  snapshot, trace privacy, OCEL visibility, and roadmap boundaries. It does not
+  implement actual UI or panels, trace explorer, provider browser, evidence
+  inspector, approval console, run dashboard, command surface, snapshot/export,
+  ask/REPL execution, final response emission, provider invocation, local
+  command execution, memory continuity, external adapters, Schumpeter split, raw
+  transcript/provider/secret persistence, or LLM judge. The next step is
+  `v0.26.1` Workbench View State & Panel Model. `v0.26.1` creates view-state,
+  panel model, layout, selection, filter, focus, navigation, and session-view
+  records without UI rendering, panel behavior, trace/provider/evidence/
+  approval/dashboard/command/snapshot behavior, ask/REPL execution, provider
+  invocation, command execution, memory continuity, external adapters, raw data
+  persistence, or LLM judge. The next step is `v0.26.2` Trace Explorer &
+  Pipeline Timeline. `v0.26.2` creates Trace Explorer and Pipeline Timeline
+  view artifacts from existing v0.26.1 view state and v0.25.8 trace telemetry
+  refs. It does not render UI or panels, rerun stages/routes, invoke providers,
+  execute ask/REPL, emit final responses, execute local commands, mutate
+  traces, promote memory, add external adapters, persist raw transcript/
+  provider/secret material, or use an LLM judge. The next step is `v0.26.3`
+  Provider / Capability Browser.
 - `v0.27.x`: Memory Candidate & Continuity.
 - `v0.28.x`: Public Alpha / Schumpeter Split Preparation.
 - `v0.29.x+`: External Skill / External Provider Adapter Development.
+- `v0.30.x+`: External Agent Dominion Bridge.
 
 Do not describe `v0.20.x` as a write/shell/network/MCP/plugin safety track.
 Those capabilities remain excluded from the self-awareness foundation unless a
