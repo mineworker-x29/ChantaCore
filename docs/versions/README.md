@@ -138,8 +138,98 @@ version intent:
   execute ask/REPL, emit final responses, execute local commands, mutate
   traces, promote memory, add external adapters, persist raw transcript/
   provider/secret material, or use an LLM judge. The next step is `v0.26.3`
-  Provider / Capability Browser.
+  Provider / Capability Browser. `v0.26.3` creates Provider / Capability
+  Browser view artifacts from v0.24 provider registry/capability surfaces,
+  v0.25 route/provider-selection refs, and v0.26 workbench state. It does not
+  invoke or test-run providers, bypass provider boundaries, add external or
+  vendor adapters, add process-mining runtime dependencies, treat PIG as memory,
+  policy mutation, or execution, render UI, execute ask/REPL, emit final
+  responses, execute local commands, mutate memory/persona, persist raw data, or
+  use an LLM judge. The next step is `v0.26.4` Evidence / Report Inspector.
+  `v0.26.4` creates Evidence / Report Inspector view artifacts from response
+  assembly, evidence bundle, claim/support, safety, routing, provider browser,
+  trace, PIG guidance, and failure refs. It does not rewrite responses, use
+  factuality or safety LLM judges, invoke providers, rerun routes/stages,
+  execute approvals, execute ask/REPL, emit final responses, execute local
+  commands, mutate memory/persona/PIG/policy, add external or vendor adapters,
+  persist raw transcript/provider/secret material, or use an LLM judge. The
+  next step is `v0.26.5` Safety Gate / Approval Console. `v0.26.5` creates
+  Safety Gate / Approval Console view and decision-record artifacts from safety,
+  evidence, provider, route, trace, PIG guidance, risk, action-candidate, and
+  human-intervention refs. It may record approval, rejection, deferral, manual
+  review, scope, expiry, and non-executable approval token refs, but it does not
+  execute approvals, execute approval tokens, auto-approve, execute commands,
+  invoke providers, rerun routes/stages, execute ask/REPL, emit final responses,
+  execute local commands, mutate memory/persona/PIG/policy, add external or
+  vendor adapters, persist raw transcript/provider/secret material, or use an
+  LLM judge. The next step is `v0.26.6` Run Dashboard / Session Monitor.
+  `v0.26.6` creates Run Dashboard / Session Monitor view artifacts from
+  ask/REPL, trace telemetry, approval, evidence, provider, PIG guidance, failure,
+  and session refs. It may create run cards, pipeline status, descriptive status
+  summaries, refs-only session summaries, repeated pattern views, context refs,
+  metrics, and dashboard reports, but it does not start background monitors,
+  continuous watchers, auto-refresh execution, rerun/retry/repair, autonomous
+  optimization, command execution, approval execution, provider invocation,
+  ask/REPL execution, final response emission, local command execution, memory
+  continuity/promotion, persona mutation, external adapters, raw material
+  persistence, or LLM judge. The next step is `v0.26.7` Workbench Command
+  Surface. `v0.26.7` creates Workbench Command Surface command candidates,
+  do-nothing candidates, skill/action/route/provider/file-edit/ask/snapshot
+  request candidates, rationale, evidence, risk, PIG guidance, safety finding,
+  approval requirement, boundary trace, decision record, non-executing envelope,
+  result, history, audit, and report artifacts. It does not execute or dispatch
+  commands, invoke providers, execute local runtime, mutate files, apply
+  patches, execute ask/REPL, emit final responses, rerun routes/stages,
+  auto-retry, auto-repair, start autonomous loops, execute approvals or approval
+  tokens, promote memory, mutate persona, implement external/vendor adapters,
+  treat PIG as memory/policy/execution, persist raw material, or use an LLM
+  judge. The next step is `v0.26.8` Workbench Snapshot / OCEL Export.
+  `v0.26.8` creates refs-only snapshot, manifest, ref bundle, OCEL export
+  package, event-quality, trace-coverage, redaction, reproducibility, export
+  boundary, and report artifacts from v0.26 workbench refs. It does not promote
+  memory, write persistent memory, extract memory candidates, mutate persona,
+  export raw transcript/provider/secret/credential/private path material, sync
+  externally, add external/vendor adapters, add pm4py/ocpa runtime dependencies,
+  execute commands/providers/local runtime/ask, emit final responses, mutate
+  files, rerun routes/stages, retry, repair, start autonomous loops, treat PIG
+  as memory/policy/execution, introduce Schumpeter split, or use an LLM judge.
+  The next step is `v0.26.9` Workspace Agent Workbench Consolidation.
+  `v0.26.9` consolidates `v0.26.0` through `v0.26.8` into Workspace Agent
+  Workbench Foundation v1. It creates release manifest, capability map,
+  coverage matrix, safety and interaction boundary reports, event and trace
+  consolidation, usability readiness, feedback-loop readiness, future gap
+  register, `v0.27` readiness, refs-only handoff packet, and consolidation
+  report artifacts. It does not implement new Workbench panels, memory
+  candidate extraction, memory promotion, persistent memory writes, persona
+  mutation, command/provider/local/file/ask execution, final response emission,
+  rerun/retry/repair, autonomous loops, external/vendor adapters, pm4py/ocpa
+  runtime dependencies, raw transcript/provider/secret persistence, Schumpeter
+  split, or LLM judging. The next step is `v0.27.0` Memory Candidate &
+  Continuity Contract.
 - `v0.27.x`: Memory Candidate & Continuity.
+  `v0.27.0` introduces the contract-only Memory Candidate & Continuity layer
+  after the Workspace Agent Workbench Foundation v1 handoff. It declares the
+  full `v0.27.x` roadmap and source, candidate, evidence, scoring, promotion,
+  durable memory, continuity, injection, audit, privacy, governance, PIG, and
+  safety policies. It does not extract or score memory candidates, promote
+  memory, write persistent memory, create durable memory records, create session
+  continuity contexts, inject continuity, mutate persona or behavior policy,
+  persist raw transcript/provider output as memory, treat PIG as memory,
+  invoke providers, execute commands, bypass safety gates, implement external
+  adapters, introduce Schumpeter split, expose secrets or credentials, or use an
+  LLM judge. `v0.26.10` Release Hygiene / Governance Hardening is recommended
+  before implementation-heavy memory work and required before `v0.27.5`
+  persistent write or durable registry work. The next step is `v0.27.1` Memory
+  Source / Ref Boundary.
+  `v0.27.1` creates the Memory Source / Ref Boundary. It builds source category
+  catalogs, refs, bundles, registry views, eligibility rules/evaluations/
+  decisions, redaction views/reports, quality signals/reports, forbidden-source
+  reports, and candidate-readiness boundaries. It remains non-mutating: source
+  eligibility is not candidate extraction, source quality is not memory scoring,
+  source bundles are not memory registries, and no memory candidates, durable
+  memory records, continuity injection, provider/command execution, external
+  adapters, Schumpeter split, raw memory, or LLM judge are introduced. The next
+  step is `v0.27.2` Memory Candidate Extraction.
 - `v0.28.x`: Public Alpha / Schumpeter Split Preparation.
 - `v0.29.x+`: External Skill / External Provider Adapter Development.
 - `v0.30.x+`: External Agent Dominion Bridge.

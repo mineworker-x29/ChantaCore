@@ -200,12 +200,70 @@ from chanta_core.agent_surface import (
     render_agent_usability_consolidation_cli,
 )
 from chanta_core.workspace_agent_workbench import (
+    WorkbenchApprovalConsoleReportService,
+    WorkbenchCommandSurfaceReportService,
     WorkbenchContractReportService,
+    WorkbenchEvidenceInspectorReportService,
+    WorkbenchProviderBrowserReportService,
+    WorkbenchRunDashboardReportService,
+    WorkbenchConsolidationReportService,
+    WorkbenchSnapshotExportReportService,
     WorkbenchTraceExplorerReportService,
     WorkbenchViewStateReportService,
+    render_workbench_approval_console_cli,
+    render_workbench_command_surface_cli,
     render_workbench_contract_cli,
+    render_workbench_evidence_inspector_cli,
+    render_workbench_provider_browser_cli,
+    render_workbench_run_dashboard_cli,
+    render_workbench_consolidation_cli,
+    render_workbench_snapshot_export_cli,
     render_workbench_trace_explorer_cli,
     render_workbench_view_state_cli,
+)
+from chanta_core.memory_candidate_continuity import (
+    ContinuityInjectionBoundaryReportService,
+    DurableMemoryRegistryReportService,
+    MemoryConsolidationReportService,
+    MemoryCandidateExtractionReportService,
+    MemoryContractReportService,
+    MemoryEvidenceScoringReportService,
+    MemoryLifecycleReportService,
+    MemoryPromotionGateReportService,
+    MemorySourceBoundaryReportService,
+    SessionContinuityContextBuildReportService,
+    render_continuity_injection_boundary_cli,
+    render_durable_memory_registry_cli,
+    render_memory_consolidation_cli,
+    render_memory_lifecycle_cli,
+    render_memory_evidence_scoring_cli,
+    render_memory_candidate_extraction_cli,
+    render_memory_contract_cli,
+    render_memory_promotion_gate_cli,
+    render_memory_source_boundary_cli,
+    render_session_continuity_context_cli,
+)
+from chanta_core.public_alpha_schumpeter_preparation import (
+    PackagingReadinessReportService,
+    PublicPrivateBoundaryReportService,
+    AlphaDocumentationReadinessReportService,
+    AlphaReadinessValidationReportService,
+    AlphaRuntimeProfileReportService,
+    ReleaseHygieneGateReportService,
+    SchumpeterPreparationReportService,
+    SchumpeterSplitDecisionReportService,
+    V028ContractReportService,
+    V028ConsolidationReportService,
+    render_packaging_readiness_cli,
+    render_alpha_documentation_cli,
+    render_alpha_readiness_validation_cli,
+    render_alpha_runtime_profile_cli,
+    render_public_private_boundary_cli,
+    render_release_hygiene_gate_cli,
+    render_schumpeter_preparation_cli,
+    render_schumpeter_split_decision_cli,
+    render_v028_consolidation_cli,
+    render_v028_contract_cli,
 )
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.settings.app_settings import load_app_settings
@@ -2125,6 +2183,234 @@ def build_parser() -> argparse.ArgumentParser:
         command_parser.add_argument("--ask-report-id", help="Existing ask/repl report id reference to inspect.")
         command_parser.add_argument("--report-id", help="Existing trace explorer report id reference to inspect.")
         command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    providers_parser = workbench_subparsers.add_parser(
+        "providers",
+        help="Render v0.26.3 Provider / Capability Browser view artifacts.",
+    )
+    providers_subparsers = providers_parser.add_subparsers(dest="workbench_providers_command")
+    for command_name in [
+        "view",
+        "cards",
+        "capabilities",
+        "boundaries",
+        "readiness",
+        "route-compatibility",
+        "rationale",
+        "pig-guidance",
+        "intervention-points",
+        "inspect",
+        "report",
+    ]:
+        command_parser = providers_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench provider browser {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing provider browser report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    evidence_parser = workbench_subparsers.add_parser(
+        "evidence",
+        help="Render v0.26.4 Evidence / Report Inspector view artifacts.",
+    )
+    evidence_subparsers = evidence_parser.add_subparsers(dest="workbench_evidence_command")
+    for command_name in [
+        "view",
+        "bundle",
+        "claims",
+        "support",
+        "decisions",
+        "skills",
+        "actions",
+        "routes",
+        "providers",
+        "safety",
+        "pig-guidance",
+        "failures",
+        "unsupported",
+        "uncertainty",
+        "limitations",
+        "inspect",
+        "report",
+    ]:
+        command_parser = evidence_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench evidence/report inspector {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing evidence inspector report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    safety_parser = workbench_subparsers.add_parser(
+        "safety",
+        help="Render v0.26.5 Safety Gate view artifacts.",
+    )
+    safety_subparsers = safety_parser.add_subparsers(dest="workbench_safety_command")
+    for command_name in ["view", "rationale"]:
+        command_parser = safety_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench safety {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing approval console report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    approval_parser = workbench_subparsers.add_parser(
+        "approval",
+        help="Render v0.26.5 Approval Console decision-record artifacts.",
+    )
+    approval_subparsers = approval_parser.add_subparsers(dest="workbench_approval_command")
+    for command_name in ["console", "candidates", "requirements", "scope", "expiry", "audit", "report"]:
+        command_parser = approval_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench approval {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing approval console report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    approval_decide_parser = approval_subparsers.add_parser(
+        "decide",
+        help="Create a non-executing approval decision record.",
+    )
+    approval_decide_parser.add_argument("--candidate-id", help="Approval candidate id reference.")
+    approval_decide_parser.add_argument("--decision", choices=["approve", "reject", "defer"], default="approve")
+    approval_decide_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    dashboard_parser = workbench_subparsers.add_parser(
+        "dashboard",
+        help="Render v0.26.6 Run Dashboard view artifacts.",
+    )
+    dashboard_subparsers = dashboard_parser.add_subparsers(dest="workbench_dashboard_command")
+    for command_name in [
+        "view",
+        "runs",
+        "pipeline-status",
+        "providers",
+        "responses",
+        "safety",
+        "approvals",
+        "failures",
+        "warnings",
+        "metrics",
+        "report",
+    ]:
+        command_parser = dashboard_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench dashboard {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing run dashboard report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    sessions_parser = workbench_subparsers.add_parser(
+        "sessions",
+        help="Render v0.26.6 Session Monitor view artifacts.",
+    )
+    sessions_subparsers = sessions_parser.add_subparsers(dest="workbench_sessions_command")
+    for command_name in ["monitor", "cards", "trace-summary", "pig-guidance", "patterns", "context-refs"]:
+        command_parser = sessions_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench sessions {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing run dashboard report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    commands_parser = workbench_subparsers.add_parser(
+        "commands",
+        help="Render v0.26.7 Workbench Command Surface candidate artifacts.",
+    )
+    commands_subparsers = commands_parser.add_subparsers(dest="workbench_commands_command")
+    for command_name in [
+        "surface",
+        "candidates",
+        "do-nothing",
+        "skills",
+        "actions",
+        "routes",
+        "providers",
+        "file-edit-candidates",
+        "ask-candidates",
+        "snapshot-candidates",
+        "rationale",
+        "risk",
+        "pig-guidance",
+        "safety",
+        "approval-requirements",
+        "boundary-trace",
+        "history",
+        "audit",
+        "report",
+    ]:
+        command_parser = commands_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench commands {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing command surface report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    commands_decide_parser = commands_subparsers.add_parser(
+        "decide",
+        help="Create a non-executing command decision record.",
+    )
+    commands_decide_parser.add_argument("--candidate-id", help="Command candidate id reference.")
+    commands_decide_parser.add_argument(
+        "--decision",
+        choices=[
+            "approve_candidate",
+            "reject_candidate",
+            "defer_candidate",
+            "request_more_evidence",
+            "request_clarification",
+            "choose_do_nothing",
+        ],
+        default="choose_do_nothing",
+    )
+    commands_decide_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    snapshot_parser = workbench_subparsers.add_parser(
+        "snapshot",
+        help="Render v0.26.8 Workbench Snapshot artifact records.",
+    )
+    snapshot_subparsers = snapshot_parser.add_subparsers(dest="workbench_snapshot_command")
+    for command_name in ["create", "selection", "manifest", "refs", "redaction", "reproducibility", "report"]:
+        command_parser = snapshot_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench snapshot {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing snapshot/export report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    export_parser = workbench_subparsers.add_parser(
+        "export",
+        help="Render v0.26.8 Workbench OCEL Export package records.",
+    )
+    export_subparsers = export_parser.add_subparsers(dest="workbench_export_command")
+    for command_name in ["ocel", "manifest", "quality", "trace-coverage", "boundary"]:
+        command_parser = export_subparsers.add_parser(
+            command_name,
+            help=f"Render Workbench export {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing snapshot/export report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "consolidate",
+        "release-manifest",
+        "coverage",
+        "safety-boundary",
+        "interaction-boundary",
+        "quality",
+        "trace-coverage",
+        "usability",
+        "feedback-loop",
+        "gaps",
+        "consolidation-report",
+    ]:
+        command_parser = workbench_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.26.9 Workbench consolidation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing consolidation report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    readiness_parser = workbench_subparsers.add_parser(
+        "readiness",
+        help="Render v0.26.9 Workbench readiness report.",
+    )
+    readiness_parser.add_argument("--target", default="v0.27", choices=["v0.27"], help="Readiness target.")
+    readiness_parser.add_argument("--report-id", help="Existing consolidation report id reference to inspect.")
+    readiness_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    handoff_parser = workbench_subparsers.add_parser(
+        "handoff",
+        help="Render v0.26.9 refs-only memory-candidate handoff packet.",
+    )
+    handoff_parser.add_argument("--target", default="v0.27", choices=["v0.27"], help="Handoff target.")
+    handoff_parser.add_argument("--report-id", help="Existing consolidation report id reference to inspect.")
+    handoff_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
     for command_name in ["status", "recent", "pending", "blockers", "candidates", "summaries", "health"]:
         command_parser = workbench_subparsers.add_parser(
             command_name,
@@ -2134,6 +2420,724 @@ def build_parser() -> argparse.ArgumentParser:
         command_parser.add_argument("--show-paths", action="store_true", help="Show path-like fields.")
         command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
         command_parser.add_argument("--ocel-db", help="Path to the OCEL SQLite database.")
+
+    alpha_parser = subparsers.add_parser(
+        "alpha",
+        help="Render v0.28 Public Alpha / Schumpeter Split Preparation contract artifacts.",
+    )
+    alpha_subparsers = alpha_parser.add_subparsers(dest="alpha_command")
+    for command_name in [
+        "contract",
+        "roadmap",
+        "scope-policy",
+        "stage-policy",
+        "hygiene-debt",
+        "hygiene-blocking-policy",
+        "packaging-policy",
+        "public-private-policy",
+        "schumpeter-preparation",
+        "schumpeter-decision-framework",
+        "schumpeter-reference-policy",
+        "external-adapter-preflight",
+        "v029-risk-reopen",
+        "safety-boundary",
+        "contract-report",
+    ]:
+        command_parser = alpha_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.0 alpha preparation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28 contract report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    hygiene_parser = alpha_subparsers.add_parser(
+        "hygiene",
+        help="Render v0.28.1 release hygiene / repository governance gate artifacts.",
+    )
+    hygiene_subparsers = hygiene_parser.add_subparsers(dest="alpha_hygiene_command")
+    for command_name in [
+        "gate",
+        "snapshot",
+        "version",
+        "worktree",
+        "tag",
+        "governance-files",
+        "license",
+        "changelog",
+        "third-party",
+        "pyproject",
+        "py-typed",
+        "ci",
+        "gitignore",
+        "data",
+        "artifacts",
+        "references",
+        "forbidden-scan",
+        "remediation",
+        "release-claim",
+        "report",
+    ]:
+        command_parser = hygiene_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.1 hygiene {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.1 hygiene report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    packaging_parser = alpha_subparsers.add_parser(
+        "packaging",
+        help="Render v0.28.2 packaging / distribution / type boundary artifacts.",
+    )
+    packaging_subparsers = packaging_parser.add_subparsers(dest="alpha_packaging_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "pyproject",
+        "dependencies",
+        "runtime-deps",
+        "dev-deps",
+        "optional-deps",
+        "pytest-boundary",
+        "build-backend",
+        "include-exclude",
+        "package-data",
+        "py-typed",
+        "type-boundary",
+        "wheel-smoke",
+        "sdist-smoke",
+        "import-smoke",
+        "cli-smoke",
+        "publish-blocker",
+        "remediation",
+        "readiness",
+        "report",
+    ]:
+        command_parser = packaging_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.2 packaging {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.2 packaging report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    boundary_parser = alpha_subparsers.add_parser(
+        "boundary",
+        help="Render v0.28.3 public-private boundary / redaction / reference policy artifacts.",
+    )
+    boundary_subparsers = boundary_parser.add_subparsers(dest="alpha_boundary_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "public-policy",
+        "private-policy",
+        "classify",
+        "redaction-policy",
+        "redaction-preview",
+        "secrets",
+        "credentials",
+        "company-material",
+        "raw-traces",
+        "raw-transcripts",
+        "raw-provider-outputs",
+        "references",
+        "reference-license",
+        "datasets",
+        "examples",
+        "docs",
+        "package-exposure",
+        "remediation",
+        "release-gate",
+        "report",
+    ]:
+        command_parser = boundary_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.3 boundary {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.3 boundary report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    schumpeter_parser = alpha_subparsers.add_parser(
+        "schumpeter",
+        help="Render v0.28.4 Schumpeter split decision framework artifacts.",
+    )
+    schumpeter_subparsers = schumpeter_parser.add_subparsers(dest="alpha_schumpeter_command")
+    for command_name in [
+        "decision-policy",
+        "source-view",
+        "inventory",
+        "license-review",
+        "private-risk",
+        "architecture-comparison",
+        "capability-matrix",
+        "ocel-pig-ocpx",
+        "workbench-memory",
+        "reuse-value",
+        "risk",
+        "options",
+        "criteria",
+        "disposition",
+        "recommendation",
+        "decision-record",
+        "audit",
+        "report",
+    ]:
+        command_parser = schumpeter_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.4 Schumpeter {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.4 Schumpeter decision report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    schumpeter_prep_parser = alpha_subparsers.add_parser(
+        "schumpeter-prep",
+        help="Render v0.28.5 Schumpeter split preparation profile artifacts.",
+    )
+    schumpeter_prep_subparsers = schumpeter_prep_parser.add_subparsers(dest="alpha_schumpeter_prep_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "profile-boundary",
+        "naming",
+        "overlay-policy",
+        "overlay-contract",
+        "config-contract",
+        "data-boundary",
+        "skill-boundary",
+        "provider-boundary",
+        "rpa-deferral",
+        "runtime-boundary",
+        "memory-workbench",
+        "deployment-boundary",
+        "manifest-preview",
+        "capability-map",
+        "risk-register",
+        "decision",
+        "handoff",
+        "audit",
+        "report",
+    ]:
+        command_parser = schumpeter_prep_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.5 Schumpeter preparation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.5 Schumpeter preparation report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    runtime_parser = alpha_subparsers.add_parser(
+        "runtime",
+        help="Render v0.28.6 public alpha runtime profile artifacts.",
+    )
+    runtime_subparsers = runtime_parser.add_subparsers(dest="alpha_runtime_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "feature-flags",
+        "enabled",
+        "preview-only",
+        "disabled",
+        "capabilities",
+        "operator-surface",
+        "handoff",
+        "report",
+    ]:
+        command_parser = runtime_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.6 alpha runtime {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.6 runtime profile report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    smoke_parser = alpha_subparsers.add_parser(
+        "smoke",
+        help="Render v0.28.6 public alpha smoke demo artifacts.",
+    )
+    smoke_subparsers = smoke_parser.add_subparsers(dest="alpha_smoke_command")
+    for command_name in [
+        "scenarios",
+        "inputs",
+        "synthetic-policy",
+        "ocel-demo",
+        "ocpx-demo",
+        "pig-demo",
+        "workbench-demo",
+        "memory-demo",
+        "continuity-preview",
+        "safety-demo",
+        "cli-demo",
+        "plan",
+        "report",
+    ]:
+        command_parser = smoke_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.6 alpha smoke {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.6 runtime profile report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    docs_parser = alpha_subparsers.add_parser(
+        "docs",
+        help="Render v0.28.7 alpha documentation / onboarding artifacts.",
+    )
+    docs_subparsers = docs_parser.add_subparsers(dest="alpha_docs_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "document-set",
+        "readme",
+        "quickstart",
+        "architecture",
+        "ocel-core",
+        "workbench",
+        "memory",
+        "runtime-profile",
+        "smoke-demo",
+        "cli-reference",
+        "safety",
+        "public-private",
+        "schumpeter",
+        "external-adapter-future",
+        "onboarding",
+        "links",
+        "safety-report",
+        "consistency",
+        "readiness",
+        "handoff",
+        "report",
+    ]:
+        command_parser = docs_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.7 alpha docs {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.7 documentation readiness report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    examples_parser = alpha_subparsers.add_parser(
+        "examples",
+        help="Render v0.28.7 public-safe example pack artifacts.",
+    )
+    examples_subparsers = examples_parser.add_subparsers(dest="alpha_examples_command")
+    for command_name in ["policy", "manifest", "data-manifest", "synthetic-bundle"]:
+        command_parser = examples_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.7 alpha examples {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.7 documentation readiness report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    validate_parser = alpha_subparsers.add_parser(
+        "validate",
+        help="Render v0.28.8 alpha readiness validation artifacts.",
+    )
+    validate_subparsers = validate_parser.add_subparsers(dest="alpha_validate_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "coverage",
+        "regression",
+        "boundaries",
+        "forbidden-scan",
+        "hygiene",
+        "packaging",
+        "build",
+        "import-smoke",
+        "cli-smoke",
+        "public-private",
+        "docs",
+        "examples",
+        "smoke",
+        "safety",
+        "schumpeter",
+        "gate",
+        "handoff",
+        "report",
+    ]:
+        command_parser = validate_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.8 alpha validation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.8 readiness validation report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    preflight_parser = alpha_subparsers.add_parser(
+        "preflight",
+        help="Render v0.28.8 external adapter preflight artifacts.",
+    )
+    preflight_subparsers = preflight_parser.add_subparsers(dest="alpha_preflight_command")
+    for command_name in [
+        "adapter-policy",
+        "adapter-risk",
+        "provider-reopen",
+        "command-reopen",
+        "credentials",
+        "network",
+        "permission",
+        "safety",
+        "audit-ocel",
+        "certification",
+        "report",
+    ]:
+        command_parser = preflight_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.8 external adapter preflight {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.8 readiness validation report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    consolidate_parser = alpha_subparsers.add_parser(
+        "consolidate",
+        help="Render v0.28.9 public alpha / Schumpeter split preparation consolidation artifacts.",
+    )
+    consolidate_parser.add_argument("--report-id", help="Existing v0.28.9 consolidation report id reference to inspect.")
+    consolidate_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    consolidate_subparsers = consolidate_parser.add_subparsers(dest="alpha_consolidate_command")
+    for command_name in [
+        "snapshot",
+        "capabilities",
+        "coverage",
+        "hygiene",
+        "packaging",
+        "public-private",
+        "schumpeter-decision",
+        "schumpeter-prep",
+        "runtime-smoke",
+        "docs",
+        "validation",
+        "adapter-preflight",
+        "release-readiness",
+        "v029-readiness",
+        "manifest",
+        "handoff-v029",
+        "report",
+    ]:
+        command_parser = consolidate_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.28.9 alpha consolidation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.28.9 consolidation report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    memory_parser = subparsers.add_parser(
+        "memory",
+        help="Render v0.27 Memory Candidate & Continuity contract artifacts.",
+    )
+    memory_subparsers = memory_parser.add_subparsers(dest="memory_command")
+    for command_name in [
+        "consolidate",
+        "release-manifest",
+        "coverage",
+        "safety-boundary",
+        "privacy-boundary",
+        "source-boundary-summary",
+        "candidate-quality",
+        "scoring-summary",
+        "promotion-summary",
+        "registry-summary",
+        "continuity-summary",
+        "injection-boundary-summary",
+        "lifecycle-summary",
+        "pi-feedback",
+        "default-agent-readiness",
+        "release-hygiene",
+        "consolidation-report",
+    ]:
+        command_parser = memory_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.9 memory consolidation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing memory consolidation report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    memory_readiness_parser = memory_subparsers.add_parser(
+        "readiness",
+        help="Render v0.27.9 readiness toward v0.28.",
+    )
+    memory_readiness_parser.add_argument("--target", default="v0.28", choices=["v0.28"], help="Readiness target.")
+    memory_readiness_parser.add_argument("--report-id", help="Existing memory consolidation report id reference to inspect.")
+    memory_readiness_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    memory_handoff_parser = memory_subparsers.add_parser(
+        "handoff",
+        help="Render v0.27.9 refs-only public alpha handoff packet.",
+    )
+    memory_handoff_parser.add_argument("--target", default="v0.28", choices=["v0.28"], help="Handoff target.")
+    memory_handoff_parser.add_argument("--report-id", help="Existing memory consolidation report id reference to inspect.")
+    memory_handoff_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    lifecycle_parser = memory_subparsers.add_parser(
+        "lifecycle",
+        help="Render v0.27.8 Memory Audit / Update / Revoke / Forget artifacts.",
+    )
+    lifecycle_subparsers = lifecycle_parser.add_subparsers(dest="memory_lifecycle_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "gate",
+        "conflicts",
+        "no-op",
+        "audit",
+        "report",
+    ]:
+        command_parser = lifecycle_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.8 memory lifecycle {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing memory lifecycle report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in ["review", "update-candidate", "update", "revoke", "forget", "archive", "expire"]:
+        command_parser = lifecycle_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.8 memory lifecycle {command_name} artifact.",
+        )
+        command_parser.add_argument("--record-id", help="Durable memory record id reference.")
+        command_parser.add_argument("--report-id", help="Existing memory lifecycle report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    injection_parser = memory_subparsers.add_parser(
+        "injection",
+        help="Render v0.27.7 Continuity Injection Boundary artifacts.",
+    )
+    injection_subparsers = injection_parser.add_subparsers(dest="memory_injection_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "targets",
+        "compatibility",
+        "eligibility",
+        "priority",
+        "safety-boundary",
+        "permission-boundary",
+        "bindings",
+        "bundle",
+        "preview",
+        "boundary-trace",
+        "audit",
+        "report",
+    ]:
+        command_parser = injection_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.7 continuity injection {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing continuity injection boundary report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    injection_decide_parser = injection_subparsers.add_parser(
+        "decide",
+        help="Record a v0.27.7 injection boundary decision without runtime injection.",
+    )
+    injection_decide_parser.add_argument(
+        "--decision",
+        choices=[
+            "create_preview",
+            "create_future_handoff_bundle",
+            "defer_conflict_review",
+            "defer_privacy_review",
+            "reject_injection",
+        ],
+        default="create_preview",
+    )
+    injection_decide_parser.add_argument("--report-id", help="Existing continuity injection boundary report id reference to inspect.")
+    injection_decide_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    continuity_parser = memory_subparsers.add_parser(
+        "continuity",
+        help="Render v0.27.6 Session Continuity Context Builder artifacts.",
+    )
+    continuity_subparsers = continuity_parser.add_subparsers(dest="memory_continuity_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "eligibility-rules",
+        "refs",
+        "bundle",
+        "relevance",
+        "recency",
+        "stale",
+        "conflicts",
+        "privacy",
+        "items",
+        "pack",
+        "context",
+        "preview",
+        "audit",
+        "report",
+    ]:
+        command_parser = continuity_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.6 session continuity {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing session continuity context build report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    registry_parser = memory_subparsers.add_parser(
+        "registry",
+        help="Render v0.27.5 Durable Memory Record & Registry artifacts.",
+    )
+    registry_subparsers = registry_parser.add_subparsers(dest="memory_registry_command")
+    for command_name in [
+        "policy",
+        "write-gate",
+        "write-decision",
+        "dry-run",
+        "entries",
+        "inspect",
+        "provenance",
+        "evidence-index",
+        "lifecycle",
+        "privacy",
+        "forget-revoke",
+        "integrity",
+        "audit",
+        "report",
+    ]:
+        command_parser = registry_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.5 memory registry {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing durable memory registry report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    create_record_parser = registry_subparsers.add_parser(
+        "create-record",
+        help="Create a gated v0.27.5 durable memory record only if write gate and hygiene gates pass.",
+    )
+    create_record_parser.add_argument("--candidate-id", help="Candidate id to materialize when gates pass.")
+    create_record_parser.add_argument("--report-id", help="Existing durable memory registry report id reference to inspect.")
+    create_record_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    promotion_parser = memory_subparsers.add_parser(
+        "promotion",
+        help="Render v0.27.4 Memory Promotion Gate artifacts.",
+    )
+    promotion_subparsers = promotion_parser.add_subparsers(dest="memory_promotion_command")
+    for command_name in [
+        "gate",
+        "source-view",
+        "rules",
+        "candidates",
+        "requirements",
+        "evidence-review",
+        "score-review",
+        "privacy",
+        "contradictions",
+        "user-control",
+        "scope",
+        "expiry",
+        "lifecycle",
+        "forget-revoke",
+        "readiness",
+        "audit",
+        "report",
+    ]:
+        command_parser = promotion_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.4 memory promotion {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing memory promotion gate report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    decide_parser = promotion_subparsers.add_parser(
+        "decide",
+        help="Record a v0.27.4 promotion gate decision without durable memory write.",
+    )
+    decide_parser.add_argument("--candidate-id", help="Candidate id to decide.")
+    decide_parser.add_argument(
+        "--decision",
+        choices=[
+            "promote",
+            "reject",
+            "defer",
+            "request_more_evidence",
+            "request_user_confirmation",
+            "mark_ephemeral",
+            "mark_archive_only",
+        ],
+        default="promote",
+    )
+    decide_parser.add_argument("--report-id", help="Existing memory promotion gate report id reference to inspect.")
+    decide_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    scoring_parser = memory_subparsers.add_parser(
+        "scoring",
+        help="Render v0.27.3 Memory Evidence Binder & Scoring artifacts.",
+    )
+    scoring_subparsers = scoring_parser.add_subparsers(dest="memory_scoring_command")
+    for command_name in [
+        "bind-evidence",
+        "source-view",
+        "rules",
+        "bundles",
+        "evidence-items",
+        "support",
+        "assessments",
+        "privacy",
+        "contradictions",
+        "pig-signals",
+        "dimensions",
+        "scores",
+        "decisions",
+        "readiness",
+        "audit",
+        "report",
+    ]:
+        command_parser = scoring_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.3 memory scoring {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing memory evidence scoring report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    candidates_parser = memory_subparsers.add_parser(
+        "candidates",
+        help="Render v0.27.2 Memory Candidate Extraction artifacts.",
+    )
+    candidates_subparsers = candidates_parser.add_subparsers(dest="memory_candidates_command")
+    for command_name in [
+        "extract",
+        "source-view",
+        "rules",
+        "classifier",
+        "batch",
+        "list",
+        "claims",
+        "source-links",
+        "context",
+        "provenance",
+        "pig-signals",
+        "risks",
+        "decisions",
+        "audit",
+        "report",
+    ]:
+        command_parser = candidates_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.2 memory candidate {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing memory candidate extraction report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    sources_parser = memory_subparsers.add_parser(
+        "sources",
+        help="Render v0.27.1 Memory Source / Ref Boundary artifacts.",
+    )
+    sources_subparsers = sources_parser.add_subparsers(dest="memory_sources_command")
+    for command_name in [
+        "boundary",
+        "catalog",
+        "refs",
+        "bundle",
+        "registry-view",
+        "eligibility-rules",
+        "evaluate",
+        "decisions",
+        "redaction",
+        "quality",
+        "forbidden",
+        "readiness",
+        "report",
+    ]:
+        command_parser = sources_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.1 memory source {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing memory source boundary report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    for command_name in [
+        "contract",
+        "roadmap",
+        "source-policy",
+        "candidate-policy",
+        "candidate-types",
+        "evidence-policy",
+        "scoring-policy",
+        "promotion-policy",
+        "durable-policy",
+        "continuity-policy",
+        "injection-policy",
+        "audit-policy",
+        "privacy-policy",
+        "pig-policy",
+        "contract-report",
+    ]:
+        command_parser = memory_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.27.0 memory {command_name} contract artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing memory contract report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
     return parser
 
 
@@ -6561,6 +7565,305 @@ def run_workbench(args: argparse.Namespace) -> int:
     if not args.workbench_command:
         print("workbench command is required", file=sys.stderr)
         return 1
+    if args.workbench_command == "safety":
+        if not getattr(args, "workbench_safety_command", None):
+            print("workbench safety command is required", file=sys.stderr)
+            return 1
+        service = WorkbenchApprovalConsoleReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        section = args.workbench_safety_command
+        if args.json:
+            payload_by_section = {
+                "view": parts["safety_gate_view"],
+                "rationale": parts["safety_rationale_console_view"],
+            }
+            print(json.dumps(payload_by_section[section].to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_approval_console_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command == "approval":
+        if not getattr(args, "workbench_approval_command", None):
+            print("workbench approval command is required", file=sys.stderr)
+            return 1
+        section = args.workbench_approval_command
+        service = WorkbenchApprovalConsoleReportService()
+        parts = service.build_all_parts(
+            report_id=getattr(args, "report_id", None),
+            candidate_id=getattr(args, "candidate_id", None),
+            requested_decision=getattr(args, "decision", None),
+        )
+        if args.json:
+            payload_by_section = {
+                "console": parts["approval_console_view"],
+                "candidates": parts["approval_candidates"],
+                "requirements": parts["approval_requirements"],
+                "scope": parts["approval_scope"],
+                "expiry": parts["approval_expiry"],
+                "decide": parts["approval_decision_records"],
+                "audit": parts["approval_audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_approval_console_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command == "dashboard":
+        if not getattr(args, "workbench_dashboard_command", None):
+            print("workbench dashboard command is required", file=sys.stderr)
+            return 1
+        service = WorkbenchRunDashboardReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        section = args.workbench_dashboard_command
+        if args.json:
+            payload_by_section = {
+                "view": parts["run_dashboard_view"],
+                "runs": parts["run_cards"],
+                "pipeline-status": parts["pipeline_status_views"],
+                "providers": parts["provider_status_summary"],
+                "responses": parts["response_status_summary"],
+                "safety": parts["safety_status_summary"],
+                "approvals": parts["approval_status_summary"],
+                "failures": parts["failure_summary"],
+                "warnings": parts["warning_summary"],
+                "metrics": parts["metric_set"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_run_dashboard_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command == "sessions":
+        if not getattr(args, "workbench_sessions_command", None):
+            print("workbench sessions command is required", file=sys.stderr)
+            return 1
+        service = WorkbenchRunDashboardReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        section = args.workbench_sessions_command
+        if args.json:
+            payload_by_section = {
+                "monitor": parts["session_monitor_view"],
+                "cards": parts["session_cards"],
+                "trace-summary": parts["session_trace_summaries"],
+                "pig-guidance": parts["pig_guidance_summaries"],
+                "patterns": {
+                    "decision": [item.to_dict() for item in parts["decision_pattern_views"]],
+                    "route": [item.to_dict() for item in parts["route_pattern_views"]],
+                    "provider": [item.to_dict() for item in parts["provider_pattern_views"]],
+                    "safety": [item.to_dict() for item in parts["safety_pattern_views"]],
+                    "failure": [item.to_dict() for item in parts["failure_pattern_views"]],
+                },
+                "context-refs": parts["context_ref_views"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            elif hasattr(payload, "to_dict"):
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_run_dashboard_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command == "commands":
+        if not getattr(args, "workbench_commands_command", None):
+            print("workbench commands command is required", file=sys.stderr)
+            return 1
+        section = args.workbench_commands_command
+        service = WorkbenchCommandSurfaceReportService()
+        parts = service.build_all_parts(
+            report_id=getattr(args, "report_id", None),
+            candidate_id=getattr(args, "candidate_id", None),
+            requested_decision=getattr(args, "decision", None),
+        )
+        if args.json:
+            payload_by_section = {
+                "surface": parts["command_surface_view"],
+                "candidates": parts["command_candidates"],
+                "do-nothing": parts["do_nothing_candidates"],
+                "skills": parts["skill_candidates"],
+                "actions": parts["action_candidates"],
+                "routes": parts["route_candidates"],
+                "providers": parts["provider_candidate_refs"],
+                "file-edit-candidates": parts["file_edit_candidates"],
+                "ask-candidates": parts["ask_pipeline_candidates"],
+                "snapshot-candidates": parts["snapshot_request_candidates"],
+                "rationale": parts["rationale"],
+                "risk": parts["risk_summary"],
+                "pig-guidance": parts["pig_guidance_view"],
+                "safety": parts["safety_finding_view"],
+                "approval-requirements": parts["approval_requirement"],
+                "boundary-trace": parts["boundary_trace"],
+                "decide": parts["command_decision_records"],
+                "history": parts["command_history"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            elif payload is None:
+                print(json.dumps(None))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_command_surface_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command == "snapshot":
+        if not getattr(args, "workbench_snapshot_command", None):
+            print("workbench snapshot command is required", file=sys.stderr)
+            return 1
+        section = args.workbench_snapshot_command
+        service = WorkbenchSnapshotExportReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "create": parts["snapshot"],
+                "selection": parts["selection"],
+                "manifest": parts["snapshot_manifest"],
+                "refs": parts["ref_bundle"],
+                "redaction": parts["redaction_report"],
+                "reproducibility": parts["reproducibility_packet"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_snapshot_export_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command == "export":
+        if not getattr(args, "workbench_export_command", None):
+            print("workbench export command is required", file=sys.stderr)
+            return 1
+        section = args.workbench_export_command
+        service = WorkbenchSnapshotExportReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "ocel": parts["ocel_export_package"],
+                "manifest": parts["ocel_export_manifest"],
+                "quality": parts["event_quality_report"],
+                "trace-coverage": parts["trace_coverage_report"],
+                "boundary": parts["export_boundary_descriptor"],
+            }
+            payload = payload_by_section[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            render_section = "export-manifest" if section == "manifest" else section
+            print(render_workbench_snapshot_export_cli(parts, section=render_section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command in {
+        "consolidate",
+        "release-manifest",
+        "readiness",
+        "coverage",
+        "safety-boundary",
+        "interaction-boundary",
+        "quality",
+        "trace-coverage",
+        "usability",
+        "feedback-loop",
+        "gaps",
+        "handoff",
+        "consolidation-report",
+    }:
+        section = args.workbench_command
+        service = WorkbenchConsolidationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "consolidate": parts["report"],
+                "release-manifest": parts["release_manifest"],
+                "readiness": parts["v027_readiness_report"],
+                "coverage": parts["coverage_matrix"],
+                "safety-boundary": parts["safety_boundary_report"],
+                "interaction-boundary": parts["interaction_boundary_report"],
+                "quality": parts["event_quality_consolidation_report"],
+                "trace-coverage": parts["trace_coverage_consolidation_report"],
+                "usability": parts["usability_readiness_report"],
+                "feedback-loop": parts["process_intelligence_feedback_loop_report"],
+                "gaps": parts["gap_register"],
+                "handoff": parts["memory_candidate_handoff_packet"],
+                "consolidation-report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_consolidation_cli(parts, section=section))
+        return 0 if parts["report"].readiness_status in {"ready", "warning"} else 1
+    if args.workbench_command == "evidence":
+        if not getattr(args, "workbench_evidence_command", None):
+            print("workbench evidence command is required", file=sys.stderr)
+            return 1
+        service = WorkbenchEvidenceInspectorReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        section = args.workbench_evidence_command
+        if args.json:
+            payload_by_section = {
+                "view": parts["evidence_inspector_view"],
+                "bundle": parts["evidence_bundle_view"],
+                "claims": parts["claim_views"],
+                "support": parts["claim_support_views"],
+                "decisions": parts["decision_evidence_views"],
+                "skills": parts["skill_selection_evidence_views"],
+                "actions": parts["action_candidate_evidence_views"],
+                "routes": parts["route_selection_evidence_views"],
+                "providers": parts["provider_selection_evidence_views"],
+                "safety": parts["safety_rationale_views"],
+                "pig-guidance": parts["pig_guidance_views"],
+                "failures": parts["failure_cause_views"],
+                "unsupported": parts["unsupported_claim_views"],
+                "uncertainty": parts["uncertainty_views"],
+                "limitations": parts["limitation_views"],
+                "inspect": parts["inspection_summary"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            elif payload is None:
+                print(json.dumps(None))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_evidence_inspector_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.workbench_command == "providers":
+        if not getattr(args, "workbench_providers_command", None):
+            print("workbench providers command is required", file=sys.stderr)
+            return 1
+        service = WorkbenchProviderBrowserReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        section = args.workbench_providers_command
+        if args.json:
+            payload_by_section = {
+                "view": parts["provider_browser_view"],
+                "cards": parts["provider_cards"],
+                "capabilities": parts["capability_cards"],
+                "boundaries": parts["boundary_views"],
+                "readiness": parts["readiness_views"],
+                "route-compatibility": parts["route_compatibility_matrix"],
+                "rationale": parts["selection_rationale_views"],
+                "pig-guidance": parts["pig_guidance_views"],
+                "intervention-points": parts["human_intervention_points"],
+                "inspect": parts["inspection_summary"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_workbench_provider_browser_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
     if args.workbench_command == "trace":
         if not getattr(args, "workbench_trace_command", None):
             print("workbench trace command is required", file=sys.stderr)
@@ -6692,6 +7995,608 @@ def run_workbench(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_alpha(args: argparse.Namespace) -> int:
+    if not getattr(args, "alpha_command", None):
+        print("alpha command is required", file=sys.stderr)
+        return 1
+    section = args.alpha_command
+    if section == "hygiene":
+        if not getattr(args, "alpha_hygiene_command", None):
+            print("alpha hygiene command is required", file=sys.stderr)
+            return 1
+        hygiene_section = args.alpha_hygiene_command
+        service = ReleaseHygieneGateReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[hygiene_section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_release_hygiene_gate_cli(parts, section=hygiene_section))
+        return 0 if parts["report"].ready_for_v0_28_2 else 1
+    if section == "packaging":
+        if not getattr(args, "alpha_packaging_command", None):
+            print("alpha packaging command is required", file=sys.stderr)
+            return 1
+        packaging_section = args.alpha_packaging_command
+        service = PackagingReadinessReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[packaging_section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_packaging_readiness_cli(parts, section=packaging_section))
+        return 0 if parts["report"].ready_for_v0_28_3 else 1
+    if section == "boundary":
+        if not getattr(args, "alpha_boundary_command", None):
+            print("alpha boundary command is required", file=sys.stderr)
+            return 1
+        boundary_section = args.alpha_boundary_command
+        service = PublicPrivateBoundaryReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[boundary_section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_public_private_boundary_cli(parts, section=boundary_section))
+        return 0 if parts["report"].ready_for_v0_28_4 else 1
+    if section == "schumpeter":
+        if not getattr(args, "alpha_schumpeter_command", None):
+            print("alpha schumpeter command is required", file=sys.stderr)
+            return 1
+        schumpeter_section = args.alpha_schumpeter_command
+        service = SchumpeterSplitDecisionReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[schumpeter_section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_schumpeter_split_decision_cli(parts, section=schumpeter_section))
+        return 0 if parts["report"].ready_for_v0_28_5 else 1
+    if section == "schumpeter-prep":
+        if not getattr(args, "alpha_schumpeter_prep_command", None):
+            print("alpha schumpeter-prep command is required", file=sys.stderr)
+            return 1
+        prep_section = args.alpha_schumpeter_prep_command
+        service = SchumpeterPreparationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[prep_section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_schumpeter_preparation_cli(parts, section=prep_section))
+        return 0 if parts["report"].ready_for_v0_28_6 else 1
+    if section == "runtime":
+        if not getattr(args, "alpha_runtime_command", None):
+            print("alpha runtime command is required", file=sys.stderr)
+            return 1
+        runtime_section = args.alpha_runtime_command
+        service = AlphaRuntimeProfileReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[runtime_section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_alpha_runtime_profile_cli(parts, section=runtime_section))
+        return 0 if parts["report"].ready_for_v0_28_7 else 1
+    if section == "smoke":
+        if not getattr(args, "alpha_smoke_command", None):
+            print("alpha smoke command is required", file=sys.stderr)
+            return 1
+        smoke_section = args.alpha_smoke_command
+        parts_section = "smoke-report" if smoke_section == "report" else smoke_section
+        service = AlphaRuntimeProfileReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[parts_section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_alpha_runtime_profile_cli(parts, section=parts_section))
+        return 0 if parts["report"].ready_for_v0_28_7 else 1
+    if section == "docs":
+        if not getattr(args, "alpha_docs_command", None):
+            print("alpha docs command is required", file=sys.stderr)
+            return 1
+        docs_section = args.alpha_docs_command
+        service = AlphaDocumentationReadinessReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[docs_section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_alpha_documentation_cli(parts, section=docs_section))
+        return 0 if parts["report"].ready_for_v0_28_8 else 1
+    if section == "examples":
+        if not getattr(args, "alpha_examples_command", None):
+            print("alpha examples command is required", file=sys.stderr)
+            return 1
+        examples_section = args.alpha_examples_command
+        parts_section = {
+            "policy": "example-policy",
+            "manifest": "example-manifest",
+            "data-manifest": "data-manifest",
+            "synthetic-bundle": "synthetic-bundle",
+        }[examples_section]
+        service = AlphaDocumentationReadinessReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[parts_section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_alpha_documentation_cli(parts, section=parts_section))
+        return 0 if parts["report"].ready_for_v0_28_8 else 1
+    if section == "validate":
+        if not getattr(args, "alpha_validate_command", None):
+            print("alpha validate command is required", file=sys.stderr)
+            return 1
+        validate_section = args.alpha_validate_command
+        service = AlphaReadinessValidationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[validate_section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_alpha_readiness_validation_cli(parts, section=validate_section))
+        return 0 if parts["report"].ready_for_v0_28_9 else 1
+    if section == "preflight":
+        if not getattr(args, "alpha_preflight_command", None):
+            print("alpha preflight command is required", file=sys.stderr)
+            return 1
+        preflight_section = args.alpha_preflight_command
+        parts_section = {
+            "report": "preflight-report",
+            "safety": "preflight-safety",
+        }.get(preflight_section, preflight_section)
+        service = AlphaReadinessValidationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[parts_section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_alpha_readiness_validation_cli(parts, section=parts_section))
+        return 0 if parts["report"].ready_for_v0_28_9 else 1
+    if section == "consolidate":
+        consolidate_section = getattr(args, "alpha_consolidate_command", None) or "report"
+        service = V028ConsolidationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[consolidate_section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_v028_consolidation_cli(parts, section=consolidate_section))
+        return 0 if parts["report"].ready_for_v0_29 else 1
+    service = V028ContractReportService()
+    parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+    if args.json:
+        payload_by_section = {
+            "contract": parts["contract"],
+            "roadmap": parts["roadmap"],
+            "scope-policy": parts["scope_policy"],
+            "stage-policy": parts["stage_policy"],
+            "hygiene-debt": parts["hygiene_debt_policy"],
+            "hygiene-blocking-policy": parts["hygiene_blocking_policy"],
+            "packaging-policy": parts["packaging_policy"],
+            "public-private-policy": parts["public_private_policy"],
+            "schumpeter-preparation": parts["schumpeter_preparation_policy"],
+            "schumpeter-decision-framework": parts["schumpeter_decision_framework"],
+            "schumpeter-reference-policy": parts["schumpeter_reference_policy"],
+            "external-adapter-preflight": parts["external_adapter_preflight"],
+            "v029-risk-reopen": parts["v029_risk_reopen"],
+            "safety-boundary": parts["safety_boundary"],
+            "contract-report": parts["report"],
+        }
+        payload = payload_by_section[section]
+        print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+    else:
+        print(render_v028_contract_cli(parts, section=section))
+    return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+
+
+def run_memory(args: argparse.Namespace) -> int:
+    if not getattr(args, "memory_command", None):
+        print("memory command is required", file=sys.stderr)
+        return 1
+    consolidation_commands = {
+        "consolidate",
+        "release-manifest",
+        "readiness",
+        "coverage",
+        "safety-boundary",
+        "privacy-boundary",
+        "source-boundary-summary",
+        "candidate-quality",
+        "scoring-summary",
+        "promotion-summary",
+        "registry-summary",
+        "continuity-summary",
+        "injection-boundary-summary",
+        "lifecycle-summary",
+        "pi-feedback",
+        "default-agent-readiness",
+        "release-hygiene",
+        "handoff",
+        "consolidation-report",
+    }
+    if args.memory_command in consolidation_commands:
+        section = args.memory_command
+        service = MemoryConsolidationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "consolidate": parts["report"],
+                "release-manifest": parts["release_manifest"],
+                "readiness": parts["v028_readiness_report"],
+                "coverage": parts["coverage_matrix"],
+                "safety-boundary": parts["safety_boundary_report"],
+                "privacy-boundary": parts["privacy_boundary_report"],
+                "source-boundary-summary": parts["source_boundary_consolidation_report"],
+                "candidate-quality": parts["candidate_quality_consolidation_report"],
+                "scoring-summary": parts["evidence_scoring_consolidation_report"],
+                "promotion-summary": parts["promotion_boundary_consolidation_report"],
+                "registry-summary": parts["durable_registry_consolidation_report"],
+                "continuity-summary": parts["session_continuity_consolidation_report"],
+                "injection-boundary-summary": parts["injection_boundary_consolidation_report"],
+                "lifecycle-summary": parts["lifecycle_boundary_consolidation_report"],
+                "pi-feedback": parts["process_intelligence_feedback_loop_report"],
+                "default-agent-readiness": parts["default_agent_readiness_report"],
+                "release-hygiene": parts["release_hygiene_dependency_report"],
+                "handoff": parts["public_alpha_handoff_packet"],
+                "consolidation-report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_memory_consolidation_cli(parts, section=section))
+        report = parts["report"]
+        return 0 if report.readiness_status in {"ready", "warning"} and report.release_status != "blocked" else 1
+    if args.memory_command == "lifecycle":
+        if not getattr(args, "memory_lifecycle_command", None):
+            print("memory lifecycle command is required", file=sys.stderr)
+            return 1
+        section = args.memory_lifecycle_command
+        operation_by_section = {
+            "policy": "review",
+            "source-view": "review",
+            "gate": "review",
+            "review": "review",
+            "update-candidate": "update",
+            "update": "update",
+            "revoke": "revoke",
+            "forget": "forget",
+            "archive": "archive",
+            "expire": "expire",
+            "conflicts": "resolve_conflict",
+            "no-op": "no_op",
+            "audit": "review",
+            "report": "review",
+        }
+        service = MemoryLifecycleReportService()
+        parts = service.build_all_parts(
+            report_id=getattr(args, "report_id", None),
+            requested_operation=operation_by_section[section],
+            record_id=getattr(args, "record_id", None),
+        )
+        if args.json:
+            payload_by_section = {
+                "policy": parts["policy"],
+                "source-view": parts["source_view"],
+                "gate": parts["requested_gate"],
+                "review": parts["review_records"],
+                "update-candidate": parts["update_candidates"],
+                "update": parts["update_records"],
+                "revoke": parts["revoke_records"],
+                "forget": parts["forget_records"],
+                "archive": parts["archive_records"],
+                "expire": parts["expiration_records"],
+                "conflicts": parts["conflict_resolution_records"],
+                "no-op": parts["no_op_decisions"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_memory_lifecycle_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.memory_command == "injection":
+        if not getattr(args, "memory_injection_command", None):
+            print("memory injection command is required", file=sys.stderr)
+            return 1
+        section = args.memory_injection_command
+        service = ContinuityInjectionBoundaryReportService()
+        parts = service.build_all_parts(
+            report_id=getattr(args, "report_id", None),
+            requested_decision_type=getattr(args, "decision", None) if section == "decide" else None,
+        )
+        if args.json:
+            payload_by_section = {
+                "policy": parts["policy"],
+                "source-view": parts["source_view"],
+                "targets": parts["target_surfaces"],
+                "compatibility": parts["compatibility_rules"],
+                "eligibility": parts["eligibility_evaluations"],
+                "priority": parts["instruction_priority_policy"],
+                "safety-boundary": parts["safety_boundary_rules"],
+                "permission-boundary": parts["permission_boundary_rules"],
+                "bindings": parts["context_item_bindings"],
+                "bundle": parts["injection_bundles"],
+                "preview": parts["injection_previews"],
+                "decide": parts["decision_records"],
+                "boundary-trace": parts["boundary_traces"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_continuity_injection_boundary_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.memory_command == "continuity":
+        if not getattr(args, "memory_continuity_command", None):
+            print("memory continuity command is required", file=sys.stderr)
+            return 1
+        section = args.memory_continuity_command
+        service = SessionContinuityContextBuildReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "policy": parts["policy"],
+                "source-view": parts["source_view"],
+                "eligibility-rules": parts["eligibility_rules"],
+                "refs": parts["memory_refs"],
+                "bundle": parts["continuity_ref_bundle"],
+                "relevance": parts["relevance_scores"],
+                "recency": parts["recency_windows"],
+                "stale": parts["staleness_warnings"],
+                "conflicts": parts["conflict_reports"],
+                "privacy": parts["privacy_filters"],
+                "items": parts["context_items"],
+                "pack": parts["context_pack"],
+                "context": parts["continuity_context"],
+                "preview": parts["context_previews"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_session_continuity_context_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.memory_command == "registry":
+        if not getattr(args, "memory_registry_command", None):
+            print("memory registry command is required", file=sys.stderr)
+            return 1
+        section = args.memory_registry_command
+        service = DurableMemoryRegistryReportService()
+        parts = service.build_all_parts(
+            report_id=getattr(args, "report_id", None),
+            requested_write_mode="write_if_gate_passed" if section == "create-record" else "dry_run",
+            candidate_id=getattr(args, "candidate_id", None) if section == "create-record" else None,
+        )
+        if args.json:
+            payload_by_section = {
+                "policy": parts["write_policy"],
+                "write-gate": parts["write_gate"],
+                "write-decision": parts["write_decision"],
+                "dry-run": parts["dry_run_records"],
+                "create-record": parts["durable_memory_records"],
+                "entries": parts["registry_entries"],
+                "inspect": parts["registry"],
+                "provenance": parts["provenance"],
+                "evidence-index": parts["evidence_index"],
+                "lifecycle": parts["lifecycle_policy"],
+                "privacy": parts["privacy_boundary"],
+                "forget-revoke": parts["forget_revoke_binding"],
+                "integrity": parts["integrity_report"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_durable_memory_registry_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.memory_command == "promotion":
+        if not getattr(args, "memory_promotion_command", None):
+            print("memory promotion command is required", file=sys.stderr)
+            return 1
+        section = args.memory_promotion_command
+        service = MemoryPromotionGateReportService()
+        parts = service.build_all_parts(
+            report_id=getattr(args, "report_id", None),
+            requested_decision_type=getattr(args, "decision", None) if section == "decide" else None,
+            candidate_id=getattr(args, "candidate_id", None) if section == "decide" else None,
+        )
+        if args.json:
+            payload_by_section = {
+                "gate": parts["report"],
+                "source-view": parts["source_view"],
+                "rules": parts["gate_rules"],
+                "candidates": parts["candidate_views"],
+                "requirements": parts["requirements"],
+                "evidence-review": parts["evidence_reviews"],
+                "score-review": parts["score_reviews"],
+                "privacy": parts["privacy_gates"],
+                "contradictions": parts["contradiction_gates"],
+                "user-control": parts["user_control_gates"],
+                "scope": parts["scopes"],
+                "expiry": parts["expiries"],
+                "lifecycle": parts["lifecycle_boundaries"],
+                "forget-revoke": parts["forget_revoke_paths"],
+                "decide": parts["promotion_decision_records"],
+                "readiness": parts["durable_readiness_previews"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_memory_promotion_gate_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.memory_command == "scoring":
+        if not getattr(args, "memory_scoring_command", None):
+            print("memory scoring command is required", file=sys.stderr)
+            return 1
+        section = args.memory_scoring_command
+        service = MemoryEvidenceScoringReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "bind-evidence": parts["report"],
+                "source-view": parts["source_view"],
+                "rules": parts["binding_rules"],
+                "bundles": parts["evidence_bundles"],
+                "evidence-items": [item for bundle in parts["evidence_bundles"] for item in bundle.evidence_items],
+                "support": [link for bundle in parts["evidence_bundles"] for link in bundle.support_links],
+                "assessments": parts["evidence_strength_assessments"]
+                + parts["source_quality_assessments"]
+                + parts["recency_assessments"]
+                + parts["stability_assessments"]
+                + parts["reuse_value_assessments"]
+                + parts["specificity_assessments"],
+                "privacy": parts["privacy_risk_assessments"],
+                "contradictions": parts["contradiction_checks"],
+                "pig-signals": parts["pig_scoring_signals"],
+                "dimensions": [value for breakdown in parts["score_breakdowns"] for value in breakdown.dimension_values],
+                "scores": parts["candidate_scores"],
+                "decisions": parts["scoring_decisions"],
+                "readiness": parts["promotion_readiness_previews"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_memory_evidence_scoring_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.memory_command == "candidates":
+        if not getattr(args, "memory_candidates_command", None):
+            print("memory candidates command is required", file=sys.stderr)
+            return 1
+        section = args.memory_candidates_command
+        service = MemoryCandidateExtractionReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "extract": parts["report"],
+                "source-view": parts["source_view"],
+                "rules": parts["extraction_rules"],
+                "classifier": parts["type_classifier"],
+                "batch": parts["candidate_batch"],
+                "list": parts["candidates"],
+                "claims": [claim for candidate in parts["candidates"] for claim in candidate.candidate_claims],
+                "source-links": [link for candidate in parts["candidates"] for link in candidate.source_links],
+                "context": [candidate.context for candidate in parts["candidates"]],
+                "provenance": [candidate.provenance for candidate in parts["candidates"]],
+                "pig-signals": [signal for candidate in parts["candidates"] for signal in candidate.pig_signals],
+                "risks": [risk for candidate in parts["candidates"] for risk in candidate.risk_flags],
+                "decisions": parts["decisions"],
+                "audit": parts["audit_trail"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_memory_candidate_extraction_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    if args.memory_command == "sources":
+        if not getattr(args, "memory_sources_command", None):
+            print("memory sources command is required", file=sys.stderr)
+            return 1
+        section = args.memory_sources_command
+        service = MemorySourceBoundaryReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload_by_section = {
+                "boundary": parts["boundary_policy_view"],
+                "catalog": parts["category_catalog"],
+                "refs": parts["source_refs"],
+                "bundle": parts["source_bundle"],
+                "registry-view": parts["source_registry_view"],
+                "eligibility-rules": parts["eligibility_rules"],
+                "evaluate": parts["eligibility_evaluations"],
+                "decisions": parts["eligibility_decisions"],
+                "redaction": parts["redaction_report"],
+                "quality": parts["quality_report"],
+                "forbidden": parts["forbidden_source_report"],
+                "readiness": parts["candidate_readiness_boundary"],
+                "report": parts["report"],
+            }
+            payload = payload_by_section[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_memory_source_boundary_cli(parts, section=section))
+        return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+    section = args.memory_command
+    service = MemoryContractReportService()
+    parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+    if args.json:
+        payload_by_section = {
+            "contract": parts["contract"],
+            "roadmap": parts["roadmap"],
+            "source-policy": parts["source_boundary_policy"],
+            "candidate-policy": parts["candidate_policy"],
+            "candidate-types": parts["candidate_type_catalog"],
+            "evidence-policy": parts["evidence_policy"],
+            "scoring-policy": parts["scoring_policy"],
+            "promotion-policy": parts["promotion_gate_policy"],
+            "durable-policy": parts["durable_memory_policy"],
+            "continuity-policy": parts["session_continuity_policy"],
+            "injection-policy": parts["continuity_injection_policy"],
+            "audit-policy": parts["audit_policy"],
+            "privacy-policy": parts["privacy_policy"],
+            "pig-policy": parts["pig_guidance_policy"],
+            "safety-boundary": parts["safety_boundary_policy"],
+            "contract-report": parts["report"],
+        }
+        payload = payload_by_section[section]
+        print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+    else:
+        print(render_memory_contract_cli(parts, section=section))
+    return 0 if parts["report"].report_status in {"passed", "warning"} else 1
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -6740,6 +8645,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_self_modification(args)
     if args.command == "workbench":
         return run_workbench(args)
+    if args.command == "alpha":
+        return run_alpha(args)
+    if args.command == "memory":
+        return run_memory(args)
     raise SystemExit(f"unsupported command: {args.command}")
 
 
