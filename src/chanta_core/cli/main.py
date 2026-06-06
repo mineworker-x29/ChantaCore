@@ -265,6 +265,46 @@ from chanta_core.public_alpha_schumpeter_preparation import (
     render_v028_consolidation_cli,
     render_v028_contract_cli,
 )
+from chanta_core.external_provider_adapter_contract import (
+    ExternalAdapterContractReportService,
+    render_external_adapter_contract_cli,
+)
+from chanta_core.provider_capability_inventory_adapter_registry import (
+    AdapterRegistryReportService,
+    render_adapter_registry_cli,
+)
+from chanta_core.mock_adapter_harness_no_network_default import (
+    MockAdapterHarnessReportService,
+    render_mock_adapter_harness_cli,
+)
+from chanta_core.permission_safety_scope_gate_for_external_adapters import (
+    AdapterPermissionSafetyReportService,
+    render_adapter_permission_safety_cli,
+)
+from chanta_core.credential_secret_network_boundary import (
+    CredentialNetworkBoundaryReportService,
+    render_credential_network_boundary_cli,
+)
+from chanta_core.adapter_invocation_candidate_dry_run_plan import (
+    AdapterInvocationCandidateReportService,
+    render_adapter_invocation_candidate_cli,
+)
+from chanta_core.provider_invocation_approval_audit_rollback_boundary import (
+    ProviderInvocationApprovalAuditRollbackReportService,
+    render_provider_invocation_approval_cli,
+)
+from chanta_core.external_skill_packaging_certification_matrix import (
+    AdapterPackagingCertificationReportService,
+    render_adapter_packaging_certification_cli,
+)
+from chanta_core.limited_provider_invocation_preview_gate import (
+    LimitedProviderInvocationPreviewReportService,
+    render_limited_provider_invocation_preview_cli,
+)
+from chanta_core.external_provider_adapter_foundation_consolidation import (
+    V029ConsolidationReportService,
+    render_v029_consolidation_cli,
+)
 from chanta_core.runtime.chat_service import ChatService
 from chanta_core.settings.app_settings import load_app_settings
 from chanta_core.workspace.summary import (
@@ -2801,6 +2841,378 @@ def build_parser() -> argparse.ArgumentParser:
             help=f"Render v0.28.9 alpha consolidation {command_name} artifact.",
         )
         command_parser.add_argument("--report-id", help="Existing v0.28.9 consolidation report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_parser = subparsers.add_parser(
+        "adapter",
+        help="Render external provider adapter contract artifacts.",
+    )
+    adapter_subparsers = adapter_parser.add_subparsers(dest="adapter_command")
+    adapter_contract_parser = adapter_subparsers.add_parser(
+        "contract",
+        help="Render v0.29.0 external provider adapter contract-only artifacts.",
+    )
+    adapter_contract_parser.add_argument("--report-id", help="Existing v0.29.0 external adapter contract report id reference to inspect.")
+    adapter_contract_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_contract_subparsers = adapter_contract_parser.add_subparsers(dest="adapter_contract_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "provider",
+        "external-skill",
+        "lifecycle",
+        "capability",
+        "input-schema",
+        "output-schema",
+        "effects",
+        "permission",
+        "safety",
+        "credentials",
+        "network",
+        "audit",
+        "rollback",
+        "ocel",
+        "mock",
+        "certification",
+        "prohibit-provider-invocation",
+        "prohibit-command-execution",
+        "report",
+    ]:
+        command_parser = adapter_contract_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.0 adapter contract {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.0 external adapter contract report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_registry_parser = adapter_subparsers.add_parser(
+        "registry",
+        help="Render v0.29.1 provider capability inventory / adapter registry artifacts.",
+    )
+    adapter_registry_parser.add_argument("--report-id", help="Existing v0.29.1 adapter registry report id reference to inspect.")
+    adapter_registry_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_registry_subparsers = adapter_registry_parser.add_subparsers(dest="adapter_registry_command")
+    for command_name in [
+        "policy",
+        "provider-kinds",
+        "inventory",
+        "capabilities",
+        "entries",
+        "declarations",
+        "availability",
+        "readiness",
+        "disabled-reasons",
+        "dependencies",
+        "risks",
+        "permission-requirements",
+        "safety-requirements",
+        "credential-needs",
+        "network-needs",
+        "ocel-visibility",
+        "gate",
+        "report",
+    ]:
+        command_parser = adapter_registry_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.1 adapter registry {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.1 adapter registry report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_mock_parser = adapter_subparsers.add_parser(
+        "mock",
+        help="Render v0.29.2 mock adapter harness / no-network default artifacts.",
+    )
+    adapter_mock_parser.add_argument("--report-id", help="Existing v0.29.2 mock adapter harness report id reference to inspect.")
+    adapter_mock_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_mock_subparsers = adapter_mock_parser.add_subparsers(dest="adapter_mock_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "contracts",
+        "fixtures",
+        "inputs",
+        "response-schema",
+        "response-fixtures",
+        "validate-inputs",
+        "validate-outputs",
+        "validate-effects",
+        "no-network",
+        "sdk-isolation",
+        "credentials",
+        "lifecycle",
+        "ocel-plan",
+        "ocel-report",
+        "run-plan",
+        "run-report",
+        "gate",
+        "report",
+    ]:
+        command_parser = adapter_mock_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.2 adapter mock {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.2 mock adapter harness report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_gate_parser = adapter_subparsers.add_parser(
+        "gate",
+        help="Render v0.29.3 permission / safety / scope gate artifacts.",
+    )
+    adapter_gate_parser.add_argument("--report-id", help="Existing v0.29.3 permission/safety gate report id reference to inspect.")
+    adapter_gate_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_gate_subparsers = adapter_gate_parser.add_subparsers(dest="adapter_gate_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "permission-policy",
+        "safety-policy",
+        "scope-policy",
+        "deny-first",
+        "intents",
+        "scopes",
+        "scope-matrix",
+        "permission-evaluation",
+        "safety-classification",
+        "approval-requirements",
+        "approval-candidates",
+        "decision-records",
+        "expiry",
+        "private-data",
+        "credentials",
+        "network",
+        "command-like",
+        "side-effects",
+        "exfiltration",
+        "rpa-deferral",
+        "evaluate",
+        "audit",
+        "report",
+    ]:
+        command_parser = adapter_gate_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.3 adapter gate {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.3 permission/safety gate report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_boundary_parser = adapter_subparsers.add_parser(
+        "boundary",
+        help="Render v0.29.4 credential / secret / network boundary artifacts.",
+    )
+    adapter_boundary_parser.add_argument("--report-id", help="Existing v0.29.4 credential/network boundary report id reference to inspect.")
+    adapter_boundary_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_boundary_subparsers = adapter_boundary_parser.add_subparsers(dest="adapter_boundary_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "credentials",
+        "credential-classification",
+        "secret-policy",
+        "secret-refs",
+        "secret-store-contract",
+        "credential-redaction",
+        "credential-audit",
+        "credential-scope",
+        "credential-candidates",
+        "network",
+        "outbound-domains",
+        "network-requests",
+        "timeout-retry",
+        "provider-sdk",
+        "exfiltration",
+        "payload",
+        "redaction",
+        "network-audit",
+        "gate",
+        "audit",
+        "report",
+    ]:
+        command_parser = adapter_boundary_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.4 adapter boundary {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.4 credential/network boundary report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_invocation_parser = adapter_subparsers.add_parser(
+        "invocation",
+        help="Render v0.29.5 adapter invocation candidate / dry-run artifacts.",
+    )
+    adapter_invocation_parser.add_argument("--report-id", help="Existing v0.29.5 adapter invocation candidate report id reference to inspect.")
+    adapter_invocation_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_invocation_subparsers = adapter_invocation_parser.add_subparsers(dest="adapter_invocation_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "intents",
+        "candidates",
+        "input-envelope",
+        "payload-preview",
+        "output-preview",
+        "credential-check",
+        "network-check",
+        "permission-safety-check",
+        "effect-preview",
+        "risk-preview",
+        "dry-run-plan",
+        "dry-run-report",
+        "noop",
+        "failure-preview",
+        "gate",
+        "audit",
+        "report",
+    ]:
+        command_parser = adapter_invocation_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.5 adapter invocation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.5 adapter invocation candidate report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_approval_parser = adapter_subparsers.add_parser(
+        "approval",
+        help="Render v0.29.6 provider invocation approval / audit / rollback boundary artifacts.",
+    )
+    adapter_approval_parser.add_argument("--report-id", help="Existing v0.29.6 approval/audit/rollback report id reference to inspect.")
+    adapter_approval_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_approval_subparsers = adapter_approval_parser.add_subparsers(dest="adapter_approval_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "requirements",
+        "candidates",
+        "decisions",
+        "scope-summary",
+        "expiry",
+        "revalidation",
+        "audit-policy",
+        "audit-plan",
+        "audit-trail",
+        "ocel-policy",
+        "ocel-plan",
+        "result-boundary",
+        "failure",
+        "rollback",
+        "noop",
+        "retry-deferral",
+        "gate",
+        "report",
+    ]:
+        command_parser = adapter_approval_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.6 adapter approval {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.6 approval/audit/rollback report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_certify_parser = adapter_subparsers.add_parser(
+        "certify",
+        help="Render v0.29.7 external skill packaging / certification matrix artifacts.",
+    )
+    adapter_certify_parser.add_argument("--report-id", help="Existing v0.29.7 packaging/certification report id reference to inspect.")
+    adapter_certify_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_certify_subparsers = adapter_certify_parser.add_subparsers(dest="adapter_certify_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "skill-manifest",
+        "package-manifest",
+        "dependencies",
+        "exposure",
+        "matrix",
+        "cases",
+        "case-results",
+        "mock",
+        "no-network",
+        "no-credential",
+        "no-command",
+        "permission-safety",
+        "credential-network",
+        "dry-run",
+        "approval-audit-rollback",
+        "ocel",
+        "result-boundary",
+        "failure-rollback-noop",
+        "rpa-future",
+        "dominion-exclusion",
+        "gate",
+        "audit",
+        "report",
+    ]:
+        command_parser = adapter_certify_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.7 adapter certification {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.7 packaging/certification report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_preview_parser = adapter_subparsers.add_parser(
+        "preview",
+        help="Render v0.29.8 limited provider invocation preview gate artifacts.",
+    )
+    adapter_preview_parser.add_argument("--report-id", help="Existing v0.29.8 limited preview report id reference to inspect.")
+    adapter_preview_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_preview_subparsers = adapter_preview_parser.add_subparsers(dest="adapter_preview_command")
+    for command_name in [
+        "policy",
+        "source-view",
+        "eligibility",
+        "scopes",
+        "candidates",
+        "approval",
+        "credentials",
+        "network",
+        "payload",
+        "result",
+        "audit-ocel",
+        "rollback-noop",
+        "risk",
+        "decisions",
+        "gate",
+        "audit",
+        "handoff",
+        "report",
+    ]:
+        command_parser = adapter_preview_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.8 limited preview {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.8 limited preview report id reference to inspect.")
+        command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+
+    adapter_consolidate_parser = adapter_subparsers.add_parser(
+        "consolidate",
+        help="Render v0.29.9 External Provider Adapter Foundation consolidation artifacts.",
+    )
+    adapter_consolidate_parser.add_argument("--report-id", help="Existing v0.29.9 consolidation report id reference to inspect.")
+    adapter_consolidate_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
+    adapter_consolidate_subparsers = adapter_consolidate_parser.add_subparsers(dest="adapter_consolidate_command")
+    for command_name in [
+        "snapshot",
+        "capabilities",
+        "coverage",
+        "contract",
+        "registry",
+        "mock",
+        "permission-safety",
+        "credential-network",
+        "invocation-dry-run",
+        "approval-audit-rollback",
+        "certification",
+        "preview",
+        "readiness",
+        "v030-readiness",
+        "handoff-v030",
+        "manifest",
+        "audit",
+        "report",
+    ]:
+        command_parser = adapter_consolidate_subparsers.add_parser(
+            command_name,
+            help=f"Render v0.29.9 consolidation {command_name} artifact.",
+        )
+        command_parser.add_argument("--report-id", help="Existing v0.29.9 consolidation report id reference to inspect.")
         command_parser.add_argument("--json", action="store_true", help="Print result as JSON.")
 
     memory_parser = subparsers.add_parser(
@@ -8209,6 +8621,144 @@ def run_alpha(args: argparse.Namespace) -> int:
     return 0 if parts["report"].report_status in {"passed", "warning"} else 1
 
 
+def run_adapter(args: argparse.Namespace) -> int:
+    if not getattr(args, "adapter_command", None):
+        print("adapter command is required", file=sys.stderr)
+        return 2
+    if args.adapter_command == "contract":
+        section = getattr(args, "adapter_contract_command", None) or "report"
+        service = ExternalAdapterContractReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_external_adapter_contract_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_1 else 1
+    if args.adapter_command == "registry":
+        section = getattr(args, "adapter_registry_command", None) or "report"
+        service = AdapterRegistryReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_adapter_registry_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_2 else 1
+    if args.adapter_command == "mock":
+        section = getattr(args, "adapter_mock_command", None) or "report"
+        service = MockAdapterHarnessReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_mock_adapter_harness_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_3 else 1
+    if args.adapter_command == "gate":
+        section = getattr(args, "adapter_gate_command", None) or "report"
+        service = AdapterPermissionSafetyReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_adapter_permission_safety_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_4 else 1
+    if args.adapter_command == "boundary":
+        section = getattr(args, "adapter_boundary_command", None) or "report"
+        service = CredentialNetworkBoundaryReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_credential_network_boundary_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_5 else 1
+    if args.adapter_command == "invocation":
+        section = getattr(args, "adapter_invocation_command", None) or "report"
+        service = AdapterInvocationCandidateReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_adapter_invocation_candidate_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_6 else 1
+    if args.adapter_command == "approval":
+        section = getattr(args, "adapter_approval_command", None) or "report"
+        service = ProviderInvocationApprovalAuditRollbackReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_provider_invocation_approval_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_7 else 1
+    if args.adapter_command == "certify":
+        section = getattr(args, "adapter_certify_command", None) or "report"
+        service = AdapterPackagingCertificationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_adapter_packaging_certification_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_8 else 1
+    if args.adapter_command == "preview":
+        section = getattr(args, "adapter_preview_command", None) or "report"
+        service = LimitedProviderInvocationPreviewReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_limited_provider_invocation_preview_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v0_29_9 else 1
+    if args.adapter_command == "consolidate":
+        section = getattr(args, "adapter_consolidate_command", None) or "report"
+        service = V029ConsolidationReportService()
+        parts = service.build_all_parts(report_id=getattr(args, "report_id", None))
+        if args.json:
+            payload = parts[section]
+            if isinstance(payload, list):
+                print(json.dumps([item.to_dict() for item in payload], ensure_ascii=False, sort_keys=True))
+            else:
+                print(json.dumps(payload.to_dict(), ensure_ascii=False, sort_keys=True))
+        else:
+            print(render_v029_consolidation_cli(parts, section=section))
+        return 0 if parts["report"].ready_for_v030_contract else 1
+    print(f"unsupported adapter command: {args.adapter_command}", file=sys.stderr)
+    return 2
+
+
 def run_memory(args: argparse.Namespace) -> int:
     if not getattr(args, "memory_command", None):
         print("memory command is required", file=sys.stderr)
@@ -8647,6 +9197,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_workbench(args)
     if args.command == "alpha":
         return run_alpha(args)
+    if args.command == "adapter":
+        return run_adapter(args)
     if args.command == "memory":
         return run_memory(args)
     raise SystemExit(f"unsupported command: {args.command}")

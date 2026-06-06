@@ -113,7 +113,7 @@ def test_packaging_policy_source_and_pyproject_metadata() -> None:
     assert source.company_private_material_included is False
     assert pyproject.pyproject_present is True
     assert pyproject.project_name == "chanta-core"
-    assert pyproject.project_version == "0.28.9"
+    assert pyproject.project_version == "0.30.0"
     assert pyproject.build_backend == "setuptools.build_meta"
     assert pyproject.project_description_present is True
     assert pyproject.authors_present is True

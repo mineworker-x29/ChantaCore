@@ -231,8 +231,12 @@ version intent:
   adapters, Schumpeter split, raw memory, or LLM judge are introduced. The next
   step is `v0.27.2` Memory Candidate Extraction.
 - `v0.28.x`: Public Alpha / Schumpeter Split Preparation.
-- `v0.29.x+`: External Skill / External Provider Adapter Development.
-- `v0.30.x+`: External Agent Dominion Bridge.
+- `v0.29.x`: External Skill / External Provider Adapter Development.
+- `v0.30.x+`: External Dominion Control Plane Foundation. `v0.30.0`
+  begins with External Dominion Contract and is contract-first only. It does
+  not enable external agent execution, provider invocation, network access,
+  credential access, command execution, browser automation, RPA/gateway
+  control, or external agent dominion runtime.
 
 Do not describe `v0.20.x` as a write/shell/network/MCP/plugin safety track.
 Those capabilities remain excluded from the self-awareness foundation unless a
