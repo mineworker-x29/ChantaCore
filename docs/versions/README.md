@@ -237,6 +237,44 @@ version intent:
   not enable external agent execution, provider invocation, network access,
   credential access, command execution, browser automation, RPA/gateway
   control, or external agent dominion runtime.
+- `v0.39.x`: Human-approved Sandbox Repair Apply & Re-test Loop v1 with
+  PI-native Self-Prompting Mission Loop Boundary. This line opens bounded
+  sandbox-only apply, controlled post-apply retest, comparison, process-state
+  metadata, draft-only self-prompt/subagent prompt metadata, and CLI preview
+  surfaces, while keeping live apply, prompt/model/subagent execution,
+  autonomous loops, Dominion runtime, and production certification closed.
+- `v0.40.x`: Controlled Multi-Iteration Mission Loop with Execution-Test
+  Ladder and Subagent Verification Boundary. `v0.40.0` defines boundary and
+  dry-run simulation metadata. `v0.40.1` adds sandbox rehearsal over existing
+  v0.39.3/v0.39.4 primitives and records the standalone Default Personal
+  runtime gaps without opening standalone agent execution. `v0.40.2` adds a
+  manual two-iteration rehearsal with explicit human checkpoint enforcement and
+  no autonomous continuation. `v0.40.3` adds negative runtime gate regression
+  and denied runtime action coverage. `v0.40.4` hardens human checkpoint
+  semantics with scope-bound approval, artifact binding, freshness,
+  revocation/expiry metadata, and a restore packet/document for future
+  handoff. `v0.40.5` deepens Provider / Prompt boundaries with prompt dispatch
+  candidate metadata, prompt submission gate, provider invocation gate,
+  provider output quarantine, false provider/prompt readiness claim audit, and
+  a single integrated release/restore/handoff document. `v0.40.6` deepens the
+  verifier subagent boundary with request drafts, role/evidence/context
+  isolation contracts, dispatch gate, result quarantine, false verifier/
+  subagent readiness claim audit, and a single integrated release/restore/
+  handoff document. `v0.40.7` consolidates rehearsal evidence matrix,
+  boundary coverage records, denied action coverage, checkpoint coverage,
+  provider/prompt coverage, verifier/subagent coverage, restore coverage,
+  readiness flag coverage, runtime closure coverage, and the v0.40.8
+  CLI preview handoff without opening runtime authority. `v0.40.8` adds a
+  preview-only CLI execution-test surface for status, evidence matrix,
+  boundary coverage, denied action, checkpoint, provider/prompt,
+  verifier/subagent, restore summary, v0.41 readiness, and unsafe flag views
+  while keeping apply/retest/test execution, prompt submission, provider
+  invocation, subagent invocation, and standalone runtime closed. `v0.40.9`
+  closes the v0.40 preparation track with final capability, boundary, safety
+  closure, artifact, test coverage, restore-index, v0.41 runtime gap,
+  startup-plan, smoke-scenario, opening-gate, acceleration-assessment, and
+  v0.41.0 Default Personal Profile Runtime handoff metadata. Standalone
+  Default Personal runtime remains closed through v0.40.9.
 
 Do not describe `v0.20.x` as a write/shell/network/MCP/plugin safety track.
 Those capabilities remain excluded from the self-awareness foundation unless a
