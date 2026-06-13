@@ -275,6 +275,61 @@ version intent:
   startup-plan, smoke-scenario, opening-gate, acceleration-assessment, and
   v0.41.0 Default Personal Profile Runtime handoff metadata. Standalone
   Default Personal runtime remains closed through v0.40.9.
+- `v0.41.x`: Default Personal Runtime Opening Track. `v0.41.0` begins the
+  controlled opening by defining only the Default Personal profile runtime
+  foundation: personal runtime root, default-personal profile config, path
+  contracts, identity and policy file status, profile status report, safety
+  posture, restore context reference, v0.40 compatibility gate, v0.41.1
+  installable CLI bootstrap handoff, and v0.41.6 user-test target metadata. It
+  does not open `chanta-cli` run/ask, profile init, provider invocation, prompt
+  submission, AgentLoop, skill execution, trace emission, shell execution,
+  subagent invocation, Dominion runtime, or production certification. `v0.41.1`
+  adds the installable `chanta-cli` bootstrap, `--version`, `doctor`, bounded
+  idempotent `init default-personal`, `profile status`, future-gated
+  unsupported command denials, and the v0.41.2 Prompt Assembly & Session Store
+  handoff. It still does not open run/ask, provider doctor, provider
+  invocation, prompt submission, AgentLoop, skill execution, session runtime,
+  trace runtime, arbitrary file mutation, shell execution, subagent invocation,
+  Dominion runtime, or production certification. `v0.41.2` adds deterministic
+  prompt assembly/preview, safety invariant, Soul/Role/Domain binding, project
+  instruction references, read-only skill policy metadata, restore summary,
+  session context, append-only session store schema, bounded `session new`, and
+  read-only `session list`. It still does not open run/ask, provider doctor,
+  provider invocation, prompt submission to model, AgentLoop, skill execution,
+  trace runtime, arbitrary file mutation, shell execution, subagent invocation,
+  Dominion runtime, or production certification. `v0.41.3` adds provider config
+  metadata, `provider doctor --no-completion`, secret redaction, optional safe
+  loopback `/models` probe policy, provider completion blocked records, static
+  read-only skill registry metadata, `skills list`, `skills inspect`, and unsafe
+  skill denial. It still does not open run/ask, provider text completion, prompt
+  submission to model, user prompt transmission to provider, AgentLoop, skill
+  execution, trace runtime, remote network access outside the explicit loopback
+  models probe, arbitrary file mutation, shell execution, subagent invocation,
+  Dominion runtime, or production certification. `v0.41.4` adds the first
+  scoped provider-backed `chanta-cli run` path: scoped prompt submission for
+  run only, text-only provider invocation for run only, mock provider transport,
+  minimal single-turn run, assistant response rendering, and bounded session
+  turn append. It still does not open provider doctor completion, tool calling,
+  function calling, read-only skill execution, general AgentLoop, multi-step
+  autonomous loop, trace runtime, file edit/write outside bounded profile/
+  session store, shell execution, subagent invocation, Dominion runtime, or
+  production certification. `v0.41.5` adds the runtime event model,
+  append-only trace store, trace emission, `trace recent`, `trace summary`,
+  `run-report last`, `safety check-command`, denial event records, trace
+  validation report, and OCEL projection candidate metadata. It still does not
+  claim final v0.41.6 user-test release readiness, open provider doctor
+  completion, tool calling, function calling, read-only skill execution as
+  actions, general AgentLoop, multi-step autonomous loop, file edit/write
+  outside bounded profile/session/trace store, shell execution, subagent
+  invocation, Dominion runtime, or production certification. `v0.41.6`
+  completes the Default Personal Runtime Opening Track as an installable
+  user-test release with deterministic mock-provider acceptance, configured
+  provider flow documentation, command acceptance matrix, final safety
+  boundary report, closed capability matrix, user guide, troubleshooting, and
+  v0.42.0 handoff. It is not production certification and still keeps provider
+  doctor completion, tool calling, function calling, read-only skill execution
+  as actions, general AgentLoop, shell/edit/apply/test execution, subagents,
+  Dominion runtime, and production certification closed.
 
 Do not describe `v0.20.x` as a write/shell/network/MCP/plugin safety track.
 Those capabilities remain excluded from the self-awareness foundation unless a

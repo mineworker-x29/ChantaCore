@@ -1,6 +1,7 @@
 # ChantaCore
 
-`src/chanta_core/` includes a minimal CLI for OpenAI-compatible model endpoints such as LM Studio.
+`src/chanta_core/` includes the `chanta-cli` bootstrap surface for the current
+Default Personal Runtime opening track.
 
 ## Setup
 
@@ -14,22 +15,49 @@ pip install -e .
 
 ## Usage
 
+Current v0.41.6 installable Default Personal user-test release commands are:
+
+```bash
+chanta-cli --version
+chanta-cli doctor
+chanta-cli init default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli profile status --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli prompt preview --profile default-personal --home "%TEMP%\chantacore-v0416-test" "Summarize current ChantaCore status."
+chanta-cli session new --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli session list --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli provider doctor --profile default-personal --home "%TEMP%\chantacore-v0416-test" --no-completion
+chanta-cli skills list --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli skills inspect profile_status --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli run --profile default-personal --home "%TEMP%\chantacore-v0416-test" --provider mock "Summarize what ChantaCore is in three bullets."
+chanta-cli trace recent --profile default-personal --home "%TEMP%\chantacore-v0416-test" --limit 10
+chanta-cli trace summary --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli run-report last --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+chanta-cli safety check-command --profile default-personal --home "%TEMP%\chantacore-v0416-test" --command "Remove-Item -Recurse -Force C:\"
+chanta-cli release status --profile default-personal --home "%TEMP%\chantacore-v0416-test"
+```
+
+`ask`, provider doctor completion, tool calling, function calling, general
+AgentLoop, skill execution as actions, shell execution, subagents, Dominion
+runtime, and production certification are future-gated or denied in this
+release. v0.41.6 is user-test ready, not production certified. The older
+examples below are retained for historical context only.
+
 One-shot prompt:
 
 ```bash
-chanta-cli ask "한국어로 자기소개를 해줘."
+chanta-cli ask "Summarize the current context."
 ```
 
 Pipe stdin:
 
 ```bash
-echo "현재 설정을 요약해줘." | chanta-cli ask
+echo "Summarize the current setting." | chanta-cli ask
 ```
 
 Interactive session:
 
 ```bash
-chanta-cli repl --system "답변은 간결하게 해."
+chanta-cli repl --system "Answer briefly."
 ```
 
 Inspect resolved config:
