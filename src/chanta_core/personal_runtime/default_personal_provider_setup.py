@@ -300,6 +300,11 @@ class V042ProviderStatusReport:
     tool_calling_allowed: bool
     function_calling_allowed: bool
     next_action: str
+    mock_provider_available: bool
+    active_provider_config_present: bool
+    configured_provider_run_ready: bool
+    configured_provider_connectivity: str
+    configured_provider_next_action: str
     rendered_text: str
     provider_invoked: bool
     prompt_submitted: bool
@@ -973,6 +978,11 @@ def create_v042_provider_status_report(request: V042ProviderStatusRequest, env: 
         "tool_calling_allowed": False,
         "function_calling_allowed": False,
         "next_action": next_action,
+        "mock_provider_available": True,
+        "active_provider_config_present": bool(data),
+        "configured_provider_run_ready": readiness.configured_provider_run_ready,
+        "configured_provider_connectivity": "unknown",
+        "configured_provider_next_action": "run chanta-cli provider connectivity" if data and readiness.configured_provider_run_ready else next_action,
         "rendered_text": "",
         "provider_invoked": False,
         "prompt_submitted": False,
@@ -1286,9 +1296,14 @@ def _render_provider_status(report: V042ProviderStatusReport) -> str:
             f"  model: {report.model or '(none)'}",
             f"  api_key_env_var: {report.api_key_env_var or '(none)'}",
             f"  api_key_env_present: {report.api_key_env_present}",
+            f"  mock_provider_available: {str(report.mock_provider_available).lower()}",
+            f"  active_provider_config_present: {str(report.active_provider_config_present).lower()}",
+            f"  configured_provider_run_ready: {str(report.configured_provider_run_ready).lower()}",
+            f"  configured_provider_connectivity: {report.configured_provider_connectivity}",
             f"  ready_for_mock_run: {str(report.ready_for_mock_run).lower()}",
             f"  ready_for_configured_provider_run: {str(report.ready_for_configured_provider_run).lower()}",
             f"  provider_doctor_no_completion_available: {str(report.provider_doctor_no_completion_available).lower()}",
+            f"  configured_provider_next_action: {report.configured_provider_next_action}",
             f"  next: {report.next_action}",
         )
     )

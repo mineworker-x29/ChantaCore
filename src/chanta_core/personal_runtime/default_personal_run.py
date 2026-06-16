@@ -29,6 +29,13 @@ from chanta_core.personal_runtime.default_personal_prompt_session import (
     create_default_personal_session,
     create_default_personal_session_create_request,
 )
+from chanta_core.personal_runtime.default_personal_provider_response import (
+    create_v042_provider_reasoning_model_troubleshooting_guide,
+    create_v042_run_response_recording_decision,
+    create_v042_runtime_identity_injection_report,
+    create_v042_runtime_identity_prompt,
+    parse_v042_openai_compatible_response,
+)
 from chanta_core.personal_runtime.default_personal_provider_skills import (
     ProviderConfig,
     ProviderKind,
@@ -239,6 +246,15 @@ class ProviderTextResponse:
     trusted_for_process_state: bool
     token_usage: dict[str, object] | None
     error_message: str | None
+    error_class: str | None
+    response_parse_status: str | None
+    response_extracted_from_field: str | None
+    response_content_length: int | None
+    response_finish_reason: str | None
+    provider_model: str | None
+    runtime_identity_included: bool
+    provider_identity_is_implementation_detail: bool
+    empty_response_detected: bool
 
 
 @dataclass(frozen=True)
@@ -256,6 +272,8 @@ class ProviderTextTransportResult:
     tool_calling_used: bool
     function_calling_used: bool
     secret_printed: bool
+    error_class: str | None
+    timeout_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -326,6 +344,7 @@ class MinimalSingleTurnRunInput:
     provider_override: str | None
     use_mock_provider: bool
     max_steps: int
+    timeout_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -395,6 +414,7 @@ class RunCommandInput:
     session_id: str | None
     provider: str | None
     mock_provider: bool
+    timeout_seconds: float | None = None
 
 
 @dataclass(frozen=True)
@@ -754,6 +774,15 @@ def create_provider_text_response(**overrides: Any) -> ProviderTextResponse:
         "trusted_for_process_state": False,
         "token_usage": None,
         "error_message": None,
+        "error_class": None,
+        "response_parse_status": None,
+        "response_extracted_from_field": None,
+        "response_content_length": None,
+        "response_finish_reason": None,
+        "provider_model": None,
+        "runtime_identity_included": False,
+        "provider_identity_is_implementation_detail": False,
+        "empty_response_detected": False,
     }
     return ProviderTextResponse(**_merge(defaults, overrides))
 
@@ -773,6 +802,8 @@ def create_provider_text_transport_result(**overrides: Any) -> ProviderTextTrans
         "tool_calling_used": False,
         "function_calling_used": False,
         "secret_printed": False,
+        "error_class": None,
+        "timeout_seconds": None,
     }
     return ProviderTextTransportResult(**_merge(defaults, overrides))
 
@@ -868,13 +899,20 @@ def invoke_openai_compatible_text_transport(
             attempted=False,
             status=ProviderTextRunStatus.PROVIDER_NOT_CONFIGURED.value,
             error_message="base_url and model are required for configured provider run",
+            error_class="provider_not_configured",
+            timeout_seconds=transport_config.timeout_seconds,
         )
         return OpenAICompatibleTextTransportResult(transport_config, result, False, False, False)
     endpoint = _provider_url(transport_config.base_url, transport_config.endpoint_path)
+    identity_prompt = create_v042_runtime_identity_prompt()
+    identity_report = create_v042_runtime_identity_injection_report(provider_model=transport_config.model)
     payload = json.dumps(
         {
             "model": transport_config.model,
-            "messages": [{"role": "user", "content": request.assembled_prompt}],
+            "messages": [
+                {"role": "system", "content": identity_prompt.prompt_text},
+                {"role": "user", "content": request.assembled_prompt},
+            ],
             "stream": False,
         }
     ).encode("utf-8")
@@ -887,39 +925,69 @@ def invoke_openai_compatible_text_transport(
     try:
         with urllib.request.urlopen(http_request, timeout=transport_config.timeout_seconds) as response:
             data = json.loads(response.read().decode("utf-8"))
-        choices = data.get("choices", []) if isinstance(data, dict) else []
-        text = ""
-        if choices and isinstance(choices[0], dict):
-            message = choices[0].get("message", {})
-            text = str(message.get("content", "")) if isinstance(message, dict) else str(choices[0].get("text", ""))
+        parse_result = parse_v042_openai_compatible_response(data)
+        recording_decision = create_v042_run_response_recording_decision(parse_result)
+        token_usage = data.get("usage") if isinstance(data, dict) else None
         provider_response = create_provider_text_response(
             request_id=request.request_id,
             provider_id=request.provider_id,
-            text=text,
-            token_usage=data.get("usage") if isinstance(data, dict) else None,
+            status=ProviderTextRunStatus.SUCCESS.value if recording_decision.response_valid else ProviderTextRunStatus.FAILED.value,
+            text=parse_result.assistant_text,
+            token_usage=token_usage,
+            error_message=None if recording_decision.response_valid else parse_result.diagnostic_summary,
+            error_class=None if recording_decision.response_valid else parse_result.error_class,
+            response_parse_status=parse_result.status,
+            response_extracted_from_field=parse_result.extracted_from_field,
+            response_content_length=parse_result.content_length,
+            response_finish_reason=parse_result.response_shape_summary.finish_reason,
+            provider_model=parse_result.response_shape_summary.provider_model or transport_config.model,
+            runtime_identity_included=identity_report.runtime_identity_included,
+            provider_identity_is_implementation_detail=identity_report.provider_identity_is_implementation_detail,
+            empty_response_detected=not parse_result.assistant_text_present,
         )
         result = create_provider_text_transport_result(
             transport_kind=ProviderTextTransportKind.OPENAI_COMPATIBLE.value,
             attempted=True,
-            status=ProviderTextRunStatus.SUCCESS.value,
+            status=ProviderTextRunStatus.SUCCESS.value if recording_decision.response_valid else ProviderTextRunStatus.FAILED.value,
             response=provider_response,
+            error_message=None if recording_decision.response_valid else parse_result.diagnostic_summary,
             network_accessed=True,
             remote_network_accessed=urllib.parse.urlparse(transport_config.base_url).hostname not in {"localhost", "127.0.0.1", "::1"},
             prompt_submitted=True,
             provider_completion_invoked=True,
+            error_class=None if recording_decision.response_valid else parse_result.error_class,
+            timeout_seconds=transport_config.timeout_seconds,
         )
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        error_class = _classify_provider_transport_error(exc)
+        status = ProviderTextRunStatus.TIMEOUT.value if error_class == "provider_timeout" else ProviderTextRunStatus.PROVIDER_UNAVAILABLE.value
         result = create_provider_text_transport_result(
             transport_kind=ProviderTextTransportKind.OPENAI_COMPATIBLE.value,
             attempted=True,
-            status=ProviderTextRunStatus.PROVIDER_UNAVAILABLE.value,
+            status=status,
             error_message=str(exc),
             network_accessed=True,
             remote_network_accessed=urllib.parse.urlparse(transport_config.base_url).hostname not in {"localhost", "127.0.0.1", "::1"},
             prompt_submitted=True,
             provider_completion_invoked=True,
+            error_class=error_class,
+            timeout_seconds=transport_config.timeout_seconds,
         )
     return OpenAICompatibleTextTransportResult(transport_config, result, False, False, False)
+
+
+def _classify_provider_transport_error(exc: BaseException) -> str:
+    text = str(exc).lower()
+    reason = getattr(exc, "reason", None)
+    reason_text = str(reason).lower() if reason is not None else ""
+    combined = f"{text} {reason_text}"
+    if isinstance(exc, TimeoutError) or "timed out" in combined or "timeout" in combined:
+        return "provider_timeout"
+    if "connection refused" in combined or "actively refused" in combined or "winerror 10061" in combined:
+        return "connection_refused"
+    if isinstance(exc, json.JSONDecodeError):
+        return "invalid_provider_response"
+    return "unknown_provider_error"
 
 
 def create_provider_text_invocation_audit(**overrides: Any) -> ProviderTextInvocationAudit:
@@ -969,6 +1037,7 @@ def create_minimal_single_turn_run_input(
         "provider_override": None,
         "use_mock_provider": False,
         "max_steps": 1,
+        "timeout_seconds": None,
     }
     return MinimalSingleTurnRunInput(**_merge(defaults, overrides))
 
@@ -1262,6 +1331,55 @@ def _mock_provider_config() -> ProviderConfig:
     )
 
 
+def _render_provider_failure_text(config: ProviderConfig, transport_result: ProviderTextTransportResult) -> str:
+    error_class = transport_result.error_class or (
+        "provider_timeout" if transport_result.status == ProviderTextRunStatus.TIMEOUT.value else "unknown_provider_error"
+    )
+    timeout = transport_result.timeout_seconds or create_provider_text_run_policy().timeout_seconds
+    response = transport_result.response
+    if response and response.empty_response_detected:
+        parse_status = response.response_parse_status or "parsed_empty"
+        guide = create_v042_provider_reasoning_model_troubleshooting_guide()
+        return "\n".join(
+            (
+                "Configured provider returned no final assistant content.",
+                f"error_class: {error_class}",
+                f"response_parse_status: {parse_status}",
+                "next:",
+                *[f"* {item}" for item in guide.recommended_actions[:5]],
+                f"run_id: (assigned by trace runtime)",
+                "provider_text_untrusted: true",
+                "provider_invoked: true",
+                "prompt_submitted: true",
+                "shell_executed: false",
+                "subagent_invoked: false",
+                "production_certified: false",
+            )
+        )
+    return "\n".join(
+        (
+            "Configured provider run failed.",
+            "status: failed",
+            f"error_class: {error_class}",
+            f"base_url: {config.base_url or '(none)'}",
+            f"model: {config.model or '(none)'}",
+            f"timeout_seconds: {timeout:g}",
+            "provider_invoked: true",
+            "prompt_submitted: true",
+            "shell_executed: false",
+            "subagent_invoked: false",
+            "production_certified: false",
+            f"error_message: {transport_result.error_message or '(none)'}",
+            "next_action:",
+            "1. check LM Studio server is running",
+            "2. run chanta-cli provider connectivity or provider doctor --no-completion --probe-models",
+            "3. confirm model id from /v1/models",
+            "4. increase timeout with chanta-cli run --timeout 120",
+            "5. try a smaller model",
+        )
+    )
+
+
 def run_minimal_single_turn(run_input: MinimalSingleTurnRunInput, **overrides: Any) -> MinimalSingleTurnRunResult:
     if run_input.max_steps > 1:
         return create_minimal_single_turn_run_result(
@@ -1301,7 +1419,7 @@ def run_minimal_single_turn(run_input: MinimalSingleTurnRunInput, **overrides: A
     if run_input.provider_override == "mock":
         config = _mock_provider_config()
     if config.provider_kind == ProviderKind.MOCK.value or run_input.use_mock_provider:
-        request = create_provider_text_request(run_input.user_input, prompt_result.rendered_preview, config)
+        request = create_provider_text_request(run_input.user_input, prompt_result.rendered_preview, config, timeout_seconds=run_input.timeout_seconds or create_provider_text_run_policy().timeout_seconds)
         transport_result = invoke_mock_provider_text_transport(request)
     else:
         if config.mode != "text_only" or not config.base_url or not config.model:
@@ -1312,10 +1430,12 @@ def run_minimal_single_turn(run_input: MinimalSingleTurnRunInput, **overrides: A
                 status=ProviderTextRunStatus.PROVIDER_NOT_CONFIGURED.value,
                 assistant_text="Provider config must set mode=text_only, base_url, and model for non-mock run.",
             )
-        request = create_provider_text_request(run_input.user_input, prompt_result.rendered_preview, config)
-        transport_result = invoke_openai_compatible_text_transport(request).transport_result
+        timeout_seconds = run_input.timeout_seconds or create_provider_text_run_policy().timeout_seconds
+        request = create_provider_text_request(run_input.user_input, prompt_result.rendered_preview, config, timeout_seconds=timeout_seconds)
+        transport_config = create_openai_compatible_text_transport_config(config, timeout_seconds=timeout_seconds)
+        transport_result = invoke_openai_compatible_text_transport(request, transport_config).transport_result
     response = transport_result.response
-    assistant_text = response.text if response else transport_result.error_message or "Provider unavailable."
+    assistant_text = response.text if response and transport_result.status == ProviderTextRunStatus.SUCCESS.value else _render_provider_failure_text(config, transport_result)
     append_result = None
     if transport_result.status == ProviderTextRunStatus.SUCCESS.value and response is not None:
         append_result = append_run_session_turns(home, session_id, run_input.user_input, assistant_text, request.provider_id)
@@ -1354,6 +1474,7 @@ def create_run_command_input(
         "session_id": None,
         "provider": None,
         "mock_provider": False,
+        "timeout_seconds": None,
     }
     return RunCommandInput(**_merge(defaults, overrides))
 
@@ -1381,6 +1502,7 @@ def execute_run_command(command_input: RunCommandInput, **overrides: Any) -> Run
         session_id=command_input.session_id,
         provider_override=command_input.provider,
         use_mock_provider=command_input.mock_provider or command_input.provider == "mock",
+        timeout_seconds=command_input.timeout_seconds,
     )
     run_result = run_minimal_single_turn(run_input)
     render_result = render_assistant_response(
@@ -1559,6 +1681,7 @@ def _handle_run(args: Sequence[str]) -> int:
     parser.add_argument("--home", required=True)
     parser.add_argument("--session", dest="session_id")
     parser.add_argument("--provider")
+    parser.add_argument("--timeout", type=float, default=None)
     parser.add_argument("user_input")
     parsed = parser.parse_args(args)
     result = execute_run_command(
@@ -1569,6 +1692,7 @@ def _handle_run(args: Sequence[str]) -> int:
             parsed.session_id,
             parsed.provider,
             parsed.provider == "mock",
+            parsed.timeout,
         )
     )
     print(result.rendered_text)

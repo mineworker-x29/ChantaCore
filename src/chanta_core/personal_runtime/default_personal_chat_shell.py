@@ -8,6 +8,8 @@ edit/apply, or production certification.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import sys
@@ -126,6 +128,7 @@ class V042ChatShellStartRequest:
     new_session: bool
     max_turns: int | None
     mode: str
+    timeout_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -218,6 +221,7 @@ class V042ChatShellTurnRequest:
     provider: str | None
     user_input: str
     turn_index: int
+    timeout_seconds: float | None
 
 
 @dataclass(frozen=True)
@@ -559,6 +563,7 @@ def create_v042_chat_shell_start_request(
     new_session: bool = False,
     max_turns: int | None = None,
     mode: str = V042ChatShellMode.INTERACTIVE.value,
+    timeout_seconds: float | None = None,
     **overrides: Any,
 ) -> V042ChatShellStartRequest:
     bounded_turns = None if max_turns is None else max(1, min(int(max_turns), 200))
@@ -571,6 +576,7 @@ def create_v042_chat_shell_start_request(
         "new_session": new_session,
         "max_turns": bounded_turns,
         "mode": mode,
+        "timeout_seconds": timeout_seconds,
     }
     return V042ChatShellStartRequest(**_merge(defaults, overrides))
 
@@ -619,7 +625,7 @@ def create_v042_chat_shell_loop_policy(**overrides: Any) -> V042ChatShellLoopPol
 
 
 def create_v042_chat_shell_prompt_view(state: V042ChatShellSessionState, **overrides: Any) -> V042ChatShellPromptView:
-    prompt = f"chanta[{state.provider_mode}:{state.turn_count}]> "
+    prompt = "ChantaCore> "
     defaults = {
         "view_id": "v0424-chat-shell-prompt-view",
         "prompt_text": prompt,
@@ -701,8 +707,35 @@ def classify_v042_chat_shell_input(raw_text: str, **overrides: Any) -> V042ChatS
 
 def create_v042_chat_shell_help_view(**overrides: Any) -> V042ChatShellHelpView:
     commands = ("/help", "/exit", "/quit", "/status", "/provider", "/history", "/trace", "/run last", "/session", "/handoff", "/safety")
-    safety = "Shell commands are not executed. User messages run at most one existing single-turn text run."
-    rendered = "\n".join(("ChantaCore Chat Help", "Type a message and press Enter.", "Commands:", *(f"- {item}" for item in commands), safety))
+    safety = "Safety: Shell commands are not executed. File edit, subagents, tools, and production certification remain closed."
+    rendered = "\n".join(
+        (
+            "ChantaCore Help",
+            "ChantaCore Chat Help",
+            "",
+            "Conversation",
+            "- type any message",
+            "- /help",
+            "- /exit",
+            "- /quit",
+            "",
+            "Status",
+            "- /status",
+            "- /provider",
+            "- /session",
+            "",
+            "Review",
+            "- /history",
+            "- /trace",
+            "- /run last",
+            "- /handoff",
+            "",
+            "Safety",
+            "- /safety",
+            "",
+            safety,
+        )
+    )
     defaults = {"view_id": "v0424-chat-help-view", "rendered_text": rendered, "commands": commands, "safety_statement": safety}
     return V042ChatShellHelpView(**_merge(defaults, overrides))
 
@@ -710,14 +743,18 @@ def create_v042_chat_shell_help_view(**overrides: Any) -> V042ChatShellHelpView:
 def create_v042_chat_shell_status_view(state: V042ChatShellSessionState, **overrides: Any) -> V042ChatShellStatusView:
     rendered = "\n".join(
         (
-            "ChantaCore Chat Status",
-            f"profile: {state.profile_id}",
-            f"home: {state.resolved_home_path}",
-            f"session: {state.session_id}",
-            f"provider: {state.provider_mode}",
+            "ChantaCore Status",
+            f"Profile: {state.profile_id}",
+            f"Home: {state.resolved_home_path}",
+            f"Provider: {state.provider_mode}",
+            f"Session: {state.session_id}",
+            f"Turns: {state.turn_count}",
+            f"Latest run: {state.last_run_id or '-'}",
             f"turn_count: {state.turn_count}",
             f"latest_run_id: {state.last_run_id or '-'}",
-            "closed: agent_loop retry_loop shell subagent tools functions production",
+            "Trace and run details: /trace, /run last, /handoff",
+            "Closed: shell, subagents, tools, functions, production certification",
+            "closed: shell subagent tools functions production",
         )
     )
     defaults = {
@@ -736,7 +773,31 @@ def create_v042_chat_shell_status_view(state: V042ChatShellSessionState, **overr
 
 def create_v042_chat_shell_provider_view(state: V042ChatShellSessionState, **overrides: Any) -> V042ChatShellProviderView:
     report = create_v042_provider_status_report(create_v042_provider_status_request(state.resolved_home_path, state.profile_id))
-    rendered = "\n".join(("ChantaCore Chat Provider", report.rendered_text, "secrets: redacted/not included"))
+    if report.ready_for_configured_provider_run:
+        status = "Ready"
+        next_action = 'Run chanta-cli run --provider configured "..."'
+    elif report.config_present:
+        status = "Needs attention"
+        next_action = report.next_action
+    else:
+        status = "Not configured"
+        next_action = "Run chanta-cli provider setup ..."
+    rendered = "\n".join(
+        (
+            "Provider",
+            f"Status: {status}",
+            f"Mode: {report.mode or report.provider_kind or 'not configured'}",
+            f"Model: {report.model or '(none)'}",
+            f"Endpoint: {report.configured_provider_connectivity}",
+            f"Mock provider: {'available' if report.mock_provider_available else 'unavailable'}",
+            f"Next: {next_action}",
+            "Secrets: redacted/not included",
+            "secrets: redacted/not included",
+            f"mock_provider_available: {str(report.mock_provider_available).lower()}",
+            f"configured_provider_run_ready: {str(report.ready_for_configured_provider_run).lower()}",
+            f"configured_provider_next_action: {report.configured_provider_next_action}",
+        )
+    )
     defaults = {"view_id": "v0424-chat-provider-view", "rendered_text": rendered, "provider_invoked": False, "secret_values_redacted": True}
     return V042ChatShellProviderView(**_merge(defaults, overrides))
 
@@ -878,6 +939,7 @@ def create_v042_chat_shell_turn_request(
     provider: str | None,
     user_input: str,
     turn_index: int,
+    timeout_seconds: float | None = None,
     **overrides: Any,
 ) -> V042ChatShellTurnRequest:
     defaults = {
@@ -888,6 +950,7 @@ def create_v042_chat_shell_turn_request(
         "provider": provider,
         "user_input": user_input,
         "turn_index": turn_index,
+        "timeout_seconds": timeout_seconds,
     }
     return V042ChatShellTurnRequest(**_merge(defaults, overrides))
 
@@ -917,19 +980,30 @@ def execute_v042_chat_shell_turn(request: V042ChatShellTurnRequest, **overrides:
     args = ["run", "--profile", request.profile_id, "--home", request.home_path, "--session", request.session_id]
     if request.provider:
         args.extend(["--provider", request.provider])
+    if request.timeout_seconds is not None:
+        args.extend(["--timeout", str(request.timeout_seconds)])
     args.append(request.user_input)
-    exit_code = _v0423_main(args)
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured):
+        exit_code = _v0423_main(args)
     report = create_last_run_report(create_last_run_report_request(request.profile_id, request.home_path, request.session_id))
     status = V042ChatShellStatus.TURN_COMPLETED.value if exit_code == 0 and report.found else V042ChatShellStatus.FAILED.value
     assistant = report.assistant_response_preview
-    rendered = "\n".join(
-        (
-            assistant or "(no assistant response recorded)",
-            f"run_id: {report.run_id or '-'}",
-            f"session_id: {request.session_id}",
-            "provider_text_untrusted: true",
+    if assistant:
+        rendered = "\n".join((assistant, "", f"run: {report.run_id or '-'}", f"session: {request.session_id}"))
+    else:
+        rendered = "\n".join(
+            (
+                "ChantaCore could not find a final answer in the provider response.",
+                "",
+                "Next:",
+                "- inspect chanta-cli run-report last",
+                "- check provider/model settings",
+                "",
+                f"run: {report.run_id or '-'}",
+                f"session: {request.session_id}",
+            )
         )
-    )
     defaults = {
         "result_id": _new_id("v0424-turn-result"),
         "request_id": request.request_id,
@@ -1052,6 +1126,7 @@ def run_v042_chat_shell_scripted(
     new_session: bool = False,
     max_turns: int | None = None,
     banner_enabled: bool = True,
+    timeout_seconds: float | None = None,
 ) -> V042ChatShellScriptedRunResult:
     provider_mode = provider or V042ChatShellProviderMode.AUTO.value
     resolved_home = _resolve_home(home_path, "chat")
@@ -1063,7 +1138,17 @@ def run_v042_chat_shell_scripted(
     )
     outputs: list[str] = []
     if banner_enabled:
-        outputs.append(f"ChantaCore chat started. session={state.session_id} provider={state.provider_mode}")
+        outputs.append(
+            "\n".join(
+                (
+                    "ChantaCore Agent",
+                    f"Profile: {state.profile_id}",
+                    f"Provider: {state.provider_mode}",
+                    f"Session: {state.session_id}",
+                    "Type /help for commands. Type /exit to leave.",
+                )
+            )
+        )
     turn_results: list[V042ChatShellTurnResult] = []
     internal_results: list[V042ChatShellInternalCommandResult] = []
     total = 0
@@ -1103,6 +1188,7 @@ def run_v042_chat_shell_scripted(
             _provider_arg(state.provider_mode),
             record.normalized_text,
             users,
+            timeout_seconds,
         )
         turn = execute_v042_chat_shell_turn(request)
         turn_results.append(turn)
@@ -1308,8 +1394,17 @@ def _run_interactive(request: V042ChatShellStartRequest, no_banner: bool = False
     home = _resolve_home(request.home_path, "chat")
     state = create_v042_chat_shell_session_state(request.profile_id, home, None if request.new_session else request.session_id, request.provider or V042ChatShellProviderMode.AUTO.value)
     if not no_banner:
-        print(f"ChantaCore chat started. session={state.session_id} provider={state.provider_mode}")
-        print("Type /help for commands. Type /exit to leave.")
+        print(
+            "\n".join(
+                (
+                    "ChantaCore Agent",
+                    f"Profile: {state.profile_id}",
+                    f"Provider: {state.provider_mode}",
+                    f"Session: {state.session_id}",
+                    "Type /help for commands. Type /exit to leave.",
+                )
+            )
+        )
     turns = 0
     while True:
         try:
@@ -1317,15 +1412,42 @@ def _run_interactive(request: V042ChatShellStartRequest, no_banner: bool = False
         except (EOFError, KeyboardInterrupt):
             print("\nChantaCore chat exiting.")
             return 0
-        result = run_v042_chat_shell_scripted([raw], home, request.profile_id, request.provider or "mock", state.session_id, False, request.max_turns, False)
-        for output in result.outputs:
-            print(output)
-        if result.turn_results:
-            turn = result.turn_results[-1]
-            if turn.run_id:
-                state = replace(state, turn_count=state.turn_count + 1, run_ids=state.run_ids + (turn.run_id,), last_run_id=turn.run_id, last_assistant_preview=turn.assistant_text)
-                turns += 1
-        if result.exited and result.internal_command_results and result.internal_command_results[-1].exit_requested:
+        record = classify_v042_chat_shell_input(raw)
+        if record.input_kind == V042ChatShellInputKind.EMPTY.value:
+            print("(empty input ignored)")
+            continue
+        if record.input_kind in {V042ChatShellInputKind.INTERNAL_COMMAND.value, V042ChatShellInputKind.EXIT.value}:
+            command = parse_v042_chat_shell_internal_command(record.normalized_text)
+            result = create_v042_chat_shell_internal_command_result(command, state)
+            print(result.rendered_text)
+            if result.exit_requested:
+                state = replace(state, exited=True, exit_reason=command.command_kind)
+                return 0
+            continue
+        turn = execute_v042_chat_shell_turn(
+            create_v042_chat_shell_turn_request(
+                state.profile_id,
+                state.resolved_home_path,
+                state.session_id,
+                _provider_arg(state.provider_mode),
+                record.normalized_text,
+                state.turn_count + 1,
+                request.timeout_seconds,
+            )
+        )
+        print(turn.rendered_text)
+        if turn.run_id:
+            state = replace(
+                state,
+                turn_count=state.turn_count + 1,
+                run_ids=state.run_ids + (turn.run_id,),
+                last_run_id=turn.run_id,
+                last_assistant_preview=turn.assistant_text,
+            )
+            turns += 1
+        if turn.status == V042ChatShellStatus.DENIED.value:
+            continue
+        if state.exited:
             return 0
         if request.max_turns is not None and turns >= request.max_turns:
             print("max_turns reached; exiting without autonomous continuation.")
@@ -1340,10 +1462,11 @@ def _handle_chat(args: Sequence[str]) -> int:
     parser.add_argument("--session", dest="session_id")
     parser.add_argument("--new-session", action="store_true")
     parser.add_argument("--max-turns", type=int)
+    parser.add_argument("--timeout", type=float)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--no-banner", action="store_true")
     parsed = parser.parse_args(list(args))
-    request = create_v042_chat_shell_start_request(parsed.profile, parsed.home, parsed.provider, parsed.session_id, parsed.new_session, parsed.max_turns)
+    request = create_v042_chat_shell_start_request(parsed.profile, parsed.home, parsed.provider, parsed.session_id, parsed.new_session, parsed.max_turns, timeout_seconds=parsed.timeout)
     if parsed.json:
         home = _resolve_home(parsed.home, "chat")
         state = create_v042_chat_shell_session_state(parsed.profile, home, None if parsed.new_session else parsed.session_id, parsed.provider)

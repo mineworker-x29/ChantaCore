@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from chanta_core.personal_runtime.default_personal_diagnostics_feedback import main as _release_main
+from chanta_core.personal_runtime.default_personal_final_ux_acceptance import main as _release_main
 
 
 def main(argv: Sequence[str] | None = None) -> int:

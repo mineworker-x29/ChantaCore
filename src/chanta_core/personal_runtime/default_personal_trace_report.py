@@ -62,6 +62,7 @@ class RuntimeEventKind(str, Enum):
     USER_INPUT_RECEIVED = "user_input_received"
     PROVIDER_TEXT_CALL_STARTED = "provider_text_call_started"
     PROVIDER_TEXT_CALL_COMPLETED = "provider_text_call_completed"
+    PROVIDER_TEXT_CALL_FAILED = "provider_text_call_failed"
     SESSION_TURNS_APPENDED = "session_turns_appended"
     ASSISTANT_RESPONSE_RECORDED = "assistant_response_recorded"
     RUN_COMPLETED = "run_completed"
@@ -297,6 +298,16 @@ class LastRunReportResult:
     shell_executed: bool
     subagent_invoked: bool
     production_certified: bool
+    response_parse_status: str | None = None
+    response_error_class: str | None = None
+    response_extracted_from_field: str | None = None
+    response_content_length: int | None = None
+    response_finish_reason: str | None = None
+    provider_model: str | None = None
+    runtime_identity_included: bool | None = None
+    provider_identity_is_implementation_detail: bool | None = None
+    empty_response_detected: bool | None = None
+    next_action: str | None = None
 
 
 @dataclass(frozen=True)
@@ -530,6 +541,18 @@ def _preview(value: str | None, *, limit: int = 160) -> str | None:
     if len(normalized) <= limit:
         return normalized
     return f"{normalized[: limit - 3]}..."
+
+
+def _extract_error_class(value: str | None) -> str | None:
+    if not value:
+        return None
+    for line in str(value).splitlines():
+        if line.strip().startswith("error_class:"):
+            return line.split(":", 1)[1].strip() or None
+    normalized = str(value).lower()
+    if "timed out" in normalized or "timeout" in normalized:
+        return "provider_timeout"
+    return None
 
 
 def _redact_metadata(metadata: dict[str, object] | None) -> dict[str, object]:
@@ -989,6 +1012,16 @@ def create_last_run_report_result(
     trace_event_count: int,
     session_turn_count: int | None,
     unsafe_escalation_detected: bool,
+    response_parse_status: str | None = None,
+    response_error_class: str | None = None,
+    response_extracted_from_field: str | None = None,
+    response_content_length: int | None = None,
+    response_finish_reason: str | None = None,
+    provider_model: str | None = None,
+    runtime_identity_included: bool | None = None,
+    provider_identity_is_implementation_detail: bool | None = None,
+    empty_response_detected: bool | None = None,
+    next_action: str | None = None,
 ) -> LastRunReportResult:
     return LastRunReportResult(
         profile_id=request.profile_id,
@@ -1008,6 +1041,16 @@ def create_last_run_report_result(
         shell_executed=False,
         subagent_invoked=False,
         production_certified=False,
+        response_parse_status=response_parse_status,
+        response_error_class=response_error_class,
+        response_extracted_from_field=response_extracted_from_field,
+        response_content_length=response_content_length,
+        response_finish_reason=response_finish_reason,
+        provider_model=provider_model,
+        runtime_identity_included=runtime_identity_included,
+        provider_identity_is_implementation_detail=provider_identity_is_implementation_detail,
+        empty_response_detected=empty_response_detected,
+        next_action=next_action,
     )
 
 
@@ -1067,6 +1110,22 @@ def create_last_run_report(request: LastRunReportRequest) -> LastRunReportResult
             if "assistant_response_preview" in event.metadata:
                 assistant_preview = event.metadata["assistant_response_preview"]
                 break
+    response_metadata: dict[str, object] = {}
+    for event in related:
+        for key in (
+            "response_parse_status",
+            "response_error_class",
+            "response_extracted_from_field",
+            "response_content_length",
+            "response_finish_reason",
+            "provider_model",
+            "runtime_identity_included",
+            "provider_identity_is_implementation_detail",
+            "empty_response_detected",
+            "next_action",
+        ):
+            if key in event.metadata and event.metadata[key] is not None:
+                response_metadata[key] = event.metadata[key]
     return create_last_run_report_result(
         request,
         found=True,
@@ -1080,6 +1139,16 @@ def create_last_run_report(request: LastRunReportRequest) -> LastRunReportResult
         trace_event_count=len(related),
         session_turn_count=_count_session_turns(request.home_path, request.profile_id, latest.session_id),
         unsafe_escalation_detected=any(event.status == RuntimeEventStatus.DENIED.value for event in related),
+        response_parse_status=str(response_metadata["response_parse_status"]) if "response_parse_status" in response_metadata else None,
+        response_error_class=str(response_metadata["response_error_class"]) if "response_error_class" in response_metadata else None,
+        response_extracted_from_field=str(response_metadata["response_extracted_from_field"]) if "response_extracted_from_field" in response_metadata else None,
+        response_content_length=int(response_metadata["response_content_length"]) if isinstance(response_metadata.get("response_content_length"), int) else None,
+        response_finish_reason=str(response_metadata["response_finish_reason"]) if "response_finish_reason" in response_metadata else None,
+        provider_model=str(response_metadata["provider_model"]) if "provider_model" in response_metadata else None,
+        runtime_identity_included=bool(response_metadata["runtime_identity_included"]) if "runtime_identity_included" in response_metadata else None,
+        provider_identity_is_implementation_detail=bool(response_metadata["provider_identity_is_implementation_detail"]) if "provider_identity_is_implementation_detail" in response_metadata else None,
+        empty_response_detected=bool(response_metadata["empty_response_detected"]) if "empty_response_detected" in response_metadata else None,
+        next_action=str(response_metadata["next_action"]) if "next_action" in response_metadata else None,
     )
 
 
@@ -1395,6 +1464,7 @@ def validate_trace_store(profile_id: str, home_path: str) -> TraceValidationRepo
         if event.provider_invoked and event.event_kind not in {
             RuntimeEventKind.PROVIDER_TEXT_CALL_STARTED.value,
             RuntimeEventKind.PROVIDER_TEXT_CALL_COMPLETED.value,
+            RuntimeEventKind.PROVIDER_TEXT_CALL_FAILED.value,
         }:
             findings.append(
                 create_trace_validation_finding(
@@ -1735,13 +1805,30 @@ def _run_events_from_result(run_id: str, command_input: RunCommandInput, result:
     run_result = result.run_result
     session_id = run_result.session_id
     user_preview = _preview(command_input.user_input)
-    assistant_preview = _preview(run_result.assistant_text)
+    provider_response = run_result.provider_response
+    assistant_preview = _preview(provider_response.text if provider_response else run_result.assistant_text)
+    next_action = None
+    if provider_response and provider_response.empty_response_detected:
+        next_action = (
+            "inspect raw provider response JSON; increase max_tokens; ask for final answer only; "
+            "check LM Studio model/template settings; try a smaller model"
+        )
     metadata = {
         "user_input_preview": user_preview,
         "assistant_response_preview": assistant_preview,
         "provider": command_input.provider,
         "mock_provider": command_input.mock_provider,
         "exit_code": result.exit_code,
+        "response_parse_status": provider_response.response_parse_status if provider_response else None,
+        "response_error_class": provider_response.error_class if provider_response else None,
+        "response_extracted_from_field": provider_response.response_extracted_from_field if provider_response else None,
+        "response_content_length": provider_response.response_content_length if provider_response else None,
+        "response_finish_reason": provider_response.response_finish_reason if provider_response else None,
+        "provider_model": provider_response.provider_model if provider_response else None,
+        "runtime_identity_included": provider_response.runtime_identity_included if provider_response else None,
+        "provider_identity_is_implementation_detail": provider_response.provider_identity_is_implementation_detail if provider_response else None,
+        "empty_response_detected": provider_response.empty_response_detected if provider_response else None,
+        "next_action": next_action,
     }
     run_ref = create_runtime_object_ref(run_id, RuntimeObjectKind.RUN.value, "v0.41.5 traced run")
     session_ref = create_runtime_object_ref(
@@ -1783,28 +1870,57 @@ def _run_events_from_result(run_id: str, command_input: RunCommandInput, result:
         ),
     ]
     if result.provider_invoked or result.prompt_submitted:
-        events.extend(
-            [
-                create_runtime_event(
-                    RuntimeEventKind.PROVIDER_TEXT_CALL_STARTED.value,
-                    RuntimeEventStatus.STARTED.value,
-                    message="Scoped text-only provider call started for run.",
-                    provider_invoked=True,
-                    prompt_submitted=True,
-                    **base,
-                ),
-                create_runtime_event(
-                    RuntimeEventKind.PROVIDER_TEXT_CALL_COMPLETED.value,
-                    RuntimeEventStatus.COMPLETED.value
-                    if result.status == "success"
-                    else RuntimeEventStatus.FAILED.value,
-                    message="Scoped text-only provider call completed for run.",
-                    provider_invoked=True,
-                    prompt_submitted=True,
-                    **base,
-                ),
-            ]
+        events.append(
+            create_runtime_event(
+                RuntimeEventKind.PROVIDER_TEXT_CALL_STARTED.value,
+                RuntimeEventStatus.STARTED.value,
+                message="Scoped text-only provider call started for run.",
+                provider_invoked=True,
+                prompt_submitted=True,
+                **base,
+            )
         )
+        failed = result.status != "success"
+        error_metadata = {
+            **metadata,
+            "error_class": _extract_error_class(run_result.assistant_text),
+        }
+        events.append(
+            create_runtime_event(
+                RuntimeEventKind.PROVIDER_TEXT_CALL_FAILED.value if failed else RuntimeEventKind.PROVIDER_TEXT_CALL_COMPLETED.value,
+                RuntimeEventStatus.FAILED.value if failed else RuntimeEventStatus.COMPLETED.value,
+                message="Scoped text-only provider call failed for run." if failed else "Scoped text-only provider call completed for run.",
+                provider_invoked=True,
+                prompt_submitted=True,
+                metadata=error_metadata if failed else metadata,
+                profile_id=command_input.profile_id,
+                session_id=session_id,
+                run_id=run_id,
+                command_name="run",
+                objects=(run_ref, session_ref),
+            )
+        )
+        if provider_response and provider_response.response_parse_status:
+            parse_ok = provider_response.response_parse_status == "parsed" and not provider_response.empty_response_detected
+            if provider_response.empty_response_detected:
+                event_kind = "provider_text_response_empty"
+            else:
+                event_kind = "provider_text_response_parsed" if parse_ok else "provider_text_response_parse_failed"
+            events.append(
+                create_runtime_event(
+                    event_kind,
+                    RuntimeEventStatus.COMPLETED.value if parse_ok else RuntimeEventStatus.FAILED.value,
+                    message="Provider text response parsed." if parse_ok else "Provider text response parse did not produce final assistant content.",
+                    provider_invoked=False,
+                    prompt_submitted=False,
+                    metadata=metadata,
+                    profile_id=command_input.profile_id,
+                    session_id=session_id,
+                    run_id=run_id,
+                    command_name="run",
+                    objects=(run_ref, session_ref),
+                )
+            )
     if run_result.session_append_result and run_result.session_append_result.success:
         events.append(
             create_runtime_event(
@@ -1824,7 +1940,11 @@ def _run_events_from_result(run_id: str, command_input: RunCommandInput, result:
                 objects=(run_ref, session_ref),
             )
         )
-    if run_result.assistant_text:
+    if (
+        result.status == "success"
+        and run_result.provider_response is not None
+        and bool(run_result.provider_response.text.strip())
+    ):
         events.append(
             create_runtime_event(
                 RuntimeEventKind.ASSISTANT_RESPONSE_RECORDED.value,
@@ -1860,6 +1980,7 @@ def _handle_run(args: Sequence[str]) -> int:
     parser.add_argument("--home", required=True)
     parser.add_argument("--session", default=None)
     parser.add_argument("--provider", default=None)
+    parser.add_argument("--timeout", type=float, default=None)
     parser.add_argument("user_input")
     parsed = parser.parse_args(list(args)[1:])
     command_input = RunCommandInput(
@@ -1869,6 +1990,7 @@ def _handle_run(args: Sequence[str]) -> int:
         session_id=parsed.session,
         provider=parsed.provider,
         mock_provider=parsed.provider == "mock",
+        timeout_seconds=parsed.timeout,
     )
     run_id = _new_id("run")
     result = execute_run_command(command_input)
@@ -1876,7 +1998,7 @@ def _handle_run(args: Sequence[str]) -> int:
     events = _run_events_from_result(run_id, command_input, result)
     append_runtime_events(events, config)
     rendered = result.rendered_text
-    if result.status == "success":
+    if result.status == "success" or result.provider_invoked or result.prompt_submitted:
         rendered = rendered.replace(
             "[v0.41.4 single-turn text-only run]",
             "[v0.41.5 traced single-turn text-only run]",
