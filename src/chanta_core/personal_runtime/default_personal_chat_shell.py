@@ -708,6 +708,7 @@ def classify_v042_chat_shell_input(raw_text: str, **overrides: Any) -> V042ChatS
 def create_v042_chat_shell_help_view(**overrides: Any) -> V042ChatShellHelpView:
     commands = ("/help", "/exit", "/quit", "/status", "/provider", "/history", "/trace", "/run last", "/session", "/handoff", "/safety")
     safety = "Safety: Shell commands are not executed. File edit, subagents, tools, and production certification remain closed."
+    work_session_hint = "Business work flows are available through chanta-cli start: /summary, /todo, /memo, /decision, /handoff, /artifact last, /revise, /clarify, /note, /notes, /memory-boundary, /context, /recall, /evidence sources, /use-evidence, /grounded-summary, /grounding-check, /evidence used, /pilot status, /pilot review, /pilot score, /pilot findings, /pilot next, /pilot report, /acceptance, /workflow score, /polish status, /polish findings, /polish report, /pilot close, /v044 readiness, /v044 scope, /v044 risks, /v044 handoff."
     rendered = "\n".join(
         (
             "ChantaCore Help",
@@ -729,6 +730,9 @@ def create_v042_chat_shell_help_view(**overrides: Any) -> V042ChatShellHelpView:
             "- /trace",
             "- /run last",
             "- /handoff",
+            "",
+            "Business session",
+            f"- {work_session_hint}",
             "",
             "Safety",
             "- /safety",

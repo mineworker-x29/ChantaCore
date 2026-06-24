@@ -1,0 +1,18 @@
+"""Input bar constants."""
+
+INPUT_PLACEHOLDER = "Ask Schumpeter anything..."
+INPUT_REGION_ID = "input-region"
+MAIN_INPUT_ID = "main-input"
+PALETTE_REGION_ID = "palette-region"
+INPUT_REMAINS_VISIBLE_WITH_PALETTE = True
+INPUT_DISABLED_WHILE_HELP_OPEN = True
+
+
+__all__ = [
+    "INPUT_PLACEHOLDER",
+    "INPUT_REGION_ID",
+    "MAIN_INPUT_ID",
+    "PALETTE_REGION_ID",
+    "INPUT_REMAINS_VISIBLE_WITH_PALETTE",
+    "INPUT_DISABLED_WHILE_HELP_OPEN",
+]

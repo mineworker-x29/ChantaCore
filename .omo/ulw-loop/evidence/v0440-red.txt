@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.3, pluggy-1.6.0
+rootdir: D:\ChantaResearchGroup\ChantaCore
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collected 0 items / 1 error
+
+=================================== ERRORS ====================================
+_ ERROR collecting tests/test_v0440_controlled_workspace_read_design_contract.py _
+ImportError while importing test module 'D:\ChantaResearchGroup\ChantaCore\tests\test_v0440_controlled_workspace_read_design_contract.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\migeo\AppData\Local\Programs\Python\Python314\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_v0440_controlled_workspace_read_design_contract.py:5: in <module>
+    from chanta_core.personal_runtime.default_personal_workspace_read_contract import (
+E   ModuleNotFoundError: No module named 'chanta_core.personal_runtime.default_personal_workspace_read_contract'
+=========================== short test summary info ===========================
+ERROR tests/test_v0440_controlled_workspace_read_design_contract.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+============================== 1 error in 0.87s ===============================

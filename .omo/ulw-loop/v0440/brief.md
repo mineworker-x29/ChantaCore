@@ -1,0 +1,1 @@
+Implement Schumpeter v0.44.0 Controlled Workspace Read Design, Observation Contract & OCPM-Ready Research Debt Register as design-only contracts, preview TUI surfaces, integrated docs, tests, manual QA evidence, and safety proof that actual workspace read/search/shell/git/edit/provider/subagent/memory/production remain closed.
